@@ -1,0 +1,7 @@
+<?xml version='1.0' encoding='utf-8'?>
+<resources>
+    <string name="app_name">Kidora Adventure World</string>
+    <string name="title_activity_main">Kidora Adventure World</string>
+    <string name="package_name">com.kidora.adventureworld</string>
+    <string name="custom_url_scheme">com.kidora.adventureworld</string>
+</resources>

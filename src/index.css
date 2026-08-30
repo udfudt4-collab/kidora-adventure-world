@@ -1,0 +1,57 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  html {
+    -webkit-tap-highlight-color: transparent;
+    -webkit-text-size-adjust: 100%;
+  }
+  body {
+    @apply font-body text-slate-700 antialiased;
+    overscroll-behavior: none;
+    touch-action: manipulation;
+  }
+  h1, h2, h3, h4, h5, h6 {
+    @apply font-display;
+  }
+  button {
+    -webkit-tap-highlight-color: transparent;
+    user-select: none;
+  }
+}
+
+@layer components {
+  .btn-press {
+    @apply transition-all duration-150 active:scale-95;
+  }
+  .card-pop {
+    @apply bg-white rounded-3xl shadow-soft;
+  }
+  .text-stroke-white {
+    -webkit-text-stroke: 2px white;
+    paint-order: stroke fill;
+  }
+}
+
+@layer utilities {
+  .no-scrollbar::-webkit-scrollbar { display: none; }
+  .no-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
+  .bg-magic-gradient {
+    background: linear-gradient(160deg, #7dd3fc 0%, #a7f3d0 40%, #fde68a 100%);
+  }
+  .bg-night-gradient {
+    background: linear-gradient(180deg, #0c4a6e 0%, #0369a1 50%, #0ea5e9 100%);
+  }
+  .bg-sunset-gradient {
+    background: linear-gradient(160deg, #fbbf24 0%, #f9a8d4 50%, #c4b5fd 100%);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+  }
+}
