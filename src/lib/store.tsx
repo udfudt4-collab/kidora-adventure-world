@@ -3,6 +3,16 @@ import { supabase, isSupabaseConfigured } from './supabase';
 import { defaultAvatar } from './avatar';
 import { defaultBabyMoments } from './baby';
 import { defaultPeriodData } from './cycleTracker';
+import {
+  createDefaultPremiumState,
+  calculateDaysRemaining,
+  checkAndApplyDailyLoginReward,
+  checkAndApplyDailyAdventureReward,
+  applyChallengePremiumReward,
+  checkStreakMilestones,
+  applySuccessfulReferral,
+  extendPremiumDays,
+} from './premium';
 import type {
   ChildProfile,
   AvatarConfig,
@@ -20,6 +30,8 @@ import type {
   DailyLearningLog,
   PeriodTrackerData,
   CycleEntry,
+  PremiumState,
+  PremiumSourceType,
 } from './types';
 
 export const defaultControls: ChildProfileControls = {
@@ -137,6 +149,15 @@ interface AppState {
   dailyLearningLogs: DailyLearningLog[];
   // 🌸 Period & Ovulation Tracker (Parent App)
   periodTrackerData: PeriodTrackerData;
+  // 🎁 Earn Premium & Referral System
+  premiumState: PremiumState;
+  earnPremiumModalOpen: boolean;
+  setEarnPremiumModalOpen: (open: boolean) => void;
+  claimDailyLoginReward: () => void;
+  claimDailyAdventureReward: () => void;
+  claimChallengeReward: (challengeTitle: string) => void;
+  addReferralReward: (friendName?: string) => void;
+  extendPremium: (days: number, source: PremiumSourceType, title: string, emoji?: string) => void;
   loading: boolean;
   // Actions
   switchChild: (childId: string) => void;
@@ -244,6 +265,10 @@ export function AppProvider({ children: reactChildren }: { children: ReactNode }
   const [dailyLearningLogs, setDailyLearningLogs] = useState<DailyLearningLog[]>(initialSampleLearningLogs);
   const [periodTrackerData, setPeriodTrackerData] = useState<PeriodTrackerData>(defaultPeriodData);
 
+  // 🎁 Earn Premium & Referral System state
+  const [premiumState, setPremiumState] = useState<PremiumState>(() => createDefaultPremiumState());
+  const [earnPremiumModalOpen, setEarnPremiumModalOpen] = useState<boolean>(false);
+
   // Pregnancy & Baby Hub state
   const [pregnancyWeek, setPregnancyWeekState] = useState<number>(20);
   const [pregnancyWeightLogs, setPregnancyWeightLogs] = useState<WeightLogEntry[]>([
@@ -261,6 +286,16 @@ export function AppProvider({ children: reactChildren }: { children: ReactNode }
 
   // Active child derived
   const activeProfile = childrenList.find((c) => c.id === activeChildId) ?? childrenList[0] ?? null;
+
+  // Persist Premium helper
+  const persistPremiumState = useCallback((updated: PremiumState) => {
+    setPremiumState(updated);
+    try {
+      localStorage.setItem('kidora_premium', JSON.stringify(updated));
+    } catch (e) {
+      console.error('Storage premium save error:', e);
+    }
+  }, []);
 
   // Persist helper
   const persistFamilyToStorage = useCallback(
@@ -327,6 +362,36 @@ export function AppProvider({ children: reactChildren }: { children: ReactNode }
     const localRealWorld = localStorage.getItem('kidora_real_world');
     const localLearningLogs = localStorage.getItem('kidora_learning_logs');
     const localPeriod = localStorage.getItem('kidora_period_tracker');
+
+    // Load Premium & Referrals
+    const urlParams = typeof window !== 'undefined' ? new URLSearchParams(window.location.search) : null;
+    const referralParam = urlParams?.get('ref') || undefined;
+
+    const localPremium = localStorage.getItem('kidora_premium');
+    let initialPrem: PremiumState;
+    if (localPremium) {
+      try {
+        const parsed = JSON.parse(localPremium);
+        const daysRem = calculateDaysRemaining(parsed.expiresAt);
+        initialPrem = {
+          ...parsed,
+          daysRemaining: daysRem,
+          tier: daysRem > 0 ? 'premium' : 'free',
+        };
+      } catch {
+        initialPrem = createDefaultPremiumState(referralParam);
+      }
+    } else {
+      initialPrem = createDefaultPremiumState(referralParam);
+    }
+
+    // Process daily login reward (+1 Day)
+    const loginCheck = checkAndApplyDailyLoginReward(initialPrem);
+    const finalPrem = loginCheck.updatedState;
+    setPremiumState(finalPrem);
+    try {
+      localStorage.setItem('kidora_premium', JSON.stringify(finalPrem));
+    } catch {}
 
     if (localBackpack) {
       try { setBackpackItems(JSON.parse(localBackpack)); } catch (e) {}
@@ -768,8 +833,66 @@ export function AppProvider({ children: reactChildren }: { children: ReactNode }
       await addPassportStamp(worldId, 1);
       // Log learning
       await logActivityLearning(worldId, 12, starsEarned);
+
+      // 🎁 Claim daily adventure reward (+1 Day)
+      const advRes = checkAndApplyDailyAdventureReward(premiumState);
+      let updatedPrem = advRes.awarded ? advRes.updatedState : premiumState;
+
+      // 🔥 Check streak milestones (7d = +3d, 14d = +5d, 30d = +10d)
+      const streakRes = checkStreakMilestones(updatedPrem, newStreak);
+      if (streakRes.daysAwarded > 0) {
+        updatedPrem = streakRes.updatedState;
+      }
+      if (advRes.awarded || streakRes.daysAwarded > 0) {
+        persistPremiumState(updatedPrem);
+      }
     },
-    [activeProfile, saveProfile, addPassportStamp, logActivityLearning]
+    [activeProfile, saveProfile, addPassportStamp, logActivityLearning, premiumState, persistPremiumState]
+  );
+
+  // 🎁 Earn Premium Action Handlers
+  const claimDailyLoginReward = useCallback(() => {
+    const res = checkAndApplyDailyLoginReward(premiumState);
+    if (res.awarded) {
+      persistPremiumState(res.updatedState);
+    }
+  }, [premiumState, persistPremiumState]);
+
+  const claimDailyAdventureReward = useCallback(() => {
+    const res = checkAndApplyDailyAdventureReward(premiumState);
+    if (res.awarded) {
+      persistPremiumState(res.updatedState);
+    }
+  }, [premiumState, persistPremiumState]);
+
+  const claimChallengeReward = useCallback(
+    (challengeTitle: string) => {
+      const res = applyChallengePremiumReward(premiumState, challengeTitle);
+      if (res.awarded) {
+        persistPremiumState(res.updatedState);
+      }
+    },
+    [premiumState, persistPremiumState]
+  );
+
+  const addReferralReward = useCallback(
+    (friendName?: string) => {
+      const res = applySuccessfulReferral(premiumState, friendName || 'Friend Family');
+      if (res.daysAwarded > 0) {
+        persistPremiumState(res.updatedState);
+      }
+    },
+    [premiumState, persistPremiumState]
+  );
+
+  const extendPremium = useCallback(
+    (days: number, source: PremiumSourceType, title: string, emoji: string = '✨') => {
+      const res = extendPremiumDays(premiumState, days, source, title, emoji);
+      if (res.added) {
+        persistPremiumState(res.updatedState);
+      }
+    },
+    [premiumState, persistPremiumState]
   );
 
   const recordActivity = useCallback(
@@ -1026,6 +1149,9 @@ export function AppProvider({ children: reactChildren }: { children: ReactNode }
         if (targetChild) {
           updateChild(childId, { stars: (targetChild.stars ?? 0) + challenge.starsReward });
         }
+        // 🏆 Reward +7 Premium Days for completing challenge
+        const chalPremRes = applyChallengePremiumReward(premiumState, challenge.title);
+        persistPremiumState(chalPremRes.updatedState);
       }
 
       persistFamilyToStorage(
@@ -1043,7 +1169,7 @@ export function AppProvider({ children: reactChildren }: { children: ReactNode }
         familyEvents
       );
     },
-    [familyChallenges, childrenList, activeChildId, parentPin, recommendations, approvalRequests, parentNotes, pregnancyWeek, pregnancyWeightLogs, favoriteBabyNames, babyMoments, familyEvents, updateChild, persistFamilyToStorage]
+    [familyChallenges, childrenList, activeChildId, parentPin, recommendations, approvalRequests, parentNotes, pregnancyWeek, pregnancyWeightLogs, favoriteBabyNames, babyMoments, familyEvents, updateChild, persistFamilyToStorage, premiumState, persistPremiumState]
   );
 
   const requestApproval = useCallback(
@@ -1221,9 +1347,8 @@ export function AppProvider({ children: reactChildren }: { children: ReactNode }
   // Baby Hub
   const toggleFavoriteBabyName = useCallback(
     (nameId: string) => {
-      const updated = favoriteBabyNames.includes(nameId)
-        ? favoriteBabyNames.filter((id) => id !== nameId)
-        : [...favoriteBabyNames, nameId];
+      const isFav = favoriteBabyNames.includes(nameId);
+      const updated = isFav ? favoriteBabyNames.filter((id) => id !== nameId) : [...favoriteBabyNames, nameId];
       setFavoriteBabyNames(updated);
       persistFamilyToStorage(
         childrenList,
@@ -1395,6 +1520,15 @@ export function AppProvider({ children: reactChildren }: { children: ReactNode }
         completedRealWorldMissions,
         dailyLearningLogs,
         periodTrackerData,
+        // 🎁 Premium & Referral State
+        premiumState,
+        earnPremiumModalOpen,
+        setEarnPremiumModalOpen,
+        claimDailyLoginReward,
+        claimDailyAdventureReward,
+        claimChallengeReward,
+        addReferralReward,
+        extendPremium,
         loading,
         switchChild,
         addChild,

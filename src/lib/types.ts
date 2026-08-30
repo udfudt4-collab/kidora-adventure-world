@@ -308,3 +308,44 @@ export interface PeriodTrackerData {
   cycles: CycleEntry[];
 }
 
+// 🎁 Earn Premium & Referral System
+export type PremiumSourceType =
+  | 'welcome_bonus'
+  | 'referred_welcome'
+  | 'daily_login'
+  | 'daily_adventure'
+  | 'challenge'
+  | 'streak_milestone'
+  | 'referral';
+
+export interface PremiumRewardLog {
+  id: string;
+  source: PremiumSourceType;
+  title: string;
+  daysAdded: number;
+  date: string; // ISO date YYYY-MM-DD
+  emoji: string;
+}
+
+export interface SuccessfulReferral {
+  id: string;
+  friendName?: string;
+  dateJoined: string;
+  daysAwarded: number;
+}
+
+export interface PremiumState {
+  tier: 'free' | 'premium';
+  daysRemaining: number;
+  expiresAt: string; // ISO timestamp
+  totalDaysEarned: number;
+  referralCode: string;
+  referredBy?: string;
+  successfulReferrals: SuccessfulReferral[];
+  lastDailyLoginRewardDate: string | null;
+  lastDailyAdventureRewardDate: string | null;
+  claimedStreakMilestones: number[]; // e.g. [7, 14, 30]
+  history: PremiumRewardLog[];
+}
+
+

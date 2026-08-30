@@ -3,8 +3,9 @@ import { StarCounter } from './StatBadges';
 import { ParentSecurityGate } from './ParentSecurityGate';
 import { BackpackModal } from './BackpackModal';
 import { PassportModal } from './PassportModal';
+import { EarnPremiumModal } from './EarnPremiumModal';
 import { useApp } from '@/lib/store';
-import { Menu, X, Compass, Gamepad2, BookOpen, Heart, Home as HomeIcon, ChevronDown } from 'lucide-react';
+import { Menu, X, Compass, Gamepad2, BookOpen, Heart, Home as HomeIcon, ChevronDown, Sparkles } from 'lucide-react';
 import type { Screen } from '@/lib/types';
 
 interface NavbarProps {
@@ -13,7 +14,16 @@ interface NavbarProps {
 }
 
 export function Navbar({ currentScreen, onNavigate }: NavbarProps) {
-  const { profile, children: familyChildren, switchChild, backpackItems, passportStamps } = useApp();
+  const {
+    profile,
+    children: familyChildren,
+    switchChild,
+    backpackItems,
+    passportStamps,
+    premiumState,
+    earnPremiumModalOpen,
+    setEarnPremiumModalOpen,
+  } = useApp();
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [showParentGate, setShowParentGate] = useState(false);
   const [showChildPicker, setShowChildPicker] = useState(false);
@@ -114,6 +124,17 @@ export function Navbar({ currentScreen, onNavigate }: NavbarProps) {
                   <span className="text-xs font-black font-display hidden sm:inline">
                     {Object.values(passportStamps).reduce((a, b) => a + b, 0)}
                   </span>
+                </button>
+
+                {/* 👑 Premium Days Wallet Pill */}
+                <button
+                  type="button"
+                  onClick={() => setEarnPremiumModalOpen(true)}
+                  className="btn-press p-2 sm:px-3 rounded-2xl bg-gradient-to-r from-amber-400/20 to-orange-400/20 hover:from-amber-400/30 hover:to-orange-400/30 border border-amber-300/60 text-amber-900 text-xs font-black font-display flex items-center gap-1 shadow-xs cursor-pointer"
+                  title="Earn Premium Days & Invite Families"
+                >
+                  <span className="text-sm">👑</span>
+                  <span className="hidden sm:inline font-black text-amber-900">{premiumState.daysRemaining}d</span>
                 </button>
 
                 {/* Stars Counter */}
@@ -241,6 +262,14 @@ export function Navbar({ currentScreen, onNavigate }: NavbarProps) {
             onNavigate('parent');
           }}
           onCancel={() => setShowParentGate(false)}
+        />
+      )}
+
+      {/* 🎁 Earn Premium & Referral Program Modal */}
+      {earnPremiumModalOpen && (
+        <EarnPremiumModal
+          isOpen={earnPremiumModalOpen}
+          onClose={() => setEarnPremiumModalOpen(false)}
         />
       )}
     </>

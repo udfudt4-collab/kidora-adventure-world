@@ -1,6 +1,7 @@
 import { useState, useMemo } from 'react';
 import { useApp } from '@/lib/store';
 import { PeriodTracker } from '@/components/PeriodTracker';
+import { EarnPremiumModal } from '@/components/EarnPremiumModal';
 import { getParentGreeting, parentAffirmations } from '@/lib/greetings';
 import { defaultAvatar, skinTones, hairColors } from '@/lib/avatar';
 import {
@@ -77,6 +78,9 @@ export function ParentDashboard({ onNavigate }: ParentDashboardProps) {
     toggleFamilyEventCompleted,
     exportFamilyData,
     dailyLearningLogs,
+    premiumState,
+    earnPremiumModalOpen,
+    setEarnPremiumModalOpen,
   } = useApp();
 
   const [activeHub, setActiveHub] = useState<MainHub>('overview');
@@ -411,6 +415,39 @@ export function ParentDashboard({ onNavigate }: ParentDashboardProps) {
               <span className="text-[11px] font-black text-amber-800 bg-white/90 px-3 py-1.5 rounded-xl border border-amber-200 shadow-xs shrink-0">
                 Next 💫
               </span>
+            </div>
+
+            {/* 🚀 EARN PREMIUM & REFERRAL PROGRAM DASHBOARD CARD */}
+            <div className="bg-gradient-to-r from-amber-500 via-orange-500 to-rose-500 rounded-3xl p-6 text-white shadow-soft flex flex-col md:flex-row items-start md:items-center justify-between gap-5 border border-amber-300/40">
+              <div className="space-y-2 max-w-xl">
+                <div className="flex items-center gap-2 flex-wrap">
+                  <span className="bg-white/25 px-2.5 py-0.5 rounded-full text-[10px] font-black uppercase tracking-wider">
+                    Earn Premium 🚀
+                  </span>
+                  <span className="bg-amber-400 text-slate-950 px-2.5 py-0.5 rounded-full text-xs font-black">
+                    👑 {premiumState.daysRemaining} Days Remaining
+                  </span>
+                </div>
+                <h3 className="text-xl sm:text-2xl font-black font-display text-white leading-tight">
+                  Invite 3 Families → Get 90 Days Premium Free!
+                </h3>
+                <div className="flex flex-wrap gap-2 text-xs font-bold text-amber-100 pt-1">
+                  <span className="bg-white/15 backdrop-blur-md px-2.5 py-1 rounded-xl">🔐 Login today +1d</span>
+                  <span className="bg-white/15 backdrop-blur-md px-2.5 py-1 rounded-xl">🎮 Complete adventure +1d</span>
+                  <span className="bg-white/15 backdrop-blur-md px-2.5 py-1 rounded-xl">🏆 Join challenge +7d</span>
+                  <span className="bg-white/15 backdrop-blur-md px-2.5 py-1 rounded-xl">👨‍👩‍👧 Invite 3 families +90d</span>
+                </div>
+              </div>
+
+              <div className="flex flex-col sm:flex-row gap-2.5 w-full md:w-auto shrink-0">
+                <button
+                  type="button"
+                  onClick={() => setEarnPremiumModalOpen(true)}
+                  className="btn-press bg-white text-orange-600 font-black font-display text-xs sm:text-sm px-6 py-3.5 rounded-2xl shadow-pop whitespace-nowrap cursor-pointer hover:bg-amber-50 text-center transition-transform hover:scale-105"
+                >
+                  View Rewards & Invite 🎁
+                </button>
+              </div>
             </div>
 
             {/* 🌟 1. "WHAT DID MY CHILD LEARN TODAY?" 5-SECOND CLARITY CARD */}
@@ -1853,6 +1890,14 @@ export function ParentDashboard({ onNavigate }: ParentDashboardProps) {
             </div>
           </form>
         </div>
+      )}
+
+      {/* Earn Premium Days & Referral Program Modal */}
+      {earnPremiumModalOpen && (
+        <EarnPremiumModal
+          isOpen={earnPremiumModalOpen}
+          onClose={() => setEarnPremiumModalOpen(false)}
+        />
       )}
     </div>
   );
