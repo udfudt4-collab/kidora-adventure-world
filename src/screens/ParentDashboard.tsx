@@ -1,5 +1,7 @@
-import { useState } from 'react';
+import { useState, useMemo } from 'react';
 import { useApp } from '@/lib/store';
+import { PeriodTracker } from '@/components/PeriodTracker';
+import { getParentGreeting, parentAffirmations } from '@/lib/greetings';
 import { defaultAvatar, skinTones, hairColors } from '@/lib/avatar';
 import {
   getWeekData,
@@ -38,7 +40,7 @@ interface ParentDashboardProps {
   onNavigate: (screen: Screen) => void;
 }
 
-type MainHub = 'overview' | 'pregnancy' | 'baby' | 'children' | 'calendar' | 'privacy';
+type MainHub = 'overview' | 'cycle' | 'pregnancy' | 'baby' | 'children' | 'calendar' | 'privacy';
 
 export function ParentDashboard({ onNavigate }: ParentDashboardProps) {
   const {
@@ -74,10 +76,36 @@ export function ParentDashboard({ onNavigate }: ParentDashboardProps) {
     deleteFamilyEvent,
     toggleFamilyEventCompleted,
     exportFamilyData,
+    dailyLearningLogs,
   } = useApp();
 
   const [activeHub, setActiveHub] = useState<MainHub>('overview');
   const [selectedChildId, setSelectedChildId] = useState<string>(activeChildId);
+  const [affirmationIdx, setAffirmationIdx] = useState(0);
+
+  const [parentName, setParentName] = useState<string>(() => {
+    try {
+      return localStorage.getItem('kidora_parent_name') || 'Anish';
+    } catch {
+      return 'Anish';
+    }
+  });
+  const [isEditingName, setIsEditingName] = useState(false);
+  const [tempNameInput, setTempNameInput] = useState('');
+
+  const greeting = useMemo(() => getParentGreeting(parentName), [parentName]);
+
+  const handleSaveParentName = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (tempNameInput.trim()) {
+      const clean = tempNameInput.trim();
+      setParentName(clean);
+      try {
+        localStorage.setItem('kidora_parent_name', clean);
+      } catch {}
+    }
+    setIsEditingName(false);
+  };
 
   // Sub-tabs
   const [pregnancySubTab, setPregnancySubTab] = useState<'journey' | 'weight' | 'foods' | 'exercises'>('journey');
@@ -293,11 +321,24 @@ export function ParentDashboard({ onNavigate }: ParentDashboardProps) {
               🛡️
             </div>
             <div>
-              <h1 className="font-black font-display text-base tracking-tight text-white flex items-center gap-2">
-                Good Morning, Parent 👋
-              </h1>
-              <p className="text-[10px] text-emerald-400 font-bold">
-                Kidora Family & Parenting Hub • Protected Zone
+              <div className="flex items-center gap-2">
+                <h1 className="font-black font-display text-base tracking-tight text-white flex items-center gap-1.5">
+                  <span>{greeting.title}</span>
+                </h1>
+                <button
+                  type="button"
+                  onClick={() => {
+                    setTempNameInput(parentName);
+                    setIsEditingName(true);
+                  }}
+                  className="text-xs text-slate-400 hover:text-emerald-300 transition-colors p-0.5 cursor-pointer bg-white/10 hover:bg-white/20 rounded-lg px-1.5 py-0.5 flex items-center gap-1"
+                  title="Change your name"
+                >
+                  <span className="text-[10px]">✏️ Edit</span>
+                </button>
+              </div>
+              <p className="text-[10px] text-emerald-400 font-bold truncate max-w-xs sm:max-w-md">
+                {greeting.subtitle}
               </p>
             </div>
           </div>
@@ -315,6 +356,7 @@ export function ParentDashboard({ onNavigate }: ParentDashboardProps) {
         <div className="max-w-6xl mx-auto px-4 sm:px-6 flex items-center gap-1 overflow-x-auto no-scrollbar border-t border-slate-800 pt-1">
           {[
             { id: 'overview' as MainHub, label: 'Dashboard', emoji: '🏠' },
+            { id: 'cycle' as MainHub, label: 'Cycle & Period', emoji: '🌸' },
             { id: 'pregnancy' as MainHub, label: 'Pregnancy Journey', emoji: '🤰' },
             { id: 'baby' as MainHub, label: 'Baby Hub', emoji: '👶' },
             {
@@ -349,7 +391,131 @@ export function ParentDashboard({ onNavigate }: ParentDashboardProps) {
         {/* ======================================================== */}
         {activeHub === 'overview' && (
           <div className="space-y-6 animate-pop-in">
-            {/* 1. YOUR FAMILY QUICK BAR */}
+            {/* 💖 FRIENDLY PARENT THOUGHT & ENCOURAGEMENT CARD */}
+            <div
+              onClick={() => setAffirmationIdx((prev) => (prev + 1) % parentAffirmations.length)}
+              className="btn-press bg-gradient-to-r from-amber-50 via-rose-50 to-indigo-50 border border-amber-200/80 rounded-3xl p-4 flex items-center justify-between gap-3 cursor-pointer hover:border-amber-400 transition-all shadow-xs"
+              title="Click to see another friendly reminder"
+            >
+              <div className="flex items-center gap-3">
+                <span className="text-2xl">💖</span>
+                <div>
+                  <span className="text-[10px] font-black text-amber-800 uppercase tracking-wider">
+                    Parent Friend Note • Tap to refresh
+                  </span>
+                  <p className="text-xs sm:text-sm font-bold text-slate-800 italic mt-0.5">
+                    "{parentAffirmations[affirmationIdx]}"
+                  </p>
+                </div>
+              </div>
+              <span className="text-[11px] font-black text-amber-800 bg-white/90 px-3 py-1.5 rounded-xl border border-amber-200 shadow-xs shrink-0">
+                Next 💫
+              </span>
+            </div>
+
+            {/* 🌟 1. "WHAT DID MY CHILD LEARN TODAY?" 5-SECOND CLARITY CARD */}
+            {(() => {
+              const todayStr = new Date().toISOString().split('T')[0];
+              const todayLog = dailyLearningLogs.find((l) => l.date === todayStr) || dailyLearningLogs[0] || {
+                minutesSpent: 18,
+                xpEarned: 85,
+                activitiesCount: 4,
+                topics: [
+                  { name: 'Fractions & Shapes', emoji: '🧮' },
+                  { name: 'Phonics & Sight Words', emoji: '📚' },
+                  { name: 'Planets & Dinosaurs', emoji: '🧪' },
+                ],
+              };
+
+              return (
+                <div className="bg-gradient-to-r from-emerald-600 via-teal-600 to-cyan-700 rounded-3xl p-6 text-white shadow-soft space-y-4">
+                  <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 border-b border-white/20 pb-3">
+                    <div>
+                      <span className="text-[10px] font-black uppercase tracking-wider bg-white/20 px-2.5 py-0.5 rounded-full">
+                        Daily Learning Summary • 5-Second Scan
+                      </span>
+                      <h2 className="text-2xl font-black font-display mt-1">
+                        What Did {activeChild?.name || 'My Child'} Learn Today?
+                      </h2>
+                    </div>
+                    <div className="bg-white/20 backdrop-blur-md px-3.5 py-1.5 rounded-2xl font-display font-black text-xs self-start sm:self-auto">
+                      ⏱️ {todayLog.minutesSpent} min learning · ⭐ {todayLog.xpEarned} XP earned
+                    </div>
+                  </div>
+
+                  {/* Core Topics Covered */}
+                  <div className="space-y-1.5">
+                    <div className="text-xs font-bold text-emerald-100 uppercase tracking-wider">
+                      Concepts & Topics Explored:
+                    </div>
+                    <div className="flex flex-wrap gap-2">
+                      {todayLog.topics.map((t, idx) => (
+                        <div
+                          key={idx}
+                          className="bg-white/15 backdrop-blur-md px-3 py-1.5 rounded-xl border border-white/25 text-xs font-bold flex items-center gap-1.5 shadow-xs"
+                        >
+                          <span className="text-base">{t.emoji}</span>
+                          <span>{t.name}</span>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                </div>
+              );
+            })()}
+
+            {/* 🌟 2. ESSENTIAL 6 METRIC TILES (NO OVERLOADED CONFUSING CHARTS) */}
+            <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-3">
+              <div className="bg-white p-4 rounded-3xl border border-slate-200 shadow-soft text-center space-y-1">
+                <div className="text-2xl">⏱️</div>
+                <div className="text-lg font-black font-display text-slate-800">
+                  {dailyLearningLogs[0]?.minutesSpent || 18}m
+                </div>
+                <div className="text-[10px] font-bold text-slate-400 uppercase">Today's Time</div>
+              </div>
+
+              <div className="bg-white p-4 rounded-3xl border border-slate-200 shadow-soft text-center space-y-1">
+                <div className="text-2xl">🎯</div>
+                <div className="text-lg font-black font-display text-slate-800">
+                  {activeChild?.activitiesCompletedCount || 4}
+                </div>
+                <div className="text-[10px] font-bold text-slate-400 uppercase">Activities Done</div>
+              </div>
+
+              <div className="bg-white p-4 rounded-3xl border border-slate-200 shadow-soft text-center space-y-1">
+                <div className="text-2xl">⭐</div>
+                <div className="text-lg font-black font-display text-amber-600">
+                  {activeChild?.stars || 85}
+                </div>
+                <div className="text-[10px] font-bold text-slate-400 uppercase">Total XP / Stars</div>
+              </div>
+
+              <div className="bg-white p-4 rounded-3xl border border-slate-200 shadow-soft text-center space-y-1">
+                <div className="text-2xl">🔥</div>
+                <div className="text-lg font-black font-display text-orange-600">
+                  {activeChild?.streak || 2} Days
+                </div>
+                <div className="text-[10px] font-bold text-slate-400 uppercase">Current Streak</div>
+              </div>
+
+              <div className="bg-white p-4 rounded-3xl border border-slate-200 shadow-soft text-center space-y-1">
+                <div className="text-2xl">🗺️</div>
+                <div className="text-lg font-black font-display text-emerald-600">
+                  5 / 5
+                </div>
+                <div className="text-[10px] font-bold text-slate-400 uppercase">Worlds Unlocked</div>
+              </div>
+
+              <div className="bg-white p-4 rounded-3xl border border-slate-200 shadow-soft text-center space-y-1">
+                <div className="text-2xl">🏅</div>
+                <div className="text-xs font-black font-display text-purple-700 line-clamp-1 mt-1">
+                  Master Scribe
+                </div>
+                <div className="text-[10px] font-bold text-slate-400 uppercase">Recent Award</div>
+              </div>
+            </div>
+
+            {/* 3. YOUR FAMILY QUICK BAR */}
             <div className="bg-white rounded-3xl p-6 border border-slate-200 shadow-soft space-y-4">
               <div className="flex items-center justify-between">
                 <div>
@@ -563,6 +729,15 @@ export function ParentDashboard({ onNavigate }: ParentDashboardProps) {
                 </button>
               ))}
             </div>
+          </div>
+        )}
+
+        {/* ======================================================== */}
+        {/* HUB: PRIVATE PERIOD & OVULATION TRACKER */}
+        {/* ======================================================== */}
+        {activeHub === 'cycle' && (
+          <div className="animate-pop-in">
+            <PeriodTracker />
           </div>
         )}
 
@@ -1640,6 +1815,43 @@ export function ParentDashboard({ onNavigate }: ParentDashboardProps) {
               </div>
             </form>
           </div>
+        </div>
+      )}
+
+      {/* Quick Parent Name Editor Modal */}
+      {isEditingName && (
+        <div className="fixed inset-0 bg-slate-950/70 backdrop-blur-xs flex items-center justify-center p-4 z-50 animate-pop-in">
+          <form onSubmit={handleSaveParentName} className="bg-white rounded-3xl p-6 max-w-sm w-full shadow-2xl border border-slate-200 space-y-4">
+            <div className="text-center space-y-1">
+              <span className="text-4xl">👋</span>
+              <h3 className="text-lg font-black font-display text-slate-800">What is your name?</h3>
+              <p className="text-xs text-slate-500">We'll personalize your greeting and dashboard notes!</p>
+            </div>
+            <input
+              type="text"
+              value={tempNameInput}
+              onChange={(e) => setTempNameInput(e.target.value)}
+              placeholder="e.g. Anish, Sarah, Mom, Dad"
+              className="w-full px-4 py-3 rounded-2xl border border-slate-200 font-bold text-sm text-slate-800 focus:outline-none focus:ring-2 focus:ring-emerald-500 text-center"
+              autoFocus
+              maxLength={25}
+            />
+            <div className="flex gap-2">
+              <button
+                type="button"
+                onClick={() => setIsEditingName(false)}
+                className="btn-press flex-1 py-2.5 rounded-xl border border-slate-200 text-xs font-bold text-slate-600 hover:bg-slate-50 cursor-pointer"
+              >
+                Cancel
+              </button>
+              <button
+                type="submit"
+                className="btn-press flex-1 py-2.5 rounded-xl bg-emerald-500 hover:bg-emerald-600 text-xs font-black font-display text-white shadow-soft cursor-pointer"
+              >
+                Save Name ✨
+              </button>
+            </div>
+          </form>
         </div>
       )}
     </div>

@@ -4,28 +4,54 @@ import { Footer } from '@/components/Footer';
 import { LivingWorld } from '@/components/LivingWorld';
 import { HeroCharacter } from '@/components/HeroCharacter';
 import { Companion } from '@/components/Companion';
+import { DailyMysteryModal } from '@/components/DailyMysteryModal';
+import { RealWorldMissionModal } from '@/components/RealWorldMissionModal';
+import { BackpackModal } from '@/components/BackpackModal';
+import { PassportModal } from '@/components/PassportModal';
 import { AdSenseSafeZone } from '@/components/AdSenseSafeZone';
 import { kidoraCharacters } from '@/lib/characters';
+import { getTodayMystery } from '@/lib/mystery';
+import { getTodayRealWorldMission } from '@/lib/realWorld';
 import { useApp } from '@/lib/store';
 import type { Screen } from '@/lib/types';
+import { Sparkles, Compass, Award, CheckCircle2, HeartHandshake } from 'lucide-react';
 
 interface HomeProps {
   onNavigate: (screen: Screen) => void;
 }
 
 export function Home({ onNavigate }: HomeProps) {
-  const { profile, recommendations, completeRecommendation, familyChallenges } = useApp();
+  const {
+    profile,
+    recommendations,
+    completeRecommendation,
+    familyChallenges,
+    backpackItems,
+    passportStamps,
+    completedMysteryDate,
+    completeDailyMystery,
+    completedRealWorldMissions,
+    completeRealWorldMission,
+  } = useApp();
+
   const [selectedCharacter, setSelectedCharacter] = useState(kidoraCharacters[0]);
+  const [showMysteryModal, setShowMysteryModal] = useState(false);
+  const [showRealWorldModal, setShowRealWorldModal] = useState(false);
+  const [showBackpackModal, setShowBackpackModal] = useState(false);
+  const [showPassportModal, setShowPassportModal] = useState(false);
 
   if (!profile) return null;
 
   const currentStars = profile.stars ?? 0;
+  const todayStr = new Date().toISOString().split('T')[0];
+  const isMysterySolvedToday = completedMysteryDate === todayStr;
+
+  const todayMystery = getTodayMystery();
+  const todayRealWorld = getTodayRealWorldMission();
+  const isRealWorldDone = completedRealWorldMissions.includes(todayRealWorld.id);
 
   // Active parent recommendation for this child
   const activeRec = recommendations.find((r) => r.childId === profile.id && !r.completed);
-
-  // Active family challenges
-  const activeChallenges = familyChallenges.slice(0, 2);
 
   const realms = [
     {
@@ -87,7 +113,7 @@ export function Home({ onNavigate }: HomeProps) {
 
       <main className="flex-1">
         {/* 1. HERO SECTION */}
-        <section className="relative overflow-hidden bg-gradient-to-b from-sky-400 via-amber-200 to-emerald-100 py-12 sm:py-16 px-4 sm:px-6">
+        <section className="relative overflow-hidden bg-gradient-to-b from-sky-400 via-amber-200 to-emerald-100 py-10 sm:py-14 px-4 sm:px-6">
           {/* Animated Sky Elements */}
           <div className="absolute top-4 left-8 text-4xl animate-float opacity-80 pointer-events-none">☁️</div>
           <div className="absolute top-10 right-12 text-5xl animate-float opacity-70 pointer-events-none" style={{ animationDelay: '1s' }}>☁️</div>
@@ -106,12 +132,12 @@ export function Home({ onNavigate }: HomeProps) {
 
             {/* Supporting Text */}
             <p className="text-slate-700 text-sm sm:text-lg max-w-2xl mx-auto font-bold leading-relaxed">
-              An exciting world of games, puzzles, creativity and learning adventures for curious young minds.
+              When you learn, your world grows! Complete missions to sprout trees, awaken animals, and expand your magical lands.
             </p>
 
             {/* Hero Character & Companion Mascot */}
             <div className="flex justify-center items-end gap-3 pt-2 pb-2">
-              <Companion emotion="welcoming" childName={profile.name} size={65} showDialogue={false} />
+              <Companion emotion="welcoming" childName={profile.name} size={65} showDialogue={true} dialogue={`Welcome back, ${profile.name}! 🚀`} />
               <HeroCharacter avatar={profile.avatar} size={110} name={profile.name} showNameTag={true} pose="idle" />
             </div>
 
@@ -131,78 +157,99 @@ export function Home({ onNavigate }: HomeProps) {
             <div className="flex items-center justify-center gap-3 pt-2 text-xs font-bold text-slate-700 flex-wrap">
               <button
                 type="button"
-                onClick={() => onNavigate('play')}
-                className="bg-white/80 hover:bg-white px-3.5 py-1.5 rounded-full shadow-xs cursor-pointer"
+                onClick={() => setShowBackpackModal(true)}
+                className="bg-white/85 hover:bg-white px-3.5 py-1.5 rounded-full shadow-xs cursor-pointer flex items-center gap-1.5"
               >
-                🎮 Quick Play Games
+                <span>🎒</span> Backpack ({backpackItems.length})
+              </button>
+              <span>•</span>
+              <button
+                type="button"
+                onClick={() => setShowPassportModal(true)}
+                className="bg-white/85 hover:bg-white px-3.5 py-1.5 rounded-full shadow-xs cursor-pointer flex items-center gap-1.5"
+              >
+                <span>🎟️</span> Passport ({Object.values(passportStamps).reduce((a, b) => a + b, 0)} stamps)
               </button>
               <span>•</span>
               <button
                 type="button"
                 onClick={() => onNavigate('my-kidora')}
-                className="bg-white/80 hover:bg-white px-3.5 py-1.5 rounded-full shadow-xs cursor-pointer"
+                className="bg-white/85 hover:bg-white px-3.5 py-1.5 rounded-full shadow-xs cursor-pointer"
               >
-                🌱 My Kidora Sanctuary
-              </button>
-              <span>•</span>
-              <button
-                type="button"
-                onClick={() => onNavigate('learn')}
-                className="bg-white/80 hover:bg-white px-3.5 py-1.5 rounded-full shadow-xs cursor-pointer"
-              >
-                📚 Learning Guides
+                🌱 My Living World
               </button>
             </div>
           </div>
         </section>
 
-        {/* 2. PROGRESSION & STAR MILESTONES BAR */}
-        <section className="max-w-5xl mx-auto px-4 sm:px-6 -mt-6 relative z-20">
-          <div className="bg-white rounded-3xl p-5 shadow-soft border border-slate-100 flex flex-col sm:flex-row items-center justify-between gap-4">
-            <div className="flex items-center gap-3 text-center sm:text-left">
-              <div className="w-12 h-12 rounded-2xl bg-amber-100 flex items-center justify-center text-2xl">
-                ⭐
-              </div>
-              <div>
-                <div className="text-xs font-bold text-slate-400 uppercase tracking-wider">
-                  {profile.name}'s Explorer Progress
+        {/* 🕵️ 2. DAILY MYSTERY MISSION & 🧩 SCREEN-FREE REAL-WORLD MISSION WIDGETS */}
+        <section className="max-w-5xl mx-auto px-4 sm:px-6 -mt-6 relative z-20 space-y-3">
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            {/* Daily Mystery Mission Card */}
+            <div className="bg-gradient-to-r from-amber-500 via-orange-500 to-rose-500 rounded-3xl p-5 text-white shadow-pop flex items-center justify-between gap-4 border border-amber-300/40">
+              <div className="flex items-center gap-3.5">
+                <div className="w-12 h-12 rounded-2xl bg-white/25 backdrop-blur-md flex items-center justify-center text-3xl shrink-0">
+                  {todayMystery.emoji}
                 </div>
-                <div className="text-xl font-black font-display text-slate-800">
-                  {currentStars} Stars Collected
+                <div>
+                  <span className="text-[10px] font-black uppercase tracking-wider bg-white/20 px-2 py-0.5 rounded-full">
+                    Daily Mystery Mission 🔎
+                  </span>
+                  <h3 className="text-base font-black font-display mt-0.5">{todayMystery.title}</h3>
+                  <p className="text-xs text-amber-100 line-clamp-1">
+                    {isMysterySolvedToday ? '✨ Solved! Mystery item collected!' : 'Something strange happened in Kidora!'}
+                  </p>
                 </div>
               </div>
+
+              <button
+                type="button"
+                onClick={() => setShowMysteryModal(true)}
+                className={`btn-press px-4 py-2.5 rounded-2xl font-display font-black text-xs shadow-soft whitespace-nowrap cursor-pointer transition-transform hover:scale-105 ${
+                  isMysterySolvedToday
+                    ? 'bg-emerald-500 text-white'
+                    : 'bg-white text-orange-600 hover:bg-amber-50'
+                }`}
+              >
+                {isMysterySolvedToday ? 'View Solved ✓' : 'Solve Mystery 🔎'}
+              </button>
             </div>
 
-            {/* Visual Milestones */}
-            <div className="flex items-center gap-2 sm:gap-4 flex-1 max-w-md w-full">
-              {[
-                { stars: 10, label: 'Explorer Badge', icon: '🏅' },
-                { stars: 25, label: 'Realm Unlock', icon: '🗺️' },
-                { stars: 50, label: 'Hero Upgrade', icon: '👑' },
-              ].map((m, idx) => {
-                const isUnlocked = currentStars >= m.stars;
-                return (
-                  <div
-                    key={idx}
-                    className={`flex-1 p-2 rounded-2xl text-center border transition-all ${
-                      isUnlocked
-                        ? 'bg-amber-50 border-amber-200 text-amber-900 shadow-xs'
-                        : 'bg-slate-50 border-slate-200 text-slate-400 opacity-60'
-                    }`}
-                  >
-                    <div className="text-lg">{m.icon}</div>
-                    <div className="text-[10px] font-bold truncate">{m.stars} Stars</div>
-                    <div className="text-[9px] font-medium truncate">{m.label}</div>
-                  </div>
-                );
-              })}
+            {/* Screen-Free Real World Mission Card */}
+            <div className="bg-gradient-to-r from-emerald-600 via-teal-600 to-green-700 rounded-3xl p-5 text-white shadow-pop flex items-center justify-between gap-4 border border-emerald-300/40">
+              <div className="flex items-center gap-3.5">
+                <div className="w-12 h-12 rounded-2xl bg-white/25 backdrop-blur-md flex items-center justify-center text-3xl shrink-0">
+                  {todayRealWorld.emoji}
+                </div>
+                <div>
+                  <span className="text-[10px] font-black uppercase tracking-wider bg-white/20 px-2 py-0.5 rounded-full">
+                    Screen-Free Quest 🧩
+                  </span>
+                  <h3 className="text-base font-black font-display mt-0.5">{todayRealWorld.title}</h3>
+                  <p className="text-xs text-emerald-100 line-clamp-1">
+                    {isRealWorldDone ? '🌟 Completed in the real world!' : 'Quick hands-on home adventure!'}
+                  </p>
+                </div>
+              </div>
+
+              <button
+                type="button"
+                onClick={() => setShowRealWorldModal(true)}
+                className={`btn-press px-4 py-2.5 rounded-2xl font-display font-black text-xs shadow-soft whitespace-nowrap cursor-pointer transition-transform hover:scale-105 ${
+                  isRealWorldDone
+                    ? 'bg-amber-400 text-slate-950'
+                    : 'bg-white text-emerald-800 hover:bg-emerald-50'
+                }`}
+              >
+                {isRealWorldDone ? 'Completed ⭐' : 'Start Quest 🌟'}
+              </button>
             </div>
           </div>
         </section>
 
         {/* PARENT RECOMMENDATION BANNER (If parent sent a quest) */}
         {activeRec && (
-          <section className="max-w-5xl mx-auto px-4 sm:px-6 pt-6">
+          <section className="max-w-5xl mx-auto px-4 sm:px-6 pt-4">
             <div className="bg-gradient-to-r from-rose-500 via-pink-500 to-amber-500 rounded-3xl p-5 text-white shadow-pop flex flex-col sm:flex-row items-center justify-between gap-4 animate-pop-in">
               <div className="flex items-center gap-3.5">
                 <div className="w-12 h-12 rounded-2xl bg-white/20 backdrop-blur-md flex items-center justify-center text-3xl shrink-0">
@@ -231,18 +278,19 @@ export function Home({ onNavigate }: HomeProps) {
         )}
 
         {/* 3. INTERACTIVE LIVING WORLD LANDSCAPE */}
-        <section className="max-w-5xl mx-auto px-4 sm:px-6 py-10">
+        <section className="max-w-5xl mx-auto px-4 sm:px-6 py-8">
           <div className="text-center max-w-xl mx-auto mb-6">
             <h2 className="text-2xl sm:text-3xl font-black font-display text-slate-800">
-              Your Living Kidora World
+              World That Grows With You 🌱
             </h2>
             <p className="text-xs sm:text-sm text-slate-500 mt-1">
-              Tap landmarks below to enter your sanctuary, plant seeds in your garden, or launch realm quests!
+              Every completed activity and adventure sprouts new plants, unlocks wildlife, and expands your sanctuary!
             </p>
           </div>
 
           <LivingWorld onNavigate={onNavigate} />
         </section>
+
 
         {/* 4. EXPLORE THE 5 ADVENTURE REALMS */}
         <section className="max-w-6xl mx-auto px-4 sm:px-6 py-10">
@@ -390,6 +438,52 @@ export function Home({ onNavigate }: HomeProps) {
 
       {/* Universal Footer with Legal & Compliance Links */}
       <Footer onNavigate={onNavigate} />
+
+      {/* Daily Mystery Mission Modal */}
+      {showMysteryModal && (
+        <DailyMysteryModal
+          isOpen={showMysteryModal}
+          onClose={() => setShowMysteryModal(false)}
+          childName={profile.name}
+          isAlreadySolvedToday={isMysterySolvedToday}
+          onSolveMystery={(mId, stars, cId, wItem) => {
+            completeDailyMystery(mId, stars, cId, wItem);
+          }}
+        />
+      )}
+
+      {/* Real-World Screen-Free Quest Modal */}
+      {showRealWorldModal && (
+        <RealWorldMissionModal
+          isOpen={showRealWorldModal}
+          onClose={() => setShowRealWorldModal(false)}
+          childName={profile.name}
+          isCompleted={isRealWorldDone}
+          onComplete={(mId, stars) => {
+            completeRealWorldMission(mId, stars);
+          }}
+        />
+      )}
+
+      {/* Backpack Modal */}
+      {showBackpackModal && (
+        <BackpackModal
+          isOpen={showBackpackModal}
+          onClose={() => setShowBackpackModal(false)}
+          collectedItemIds={backpackItems}
+        />
+      )}
+
+      {/* Passport Modal */}
+      {showPassportModal && (
+        <PassportModal
+          isOpen={showPassportModal}
+          onClose={() => setShowPassportModal(false)}
+          childName={profile.name}
+          passportStamps={passportStamps}
+        />
+      )}
     </div>
   );
 }
+

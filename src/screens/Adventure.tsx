@@ -85,11 +85,21 @@ export function Adventure({ onNavigate }: AdventureProps) {
       setPhase('mission');
     } else {
       // All done — cinematic unlock
-      completeAdventure(earnedStars, adventure.rewardBadge);
+      const worldThemeMap: Record<string, string> = {
+        jungle: 'words',
+        space: 'science',
+        dinosaurs: 'science',
+        ocean: 'science',
+        castle: 'puzzle',
+        science: 'science',
+        creativity: 'creative',
+      };
+      const worldId = worldThemeMap[adventure.theme] || 'words';
+      completeAdventure(earnedStars, adventure.rewardBadge, worldId);
       addUnlock('badge', adventure.rewardBadge);
       setShowUnlock(true);
       if (profile.voiceEnabled) {
-        speak(`Magnificent job, ${profile.name}! You earned the ${adventure.rewardBadge} badge!`, true);
+        speak(`Magnificent job, ${profile.name}! You earned the ${adventure.rewardBadge} badge and stamped your Adventure Passport!`, true);
       }
       setTimeout(() => {
         setShowUnlock(false);

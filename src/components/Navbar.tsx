@@ -1,6 +1,8 @@
 import { useState } from 'react';
 import { StarCounter } from './StatBadges';
 import { ParentSecurityGate } from './ParentSecurityGate';
+import { BackpackModal } from './BackpackModal';
+import { PassportModal } from './PassportModal';
 import { useApp } from '@/lib/store';
 import { Menu, X, Compass, Gamepad2, BookOpen, Heart, Home as HomeIcon, ChevronDown } from 'lucide-react';
 import type { Screen } from '@/lib/types';
@@ -11,10 +13,12 @@ interface NavbarProps {
 }
 
 export function Navbar({ currentScreen, onNavigate }: NavbarProps) {
-  const { profile, children: familyChildren, switchChild } = useApp();
+  const { profile, children: familyChildren, switchChild, backpackItems, passportStamps } = useApp();
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [showParentGate, setShowParentGate] = useState(false);
   const [showChildPicker, setShowChildPicker] = useState(false);
+  const [showBackpack, setShowBackpack] = useState(false);
+  const [showPassport, setShowPassport] = useState(false);
 
   const navLinks: { id: Screen; label: string; emoji: string; icon: any }[] = [
     { id: 'home', label: 'Home', emoji: '🏠', icon: HomeIcon },
@@ -84,10 +88,35 @@ export function Navbar({ currentScreen, onNavigate }: NavbarProps) {
             })}
           </nav>
 
-          {/* Right Side HUD: Stars & Multi-Child Switcher */}
-          <div className="flex items-center gap-2.5">
+          {/* Right Side HUD: Backpack, Passport, Stars & Multi-Child Switcher */}
+          <div className="flex items-center gap-2">
             {profile && (
               <>
+                {/* 🎒 Backpack Button */}
+                <button
+                  type="button"
+                  onClick={() => setShowBackpack(true)}
+                  className="btn-press p-2 rounded-2xl bg-amber-50 hover:bg-amber-100 border border-amber-200 text-amber-900 text-sm flex items-center gap-1 shadow-xs cursor-pointer"
+                  title="Open Adventure Backpack"
+                >
+                  <span>🎒</span>
+                  <span className="text-xs font-black font-display hidden sm:inline">{backpackItems.length}</span>
+                </button>
+
+                {/* 🎟️ Passport Button */}
+                <button
+                  type="button"
+                  onClick={() => setShowPassport(true)}
+                  className="btn-press p-2 rounded-2xl bg-indigo-50 hover:bg-indigo-100 border border-indigo-200 text-indigo-900 text-sm flex items-center gap-1 shadow-xs cursor-pointer"
+                  title="Open Adventure Passport"
+                >
+                  <span>🎟️</span>
+                  <span className="text-xs font-black font-display hidden sm:inline">
+                    {Object.values(passportStamps).reduce((a, b) => a + b, 0)}
+                  </span>
+                </button>
+
+                {/* Stars Counter */}
                 <div
                   onClick={() => handleNav('my-kidora')}
                   className="cursor-pointer"
@@ -129,7 +158,7 @@ export function Navbar({ currentScreen, onNavigate }: NavbarProps) {
                             switchChild(c.id);
                             setShowChildPicker(false);
                           }}
-                          className={`w-full text-left px-3 py-2 rounded-xl text-xs font-bold flex items-center justify-between transition-colors ${
+                          className={`w-full text-left px-3 py-2 rounded-xl text-xs font-bold flex items-center justify-between transition-colors cursor-pointer ${
                             c.id === profile.id
                               ? 'bg-sky-50 text-sky-700'
                               : 'text-slate-700 hover:bg-slate-50'
@@ -152,7 +181,7 @@ export function Navbar({ currentScreen, onNavigate }: NavbarProps) {
             <button
               type="button"
               onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
-              className="md:hidden p-2 rounded-xl bg-slate-100 text-slate-700 hover:bg-slate-200 transition-colors"
+              className="md:hidden p-2 rounded-xl bg-slate-100 text-slate-700 hover:bg-slate-200 transition-colors cursor-pointer"
               aria-label="Toggle Menu"
             >
               {mobileMenuOpen ? <X className="h-6 w-6" /> : <Menu className="h-6 w-6" />}
@@ -168,7 +197,7 @@ export function Navbar({ currentScreen, onNavigate }: NavbarProps) {
                 key={item.id}
                 type="button"
                 onClick={() => handleNav(item.id)}
-                className={`w-full py-3 px-4 rounded-2xl text-sm font-black font-display text-left flex items-center justify-between transition-colors ${
+                className={`w-full py-3 px-4 rounded-2xl text-sm font-black font-display text-left flex items-center justify-between transition-colors cursor-pointer ${
                   currentScreen === item.id
                     ? 'bg-amber-400 text-white shadow-soft'
                     : 'bg-slate-50 text-slate-700 hover:bg-slate-100'
@@ -185,6 +214,25 @@ export function Navbar({ currentScreen, onNavigate }: NavbarProps) {
         )}
       </header>
 
+      {/* Backpack Modal */}
+      {showBackpack && (
+        <BackpackModal
+          isOpen={showBackpack}
+          onClose={() => setShowBackpack(false)}
+          collectedItemIds={backpackItems}
+        />
+      )}
+
+      {/* Passport Modal */}
+      {showPassport && profile && (
+        <PassportModal
+          isOpen={showPassport}
+          onClose={() => setShowPassport(false)}
+          childName={profile.name}
+          passportStamps={passportStamps}
+        />
+      )}
+
       {/* Parent Security PIN Gate Modal */}
       {showParentGate && (
         <ParentSecurityGate
@@ -198,4 +246,5 @@ export function Navbar({ currentScreen, onNavigate }: NavbarProps) {
     </>
   );
 }
+
 

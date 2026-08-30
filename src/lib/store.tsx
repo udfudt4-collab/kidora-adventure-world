@@ -2,6 +2,7 @@ import { createContext, useContext, useState, useEffect, useCallback, type React
 import { supabase, isSupabaseConfigured } from './supabase';
 import { defaultAvatar } from './avatar';
 import { defaultBabyMoments } from './baby';
+import { defaultPeriodData } from './cycleTracker';
 import type {
   ChildProfile,
   AvatarConfig,
@@ -16,6 +17,9 @@ import type {
   WeightLogEntry,
   BabyMoment,
   FamilyEvent,
+  DailyLearningLog,
+  PeriodTrackerData,
+  CycleEntry,
 } from './types';
 
 export const defaultControls: ChildProfileControls = {
@@ -26,6 +30,20 @@ export const defaultControls: ChildProfileControls = {
   bedtimeEnd: '07:00',
   priorityLearningAreas: ['math', 'reading', 'logic'],
 };
+
+const initialSampleLearningLogs: DailyLearningLog[] = [
+  {
+    date: new Date().toISOString().split('T')[0],
+    minutesSpent: 18,
+    xpEarned: 85,
+    activitiesCount: 4,
+    topics: [
+      { name: 'Fractions & Shape Counting', emoji: '🧮' },
+      { name: 'Sight Words & Phonics', emoji: '📚' },
+      { name: 'Space Planets & Dinosaurs', emoji: '🧪' },
+    ],
+  },
+];
 
 const initialSampleChallenges: FamilyChallenge[] = [
   {
@@ -110,6 +128,15 @@ interface AppState {
   familyPlannerEvents: FamilyEvent[];
   creations: Creation[];
   unlocks: Unlock[];
+  // 🎒 Backpack & 🎟️ Passport & 🕵️ Mystery & 🧩 Real-World
+  backpackItems: string[];
+  passportStamps: Record<string, number>;
+  completedMysteryDate: string | null;
+  completedRealWorldMissions: string[];
+  // 📊 Daily Learning Logs (Parent App)
+  dailyLearningLogs: DailyLearningLog[];
+  // 🌸 Period & Ovulation Tracker (Parent App)
+  periodTrackerData: PeriodTrackerData;
   loading: boolean;
   // Actions
   switchChild: (childId: string) => void;
@@ -120,7 +147,7 @@ interface AppState {
   setAvatar: (avatar: AvatarConfig) => Promise<void>;
   setPet: (pet: PetConfig) => Promise<void>;
   addStars: (n: number) => Promise<void>;
-  completeAdventure: (stars: number, badge: string) => Promise<void>;
+  completeAdventure: (stars: number, badge: string, worldId?: string) => Promise<void>;
   recordActivity: (skill: string) => Promise<void>;
   addCreation: (type: string, title: string, payload: unknown) => Promise<void>;
   addWorldItem: (item: Omit<import('./types').PlacedWorldItem, 'id' | 'createdAt'>) => Promise<void>;
@@ -128,6 +155,16 @@ interface AppState {
   addUnlock: (category: string, key: string) => Promise<void>;
   addGardenItem: (item: string) => Promise<void>;
   resetProfile: () => Promise<void>;
+  // 🎒 Backpack & 🎟️ Passport Actions
+  collectBackpackItem: (itemId: string) => Promise<void>;
+  addPassportStamp: (worldId: string, count?: number) => Promise<void>;
+  completeDailyMystery: (mysteryId: string, stars: number, collectibleId: string, worldItem: string) => Promise<void>;
+  completeRealWorldMission: (missionId: string, stars: number) => Promise<void>;
+  logActivityLearning: (skill: string, minutes?: number, xp?: number) => Promise<void>;
+  // 🌸 Period Tracker Actions (Parent)
+  updatePeriodTrackerData: (partial: Partial<PeriodTrackerData>) => void;
+  addPeriodCycle: (cycle: Omit<CycleEntry, 'id'>) => void;
+  deletePeriodCycle: (cycleId: string) => void;
   // Parent controls & connections
   setParentPin: (pin: string) => void;
   verifyParentPin: (pin: string) => boolean;
@@ -152,6 +189,7 @@ interface AppState {
   toggleFamilyEventCompleted: (id: string) => void;
   exportFamilyData: () => string;
 }
+
 
 const AppContext = createContext<AppState | null>(null);
 
@@ -191,6 +229,20 @@ export function AppProvider({ children: reactChildren }: { children: ReactNode }
   const [familyChallenges, setFamilyChallenges] = useState<FamilyChallenge[]>(initialSampleChallenges);
   const [approvalRequests, setApprovalRequests] = useState<ParentApprovalRequest[]>([]);
   const [parentNotes, setParentNotes] = useState<ParentNote[]>([]);
+
+  // 🎒 Backpack & 🎟️ Passport & 🕵️ Mystery & 🧩 Real-World & 🌸 Period Tracker
+  const [backpackItems, setBackpackItems] = useState<string[]>(['brass_compass', 'explorer_badge']);
+  const [passportStamps, setPassportStamps] = useState<Record<string, number>>({
+    words: 3,
+    math: 2,
+    science: 1,
+    puzzle: 2,
+    creative: 1,
+  });
+  const [completedMysteryDate, setCompletedMysteryDate] = useState<string | null>(null);
+  const [completedRealWorldMissions, setCompletedRealWorldMissions] = useState<string[]>([]);
+  const [dailyLearningLogs, setDailyLearningLogs] = useState<DailyLearningLog[]>(initialSampleLearningLogs);
+  const [periodTrackerData, setPeriodTrackerData] = useState<PeriodTrackerData>(defaultPeriodData);
 
   // Pregnancy & Baby Hub state
   const [pregnancyWeek, setPregnancyWeekState] = useState<number>(20);
@@ -267,6 +319,31 @@ export function AppProvider({ children: reactChildren }: { children: ReactNode }
     const localFavNames = localStorage.getItem('kidora_fav_names');
     const localMoments = localStorage.getItem('kidora_baby_moments');
     const localEvents = localStorage.getItem('kidora_family_events');
+
+    // Load backpack, passport, mystery, real-world, daily learning logs, period tracker
+    const localBackpack = localStorage.getItem('kidora_backpack');
+    const localPassport = localStorage.getItem('kidora_passport');
+    const localMysteryDate = localStorage.getItem('kidora_mystery_date');
+    const localRealWorld = localStorage.getItem('kidora_real_world');
+    const localLearningLogs = localStorage.getItem('kidora_learning_logs');
+    const localPeriod = localStorage.getItem('kidora_period_tracker');
+
+    if (localBackpack) {
+      try { setBackpackItems(JSON.parse(localBackpack)); } catch (e) {}
+    }
+    if (localPassport) {
+      try { setPassportStamps(JSON.parse(localPassport)); } catch (e) {}
+    }
+    if (localMysteryDate) setCompletedMysteryDate(localMysteryDate);
+    if (localRealWorld) {
+      try { setCompletedRealWorldMissions(JSON.parse(localRealWorld)); } catch (e) {}
+    }
+    if (localLearningLogs) {
+      try { setDailyLearningLogs(JSON.parse(localLearningLogs)); } catch (e) {}
+    }
+    if (localPeriod) {
+      try { setPeriodTrackerData(JSON.parse(localPeriod)); } catch (e) {}
+    }
 
     if (localPin) setParentPinState(localPin);
     if (localPregWeek) setPregnancyWeekState(parseInt(localPregWeek, 10));
@@ -527,8 +604,145 @@ export function AppProvider({ children: reactChildren }: { children: ReactNode }
     [activeProfile, saveProfile]
   );
 
+  const logActivityLearning = useCallback(
+    async (skill: string, minutes: number = 5, xp: number = 20) => {
+      const today = new Date().toISOString().split('T')[0];
+      const skillNameMap: Record<string, { name: string; emoji: string }> = {
+        math: { name: 'Numbers & Logic', emoji: '🧮' },
+        words: { name: 'Phonics & Sight Words', emoji: '📚' },
+        science: { name: 'Science & Cosmos', emoji: '🧪' },
+        brain: { name: 'Memory & Spatial Puzzles', emoji: '🧩' },
+        creativity: { name: 'Art & Design', emoji: '🎨' },
+        story: { name: 'Reading & Imagination', emoji: '📖' },
+      };
+      const topic = skillNameMap[skill] || { name: 'Skill Adventure', emoji: '⭐' };
+
+      setDailyLearningLogs((prev) => {
+        const existingIdx = prev.findIndex((log) => log.date === today);
+        let updated: DailyLearningLog[];
+        if (existingIdx >= 0) {
+          const existing = prev[existingIdx];
+          const hasTopic = existing.topics.some((t) => t.name === topic.name);
+          const updatedTopics = hasTopic ? existing.topics : [...existing.topics, topic];
+          const newEntry: DailyLearningLog = {
+            ...existing,
+            minutesSpent: existing.minutesSpent + minutes,
+            xpEarned: existing.xpEarned + xp,
+            activitiesCount: existing.activitiesCount + 1,
+            topics: updatedTopics,
+          };
+          updated = [...prev];
+          updated[existingIdx] = newEntry;
+        } else {
+          updated = [
+            {
+              date: today,
+              minutesSpent: minutes,
+              xpEarned: xp,
+              activitiesCount: 1,
+              topics: [topic],
+            },
+            ...prev,
+          ];
+        }
+        try {
+          localStorage.setItem('kidora_learning_logs', JSON.stringify(updated));
+        } catch (e) {}
+        return updated;
+      });
+    },
+    []
+  );
+
+  const collectBackpackItem = useCallback(
+    async (itemId: string) => {
+      if (backpackItems.includes(itemId)) return;
+      const updated = [...backpackItems, itemId];
+      setBackpackItems(updated);
+      try {
+        localStorage.setItem('kidora_backpack', JSON.stringify(updated));
+      } catch (e) {}
+    },
+    [backpackItems]
+  );
+
+  const addPassportStamp = useCallback(
+    async (worldId: string, count: number = 1) => {
+      const current = passportStamps[worldId] || 0;
+      const updated = {
+        ...passportStamps,
+        [worldId]: current + count,
+      };
+      setPassportStamps(updated);
+      try {
+        localStorage.setItem('kidora_passport', JSON.stringify(updated));
+      } catch (e) {}
+    },
+    [passportStamps]
+  );
+
+  const completeDailyMystery = useCallback(
+    async (mysteryId: string, stars: number, collectibleId: string, worldItem: string) => {
+      if (!activeProfile) return;
+      const today = new Date().toISOString().split('T')[0];
+      setCompletedMysteryDate(today);
+      try {
+        localStorage.setItem('kidora_mystery_date', today);
+      } catch (e) {}
+
+      // Add stars
+      await addStars(stars);
+      // Collect backpack item
+      if (collectibleId) {
+        await collectBackpackItem(collectibleId);
+      }
+      // Log learning
+      await logActivityLearning('brain', 8, stars);
+      // Record activity count and new world items for world growth
+      const currentItems = activeProfile.worldItems || [];
+      const updatedWorldItems = worldItem
+        ? [
+            ...currentItems,
+            {
+              id: `mystery_${Date.now()}`,
+              type: 'flower' as const,
+              title: worldItem,
+              emoji: '🌱',
+              x: 50,
+              y: 50,
+              createdAt: new Date().toISOString(),
+            },
+          ]
+        : currentItems;
+
+      await saveProfile({
+        activitiesCompletedCount: (activeProfile.activitiesCompletedCount ?? 0) + 1,
+        worldItems: updatedWorldItems,
+      });
+    },
+    [activeProfile, addStars, collectBackpackItem, logActivityLearning, saveProfile]
+  );
+
+  const completeRealWorldMission = useCallback(
+    async (missionId: string, stars: number) => {
+      if (!activeProfile || completedRealWorldMissions.includes(missionId)) return;
+      const updated = [...completedRealWorldMissions, missionId];
+      setCompletedRealWorldMissions(updated);
+      try {
+        localStorage.setItem('kidora_real_world', JSON.stringify(updated));
+      } catch (e) {}
+
+      await addStars(stars);
+      await logActivityLearning('creativity', 10, stars);
+      await saveProfile({
+        activitiesCompletedCount: (activeProfile.activitiesCompletedCount ?? 0) + 1,
+      });
+    },
+    [activeProfile, completedRealWorldMissions, addStars, logActivityLearning, saveProfile]
+  );
+
   const completeAdventure = useCallback(
-    async (starsEarned: number, badge: string) => {
+    async (starsEarned: number, badge: string, worldId: string = 'words') => {
       if (!activeProfile) return;
       const today = new Date().toISOString().split('T')[0];
       const isConsecutive =
@@ -549,8 +763,13 @@ export function AppProvider({ children: reactChildren }: { children: ReactNode }
           ? prev
           : [{ category: 'badge', key: badge, unlockedAt: new Date().toISOString() }, ...prev]
       );
+
+      // Add passport stamp for world
+      await addPassportStamp(worldId, 1);
+      // Log learning
+      await logActivityLearning(worldId, 12, starsEarned);
     },
-    [activeProfile, saveProfile]
+    [activeProfile, saveProfile, addPassportStamp, logActivityLearning]
   );
 
   const recordActivity = useCallback(
@@ -559,9 +778,64 @@ export function AppProvider({ children: reactChildren }: { children: ReactNode }
       await saveProfile({
         activitiesCompletedCount: (activeProfile.activitiesCompletedCount ?? 0) + 1,
       });
+      await logActivityLearning(skill, 5, 15);
     },
-    [activeProfile, saveProfile]
+    [activeProfile, saveProfile, logActivityLearning]
   );
+
+  // Period Tracker Actions (Private to Parent)
+  const updatePeriodTrackerData = useCallback(
+    (partial: Partial<PeriodTrackerData>) => {
+      setPeriodTrackerData((prev) => {
+        const updated = { ...prev, ...partial };
+        try {
+          localStorage.setItem('kidora_period_tracker', JSON.stringify(updated));
+        } catch (e) {}
+        return updated;
+      });
+    },
+    []
+  );
+
+  const addPeriodCycle = useCallback(
+    (cycle: Omit<CycleEntry, 'id'>) => {
+      const newCycle: CycleEntry = {
+        ...cycle,
+        id: `cycle-${Date.now()}`,
+      };
+      setPeriodTrackerData((prev) => {
+        const updatedCycles = [newCycle, ...prev.cycles];
+        const updated: PeriodTrackerData = {
+          ...prev,
+          lastPeriodStart: newCycle.startDate,
+          cycles: updatedCycles,
+        };
+        try {
+          localStorage.setItem('kidora_period_tracker', JSON.stringify(updated));
+        } catch (e) {}
+        return updated;
+      });
+    },
+    []
+  );
+
+  const deletePeriodCycle = useCallback(
+    (cycleId: string) => {
+      setPeriodTrackerData((prev) => {
+        const updatedCycles = prev.cycles.filter((c) => c.id !== cycleId);
+        const updated: PeriodTrackerData = {
+          ...prev,
+          cycles: updatedCycles,
+        };
+        try {
+          localStorage.setItem('kidora_period_tracker', JSON.stringify(updated));
+        } catch (e) {}
+        return updated;
+      });
+    },
+    []
+  );
+
 
   const addCreation = useCallback(
     async (type: string, title: string, payload: unknown) => {
@@ -1115,6 +1389,12 @@ export function AppProvider({ children: reactChildren }: { children: ReactNode }
         familyPlannerEvents: familyEvents,
         creations,
         unlocks,
+        backpackItems,
+        passportStamps,
+        completedMysteryDate,
+        completedRealWorldMissions,
+        dailyLearningLogs,
+        periodTrackerData,
         loading,
         switchChild,
         addChild,
@@ -1132,6 +1412,14 @@ export function AppProvider({ children: reactChildren }: { children: ReactNode }
         addUnlock,
         addGardenItem,
         resetProfile,
+        collectBackpackItem,
+        addPassportStamp,
+        completeDailyMystery,
+        completeRealWorldMission,
+        logActivityLearning,
+        updatePeriodTrackerData,
+        addPeriodCycle,
+        deletePeriodCycle,
         setParentPin,
         verifyParentPin,
         sendRecommendation,

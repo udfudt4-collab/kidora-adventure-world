@@ -3,9 +3,10 @@ import { HeroCharacter } from './HeroCharacter';
 import { Pet } from './Pet';
 import { Companion } from './Companion';
 import { useApp } from '@/lib/store';
-import { plantEmoji, getPlantStage, plantStageName } from '@/lib/content';
+import { computeWorldGrowth } from '@/lib/worldGrowth';
 import { useVoice } from '@/lib/useVoice';
 import type { Screen } from '@/lib/types';
+import { Sparkles, Trees, Info } from 'lucide-react';
 
 interface LivingWorldProps {
   onNavigate: (screen: Screen) => void;
@@ -17,14 +18,17 @@ export function LivingWorld({ onNavigate, onSelectHero }: LivingWorldProps) {
   const { speak } = useVoice();
   const [tappedId, setTappedId] = useState<string | null>(null);
   const [sparkleCoord, setSparkleCoord] = useState<{ x: number; y: number } | null>(null);
+  const [tappedItemMessage, setTappedItemMessage] = useState<string | null>(null);
 
   const hour = new Date().getHours();
   const isNight = hour >= 20 || hour < 6;
   const isSunset = (hour >= 17 && hour < 20) || (hour >= 6 && hour < 8);
 
-  const plantStage = getPlantStage(profile?.totalAdventures ?? 0);
-  const gardenEmoji = plantEmoji[plantStage];
-  const gardenStageText = plantStageName[plantStage];
+  const growth = computeWorldGrowth(
+    profile?.activitiesCompletedCount ?? 0,
+    profile?.totalAdventures ?? 0,
+    profile?.streak ?? 0
+  );
 
   // Floating ambient wildlife
   const [butterflies] = useState(() =>
@@ -63,6 +67,22 @@ export function LivingWorld({ onNavigate, onSelectHero }: LivingWorldProps) {
     }, 450);
   };
 
+  const handleCreatureTap = (name: string, emoji: string, sound: string) => {
+    setTappedItemMessage(`${emoji} ${name}: "${sound}"`);
+    if (profile.voiceEnabled) {
+      speak(`${name} says: ${sound}`, true);
+    }
+    setTimeout(() => setTappedItemMessage(null), 3000);
+  };
+
+  const handlePlantTap = (name: string, emoji: string, growthStage: string) => {
+    setTappedItemMessage(`${emoji} ${name} (${growthStage}) sprouted because you learned!`);
+    if (profile.voiceEnabled) {
+      speak(`${name} blossomed because you completed learning missions!`, true);
+    }
+    setTimeout(() => setTappedItemMessage(null), 3000);
+  };
+
   const skyBackground = isNight
     ? 'linear-gradient(180deg, #0f172a 0%, #1e1b4b 40%, #312e81 70%, #064e3b 100%)'
     : isSunset
@@ -71,34 +91,65 @@ export function LivingWorld({ onNavigate, onSelectHero }: LivingWorldProps) {
 
   return (
     <div
-      className="relative w-full min-h-[580px] overflow-hidden rounded-4xl shadow-xl transition-all duration-700 select-none border-4 border-white/60"
+      className="relative w-full min-h-[620px] overflow-hidden rounded-4xl shadow-xl transition-all duration-700 select-none border-4 border-white/60"
       style={{ background: skyBackground }}
     >
-      {/* Sun / Moon & Clouds */}
+      {/* 🌿 TOP WORLD GROWTH HUD BAR */}
+      <div className="absolute top-3 left-4 right-4 z-30 flex items-center justify-between flex-wrap gap-2 pointer-events-auto">
+        <div className="bg-white/95 backdrop-blur-md px-3.5 py-1.5 rounded-full shadow-pop flex items-center gap-2 border border-emerald-300 animate-pop-in">
+          <span className="text-base">🌱</span>
+          <div className="text-left">
+            <div className="text-[11px] font-black font-display text-emerald-950 flex items-center gap-1 leading-none">
+              <span>World Lvl {growth.growthLevel}:</span>
+              <span className="text-emerald-700">{growth.title}</span>
+            </div>
+            <div className="text-[9px] font-bold text-slate-500">
+              When you learn, your world grows!
+            </div>
+          </div>
+        </div>
+
+        <div className="bg-amber-400 text-slate-950 font-black font-display text-xs px-3 py-1.5 rounded-full shadow-pop flex items-center gap-1.5 animate-pop-in">
+          <Sparkles className="h-3.5 w-3.5 animate-pulse-soft" />
+          <span>Next Growth: {growth.nextGoalActivities} {growth.nextGoalActivities === 1 ? 'activity' : 'activities'}!</span>
+        </div>
+      </div>
+
+      {/* Floating Info Toast on Tap */}
+      {tappedItemMessage && (
+        <div className="absolute top-16 left-1/2 -translate-x-1/2 z-40 bg-slate-900/90 backdrop-blur-md text-white font-display font-black text-xs px-4 py-2 rounded-2xl shadow-2xl border border-amber-300 animate-pop-in text-center max-w-xs">
+          {tappedItemMessage}
+        </div>
+      )}
+
+      {/* Sun / Moon */}
       {isNight ? (
-        <div className="absolute top-5 right-8 text-5xl animate-float pointer-events-none drop-shadow-lg">
+        <div className="absolute top-14 right-8 text-5xl animate-float pointer-events-none drop-shadow-lg">
           🌙
         </div>
       ) : (
-        <div className="absolute top-4 right-7 text-6xl animate-pulse-soft pointer-events-none drop-shadow-md">
+        <div className="absolute top-14 right-7 text-6xl animate-pulse-soft pointer-events-none drop-shadow-md">
           ☀️
         </div>
       )}
 
-      {/* Rainbow in daytime */}
-      {!isNight && (
-        <div className="absolute top-10 left-1/2 -translate-x-1/2 opacity-40 text-7xl pointer-events-none animate-pulse-soft">
-          🌈
+      {/* Rainbow in daytime / Streak Arch */}
+      {growth.streakDecoration && (
+        <div
+          className="absolute top-12 left-1/2 -translate-x-1/2 text-7xl pointer-events-none animate-float drop-shadow-md opacity-90 z-5"
+          title={growth.streakDecoration.name}
+        >
+          {growth.streakDecoration.emoji}
         </div>
       )}
 
-      {/* Drifting Fluffy Clouds */}
-      <div className="absolute top-4 left-0 w-full pointer-events-none overflow-hidden">
+      {/* Drifting Clouds */}
+      <div className="absolute top-12 left-0 w-full pointer-events-none overflow-hidden">
         <div className="text-7xl opacity-75 animate-drift" style={{ animationDuration: '60s' }}>
           ☁️
         </div>
       </div>
-      <div className="absolute top-20 left-0 w-full pointer-events-none overflow-hidden">
+      <div className="absolute top-28 left-0 w-full pointer-events-none overflow-hidden">
         <div className="text-5xl opacity-40 animate-drift" style={{ animationDuration: '85s', animationDelay: '8s' }}>
           ☁️
         </div>
@@ -121,11 +172,11 @@ export function LivingWorld({ onNavigate, onSelectHero }: LivingWorldProps) {
       ))}
 
       {/* Natural Rolling Hills SVG */}
-      <div className="absolute bottom-0 left-0 right-0 h-44 pointer-events-none z-5">
+      <div className="absolute bottom-0 left-0 right-0 h-52 pointer-events-none z-5">
         <svg viewBox="0 0 500 200" className="w-full h-full" preserveAspectRatio="none">
-          <path d="M0,120 Q120,40 250,110 T500,80 L500,200 L0,200 Z" fill="#86efac" opacity="0.85" />
-          <path d="M0,140 Q180,90 340,150 T500,120 L500,200 L0,200 Z" fill="#4ade80" opacity="0.9" />
-          <path d="M0,165 Q250,130 500,165 L500,200 L0,200 Z" fill="#22c55e" opacity="0.95" />
+          <path d="M0,110 Q120,35 250,105 T500,75 L500,200 L0,200 Z" fill="#86efac" opacity="0.85" />
+          <path d="M0,135 Q180,85 340,145 T500,115 L500,200 L0,200 Z" fill="#4ade80" opacity="0.9" />
+          <path d="M0,160 Q250,125 500,160 L500,200 L0,200 Z" fill="#22c55e" opacity="0.95" />
         </svg>
       </div>
 
@@ -140,17 +191,90 @@ export function LivingWorld({ onNavigate, onSelectHero }: LivingWorldProps) {
       )}
 
       {/* ========================================================================= */}
+      {/* 🌱 SPROUTING FLORA (PLANTS & TREES UNLOCKED BY LEARNING)                   */}
+      {/* ========================================================================= */}
+      <div className="absolute inset-0 pointer-events-auto z-10">
+        {growth.unlockedPlants
+          .filter((p) => p.unlocked)
+          .map((plant, idx) => {
+            const positions = [
+              { left: '8%', top: '65%' },
+              { left: '28%', top: '56%' },
+              { left: '68%', top: '58%' },
+              { left: '88%', top: '68%' },
+              { left: '42%', top: '68%' },
+              { left: '55%', top: '62%' },
+              { left: '74%', top: '48%' },
+            ];
+            const pos = positions[idx % positions.length];
+
+            return (
+              <button
+                key={plant.id}
+                type="button"
+                onClick={() => handlePlantTap(plant.name, plant.emoji, plant.growthStage)}
+                className="absolute btn-press flex flex-col items-center hover:scale-125 transition-transform cursor-pointer group"
+                style={{ left: pos.left, top: pos.top }}
+                title={`${plant.name} (${plant.growthStage})`}
+              >
+                <div className="text-3xl filter drop-shadow-md animate-pulse-soft">
+                  {plant.emoji}
+                </div>
+                <span className="text-[9px] font-bold text-emerald-950 bg-white/90 px-1.5 py-0.2 rounded-full opacity-0 group-hover:opacity-100 transition-opacity">
+                  {plant.name}
+                </span>
+              </button>
+            );
+          })}
+      </div>
+
+      {/* ========================================================================= */}
+      {/* 🐾 ROAMING WILDLIFE (ANIMALS UNLOCKED BY MISSIONS)                        */}
+      {/* ========================================================================= */}
+      <div className="absolute inset-0 pointer-events-auto z-12">
+        {growth.unlockedAnimals
+          .filter((a) => a.unlocked && a.id !== 'fox') // Fox is Kido the companion
+          .map((animal, idx) => {
+            const positions = [
+              { left: '16%', top: '78%' },
+              { left: '34%', top: '74%' },
+              { left: '64%', top: '76%' },
+              { left: '84%', top: '80%' },
+              { left: '92%', top: '42%' },
+              { left: '6%', top: '46%' },
+            ];
+            const pos = positions[idx % positions.length];
+
+            return (
+              <button
+                key={animal.id}
+                type="button"
+                onClick={() => handleCreatureTap(animal.name, animal.emoji, animal.sound)}
+                className="absolute btn-press flex flex-col items-center hover:scale-125 transition-transform cursor-pointer group animate-float"
+                style={{ left: pos.left, top: pos.top, animationDelay: `${idx * 0.7}s` }}
+                title={`${animal.name} - Tap to hear!`}
+              >
+                <div className="text-3xl filter drop-shadow-md">{animal.emoji}</div>
+                <span className="text-[9px] font-bold text-slate-800 bg-white/90 px-1.5 py-0.2 rounded-full opacity-0 group-hover:opacity-100 transition-opacity">
+                  {animal.name}
+                </span>
+              </button>
+            );
+          })}
+      </div>
+
+      {/* ========================================================================= */}
       {/* 🗺️ INTERACTIVE LANDMARKS                                                  */}
       {/* ========================================================================= */}
 
       {/* 1. 🏠 MY HOME (Opens My Kidora Sanctuary) */}
       <button
         type="button"
-        onClick={(e) => handleLandmarkTap('home', 'My Home', 'my-kidora', 48, 48)}
-        className={`absolute btn-press flex flex-col items-center z-15 transition-transform ${
+        onClick={() => handleLandmarkTap('home', 'My Home', 'my-kidora', 48, 46)}
+        className={`absolute btn-press flex flex-col items-center z-15 transition-transform cursor-pointer ${
           tappedId === 'home' ? 'scale-125' : 'hover:scale-105'
         }`}
-        style={{ left: '48%', top: '46%', transform: 'translate(-50%, -50%)' }}
+        style={{ left: '48%', top: '44%', transform: 'translate(-50%, -50%)' }}
         title="Tap to enter My Home!"
       >
         <div className="text-6xl animate-float drop-shadow-xl">🏠</div>
@@ -159,32 +283,14 @@ export function LivingWorld({ onNavigate, onSelectHero }: LivingWorldProps) {
         </div>
       </button>
 
-      {/* 2. 🌳 LIVING GARDEN & VISIBLE PROGRESSION */}
+      {/* 2. 🚀 SPACE STATION */}
       <button
         type="button"
-        onClick={(e) => handleLandmarkTap('garden', 'Living Garden', 'my-kidora', 20, 72)}
-        className={`absolute btn-press flex flex-col items-center z-15 transition-transform ${
-          tappedId === 'garden' ? 'scale-125' : 'hover:scale-105'
-        }`}
-        style={{ left: '20%', top: '70%', transform: 'translate(-50%, -50%)' }}
-        title={`Your garden is at stage: ${gardenStageText}`}
-      >
-        <div className="text-5xl animate-float drop-shadow-lg" style={{ animationDelay: '0.6s' }}>
-          {gardenEmoji}
-        </div>
-        <div className="bg-emerald-500 text-white rounded-full px-2.5 py-0.5 text-[11px] font-black font-display shadow-soft">
-          {gardenStageText}
-        </div>
-      </button>
-
-      {/* 3. 🚀 SPACE STATION */}
-      <button
-        type="button"
-        onClick={() => handleLandmarkTap('space', 'Space Realm', 'world', 82, 18)}
-        className={`absolute btn-press flex flex-col items-center z-15 transition-transform ${
+        onClick={() => handleLandmarkTap('space', 'Space Realm', 'world', 82, 22)}
+        className={`absolute btn-press flex flex-col items-center z-15 transition-transform cursor-pointer ${
           tappedId === 'space' ? 'scale-125' : 'hover:scale-105'
         }`}
-        style={{ left: '82%', top: '20%', transform: 'translate(-50%, -50%)' }}
+        style={{ left: '82%', top: '24%', transform: 'translate(-50%, -50%)' }}
         title="Explore Deep Space"
       >
         <div className="text-5xl animate-float drop-shadow-lg" style={{ animationDelay: '1.2s' }}>
@@ -195,11 +301,11 @@ export function LivingWorld({ onNavigate, onSelectHero }: LivingWorldProps) {
         </div>
       </button>
 
-      {/* 4. 🦖 DINO VALLEY */}
+      {/* 3. 🦖 DINO VALLEY */}
       <button
         type="button"
         onClick={() => handleLandmarkTap('dino', 'Dino Valley', 'world', 86, 52)}
-        className={`absolute btn-press flex flex-col items-center z-15 transition-transform ${
+        className={`absolute btn-press flex flex-col items-center z-15 transition-transform cursor-pointer ${
           tappedId === 'dino' ? 'scale-125' : 'hover:scale-105'
         }`}
         style={{ left: '86%', top: '50%', transform: 'translate(-50%, -50%)' }}
@@ -213,11 +319,11 @@ export function LivingWorld({ onNavigate, onSelectHero }: LivingWorldProps) {
         </div>
       </button>
 
-      {/* 5. 🌊 CORAL OCEAN */}
+      {/* 4. 🌊 CORAL OCEAN */}
       <button
         type="button"
         onClick={() => handleLandmarkTap('ocean', 'Coral Ocean', 'world', 14, 48)}
-        className={`absolute btn-press flex flex-col items-center z-15 transition-transform ${
+        className={`absolute btn-press flex flex-col items-center z-15 transition-transform cursor-pointer ${
           tappedId === 'ocean' ? 'scale-125' : 'hover:scale-105'
         }`}
         style={{ left: '14%', top: '48%', transform: 'translate(-50%, -50%)' }}
@@ -231,14 +337,14 @@ export function LivingWorld({ onNavigate, onSelectHero }: LivingWorldProps) {
         </div>
       </button>
 
-      {/* 6. 🏰 MAGIC CASTLE */}
+      {/* 5. 🏰 MAGIC CASTLE */}
       <button
         type="button"
-        onClick={() => handleLandmarkTap('castle', 'Magic Castle', 'world', 48, 16)}
-        className={`absolute btn-press flex flex-col items-center z-15 transition-transform ${
+        onClick={() => handleLandmarkTap('castle', 'Magic Castle', 'world', 48, 18)}
+        className={`absolute btn-press flex flex-col items-center z-15 transition-transform cursor-pointer ${
           tappedId === 'castle' ? 'scale-125' : 'hover:scale-105'
         }`}
-        style={{ left: '48%', top: '16%', transform: 'translate(-50%, -50%)' }}
+        style={{ left: '48%', top: '18%', transform: 'translate(-50%, -50%)' }}
         title="Enter the Magic Castle"
       >
         <div className="text-5xl animate-float drop-shadow-lg" style={{ animationDelay: '0.3s' }}>
@@ -249,14 +355,14 @@ export function LivingWorld({ onNavigate, onSelectHero }: LivingWorldProps) {
         </div>
       </button>
 
-      {/* 7. 🎨 KIDORA CREATE STUDIO */}
+      {/* 6. 🎨 KIDORA CREATE STUDIO */}
       <button
         type="button"
         onClick={() => handleLandmarkTap('create', 'Create Studio', 'create', 76, 74)}
-        className={`absolute btn-press flex flex-col items-center z-15 transition-transform ${
+        className={`absolute btn-press flex flex-col items-center z-15 transition-transform cursor-pointer ${
           tappedId === 'create' ? 'scale-125' : 'hover:scale-105'
         }`}
-        style={{ left: '78%', top: '72%', transform: 'translate(-50%, -50%)' }}
+        style={{ left: '76%', top: '70%', transform: 'translate(-50%, -50%)' }}
         title="Create & Paint New World Items!"
       >
         <div className="text-5xl animate-float drop-shadow-lg" style={{ animationDelay: '1.5s' }}>
@@ -278,7 +384,7 @@ export function LivingWorld({ onNavigate, onSelectHero }: LivingWorldProps) {
             onClick={() => {
               if (profile.voiceEnabled) speak(`Look at your ${item.title}!`, true);
             }}
-            className="absolute z-12 btn-press flex flex-col items-center group"
+            className="absolute z-12 btn-press flex flex-col items-center group cursor-pointer"
             style={{
               left: `${item.x}%`,
               top: `${item.y}%`,

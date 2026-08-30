@@ -211,3 +211,100 @@ export interface ActivityStat {
   skill: string;
   count: number;
 }
+
+// 🎒 Backpack Collectibles
+export interface BackpackItem {
+  id: string;
+  title: string;
+  emoji: string;
+  category: 'tool' | 'relic' | 'badge' | 'nature' | 'cosmic';
+  description: string;
+  worldOrigin: string;
+  dateFound: string;
+}
+
+// 🎟️ Adventure Passport
+export interface PassportWorld {
+  id: string;
+  name: string;
+  emoji: string;
+  theme: string;
+  stampsCount: number;
+  totalStampsNeeded: number;
+  certificateTitle: string;
+  unlocked: boolean;
+}
+
+// 🕵️ Daily Mystery Mission
+export interface MysteryClue {
+  id: string;
+  type: 'observe' | 'code' | 'quiz' | 'puzzle';
+  question: string;
+  hint: string;
+  options?: string[];
+  correctAnswer: string;
+  emoji: string;
+}
+
+export interface DailyMystery {
+  id: string;
+  title: string;
+  emoji: string;
+  storyPrompt: string;
+  clues: MysteryClue[];
+  rewardCollectible: BackpackItem;
+  rewardStars: number;
+  worldGrowItem: string;
+}
+
+// 🧩 Real-World Missions (Screen-Free)
+export interface RealWorldMission {
+  id: string;
+  title: string;
+  prompt: string;
+  emoji: string;
+  category: 'home' | 'nature' | 'family' | 'creativity';
+  starsReward: number;
+  badgeName: string;
+}
+
+// 🌱 World Growth Definition
+export interface WorldGrowthStatus {
+  growthLevel: number;
+  title: string;
+  description: string;
+  unlockedLands: { id: string; name: string; emoji: string; color: string; description: string; requiredActivities: number; unlocked: boolean }[];
+  unlockedAnimals: { id: string; name: string; emoji: string; sound: string; habitat: string; requiredMissions: number; unlocked: boolean }[];
+  unlockedPlants: { id: string; name: string; emoji: string; growthStage: string; requiredActivities: number; unlocked: boolean }[];
+  unlockedLandmarks: { id: string; name: string; emoji: string; lore: string; requiredAdventures: number; unlocked: boolean }[];
+  streakDecoration?: { id: string; name: string; emoji: string };
+  nextGoalActivities: number;
+}
+
+// 📊 Daily Learning Summary (Parent App)
+export interface DailyLearningLog {
+  date: string;
+  minutesSpent: number;
+  xpEarned: number;
+  activitiesCount: number;
+  topics: { name: string; emoji: string }[];
+}
+
+// 🌸 Private Period & Ovulation Tracker
+export interface CycleEntry {
+  id: string;
+  startDate: string; // YYYY-MM-DD
+  endDate?: string;   // YYYY-MM-DD
+  flow?: 'light' | 'medium' | 'heavy';
+  symptoms?: string[];
+  notes?: string;
+}
+
+export interface PeriodTrackerData {
+  lastPeriodStart: string; // YYYY-MM-DD
+  periodDurationDays: number; // default e.g. 5
+  cycleLengthDays: number; // default e.g. 28
+  reminderEnabled: boolean;
+  cycles: CycleEntry[];
+}
+
