@@ -5,6 +5,7 @@ export type Screen =
   | 'activity'
   | 'world'
   | 'collections'
+  | 'my-kidora'
   | 'pets'
   | 'create'
   | 'parent'
@@ -29,14 +30,32 @@ export interface AvatarConfig {
   hair: string;
   hairColor: string;
   outfit: string;
+  outfitColor?: string;
   hat: string;
+  hatColor?: string;
   accessory: string;
+  backpack?: string;
+  shoes?: string;
+}
+
+export interface PlacedWorldItem {
+  id: string;
+  type: 'tree' | 'creature' | 'rocket' | 'flower' | 'castle' | 'custom';
+  title: string;
+  emoji: string;
+  imageUrl?: string;
+  x: number;
+  y: number;
+  scale?: number;
+  createdAt: string;
 }
 
 export interface PetConfig {
   type: string;
   name: string;
   color: string;
+  happiness?: number;
+  accessory?: string;
 }
 
 export interface ChildProfile {
@@ -50,6 +69,7 @@ export interface ChildProfile {
   lastAdventureDate: string | null;
   totalAdventures: number;
   gardenItems: string[];
+  worldItems?: PlacedWorldItem[];
   voiceEnabled: boolean;
   reducedMotion: boolean;
   dailyLimitMin: number;

@@ -15,6 +15,8 @@ interface AppState {
   completeAdventure: (stars: number, badge: string) => Promise<void>;
   recordActivity: (skill: string) => Promise<void>;
   addCreation: (type: string, title: string, payload: unknown) => Promise<void>;
+  addWorldItem: (item: Omit<import('./types').PlacedWorldItem, 'id' | 'createdAt'>) => Promise<void>;
+  removeWorldItem: (id: string) => Promise<void>;
   addUnlock: (category: string, key: string) => Promise<void>;
   addGardenItem: (item: string) => Promise<void>;
   resetProfile: () => Promise<void>;
@@ -221,6 +223,31 @@ export function AppProvider({ children }: { children: ReactNode }) {
     });
   }, [persistProfile]);
 
+  const addWorldItem = useCallback(async (item: Omit<import('./types').PlacedWorldItem, 'id' | 'createdAt'>) => {
+    const newItem: import('./types').PlacedWorldItem = {
+      ...item,
+      id: crypto.randomUUID(),
+      createdAt: new Date().toISOString(),
+    };
+    setProfile(prev => {
+      if (!prev) return prev;
+      const current = prev.worldItems ?? [];
+      const updated = { ...prev, worldItems: [newItem, ...current] };
+      persistProfile(updated);
+      return updated;
+    });
+  }, [persistProfile]);
+
+  const removeWorldItem = useCallback(async (id: string) => {
+    setProfile(prev => {
+      if (!prev) return prev;
+      const current = prev.worldItems ?? [];
+      const updated = { ...prev, worldItems: current.filter(w => w.id !== id) };
+      persistProfile(updated);
+      return updated;
+    });
+  }, [persistProfile]);
+
   const resetProfile = useCallback(async () => {
     if (isSupabaseConfigured && profile?.id) {
       await supabase.from('child_profile').delete().eq('id', profile.id);
@@ -235,7 +262,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
     <AppContext.Provider value={{
       profile, creations, unlocks, loading,
       saveProfile, setAvatar, setPet, addStars, completeAdventure,
-      recordActivity, addCreation, addUnlock, addGardenItem, resetProfile,
+      recordActivity, addCreation, addWorldItem, removeWorldItem, addUnlock, addGardenItem, resetProfile,
     }}>
       {children}
     </AppContext.Provider>

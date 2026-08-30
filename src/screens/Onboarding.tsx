@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { Button } from '@/components/Button';
-import { Mascot } from '@/components/Mascot';
+import { HeroCharacter } from '@/components/HeroCharacter';
+import { Companion } from '@/components/Companion';
 import { Pet } from '@/components/Pet';
 import { AnimatedBackground } from '@/components/AnimatedBackground';
 import { useApp } from '@/lib/store';
@@ -103,10 +104,11 @@ export function Onboarding() {
         {step === 'avatar' && (
           <div className="bg-white rounded-4xl shadow-pop p-6 max-w-lg w-full animate-pop-in max-h-[90vh] overflow-y-auto no-scrollbar">
             <div className="text-center mb-4">
-              <h2 className="text-2xl font-display font-bold text-slate-700">Create your character! 🎭</h2>
+              <h2 className="text-2xl font-display font-bold text-slate-700">Create your hero character! 🎭</h2>
+              <p className="text-xs text-slate-400">You are the hero of Kidora!</p>
             </div>
             <div className="flex justify-center mb-4">
-              <Mascot avatar={avatar} size={140} expression="happy" />
+              <HeroCharacter avatar={avatar} size={135} pose="idle" />
             </div>
 
             <div className="space-y-3">
@@ -219,15 +221,16 @@ export function Onboarding() {
         {step === 'ready' && (
           <div className="text-center max-w-md animate-pop-in">
             <div className="bg-white rounded-4xl shadow-pop p-8">
-              <div className="flex justify-center gap-6 mb-4">
-                <Mascot avatar={avatar} size={100} expression="celebrating" />
-                <Pet pet={{ ...pet, name: petName }} size={80} mood="celebrating" animate={false} />
+              <div className="flex justify-center items-end gap-3 mb-4">
+                <Companion emotion="celebrating" childName={name} size={65} showDialogue={false} />
+                <HeroCharacter avatar={avatar} size={115} name={name} showNameTag={true} pose="celebrate" />
+                <Pet pet={{ ...pet, name: petName }} size={55} mood="celebrating" animate={false} />
               </div>
               <h2 className="text-2xl font-display font-bold text-slate-700 mb-2">
                 Welcome, {name}! 🎉
               </h2>
-              <p className="text-slate-500 mb-6">
-                Your adventure with {petName} starts now! Your first mission is waiting.
+              <p className="text-slate-500 mb-6 text-sm">
+                Your living world is ready! Kido and {petName} are excited to explore with you.
               </p>
               <Button variant="sunny" size="xl" fullWidth onClick={handleFinish}>
                 Enter Adventure World! 🚀

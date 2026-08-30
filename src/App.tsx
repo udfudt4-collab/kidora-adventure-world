@@ -8,6 +8,7 @@ import { Collections } from '@/screens/Collections';
 import { Pets } from '@/screens/Pets';
 import { Create } from '@/screens/Create';
 import { ParentDashboard } from '@/screens/ParentDashboard';
+import { MyKidora } from '@/screens/MyKidora';
 import type { Screen } from '@/lib/types';
 
 function AppContent() {
@@ -40,7 +41,8 @@ function AppContent() {
     case 'home': return <Home onNavigate={navigate} />;
     case 'adventure': return <Adventure onNavigate={navigate} />;
     case 'world': return <WorldMap onNavigate={navigate} />;
-    case 'collections': return <Collections onNavigate={navigate} />;
+    case 'collections': return <MyKidora onNavigate={navigate} />;
+    case 'my-kidora': return <MyKidora onNavigate={navigate} />;
     case 'pets': return <Pets onNavigate={navigate} />;
     case 'create': return <Create onNavigate={navigate} />;
     case 'parent': return <ParentDashboard onNavigate={navigate} />;

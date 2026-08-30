@@ -3,16 +3,21 @@ import type { AvatarConfig } from './types';
 export const skinTones = ['#FFE0BD', '#FFCD94', '#EAC086', '#C68642', '#8D5524', '#5C3317'];
 export const hairColors = ['#3B2417', '#6B4423', '#A0522D', '#D4A017', '#B22222', '#2F4F4F', '#FF69B4', '#8B00FF'];
 export const outfitColors = ['#38bdf8', '#34d399', '#fbbf24', '#f472b6', '#a78bfa', '#fb923c', '#f87171', '#60a5fa'];
-export const hatOptions = ['none', 'crown', 'cap', 'wizard', 'party'];
-export const accessoryOptions = ['none', 'glasses', 'bowtie', 'scarf', 'wings'];
+export const hatOptions = ['none', 'crown', 'cap', 'wizard', 'safari', 'party', 'mask'];
+export const backpackOptions = ['none', 'explorer', 'rocket', 'wings', 'cape'];
+export const accessoryOptions = ['none', 'glasses', 'bowtie', 'scarf', 'wand', 'magnifier'];
+export const shoeOptions = ['sneakers', 'boots', 'sandals', 'slippers'];
 
 export const defaultAvatar: AvatarConfig = {
   skin: skinTones[1],
   hair: 'short',
   hairColor: hairColors[1],
   outfit: outfitColors[0],
+  outfitColor: outfitColors[0],
   hat: 'none',
   accessory: 'none',
+  backpack: 'explorer',
+  shoes: 'sneakers',
 };
 
 export const petOptions: { type: string; emoji: string; colors: string[] }[] = [

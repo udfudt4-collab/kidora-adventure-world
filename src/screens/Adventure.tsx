@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
 import { Button } from '@/components/Button';
-import { Mascot } from '@/components/Mascot';
+import { HeroCharacter } from '@/components/HeroCharacter';
+import { Companion } from '@/components/Companion';
 import { Pet } from '@/components/Pet';
 import { Confetti } from '@/components/Confetti';
 import { StarCounter } from '@/components/StatBadges';
@@ -147,10 +148,11 @@ export function Adventure({ onNavigate }: AdventureProps) {
               <span className="font-display font-bold text-sky-700 text-sm">Reward: {adventure.rewardBadge} Badge</span>
             </div>
 
-            {/* Character + Pet ready for adventure */}
+            {/* Character + Pet + Companion ready for adventure */}
             <div className="flex justify-center items-end gap-3 mb-6">
-              <Mascot avatar={profile.avatar} size={90} expression="excited" />
-              <Pet pet={profile.pet} size={50} mood="playing" />
+              <Companion emotion="excited" childName={profile.name} size={65} showDialogue={false} />
+              <HeroCharacter avatar={profile.avatar} size={105} name={profile.name} showNameTag={true} pose="idle" />
+              <Pet pet={profile.pet} size={48} mood="playing" />
             </div>
 
             <Button variant="sunny" size="xl" fullWidth onClick={() => {
@@ -203,7 +205,8 @@ export function Adventure({ onNavigate }: AdventureProps) {
             </div>
 
             <div className="flex justify-center items-end gap-3 mb-3">
-              <Mascot avatar={profile.avatar} size={75} expression={mascotExpression} />
+              <Companion emotion="celebrating" childName={profile.name} size={60} showDialogue={false} />
+              <HeroCharacter avatar={profile.avatar} size={90} pose="celebrate" />
               <Pet pet={profile.pet} size={42} mood="celebrating" />
             </div>
 
@@ -292,8 +295,9 @@ export function Adventure({ onNavigate }: AdventureProps) {
               <p className="text-white/95 font-display font-bold text-base mb-4">{adventure.outro}</p>
 
               <div className="bg-white/95 backdrop-blur-md rounded-4xl p-5 shadow-pop max-w-sm mx-auto">
-                <div className="flex justify-center mb-3">
-                  <Mascot avatar={profile.avatar} size={85} expression="celebrating" />
+                <div className="flex justify-center items-end gap-3 mb-3">
+                  <Companion emotion="celebrating" childName={profile.name} size={60} showDialogue={false} />
+                  <HeroCharacter avatar={profile.avatar} size={90} pose="celebrate" />
                 </div>
                 <div className="flex justify-center gap-4 mb-3">
                   <div className="text-center">
