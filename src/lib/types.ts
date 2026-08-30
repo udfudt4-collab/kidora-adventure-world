@@ -108,6 +108,42 @@ export interface ParentApprovalRequest {
   createdAt: string;
 }
 
+export interface WeightLogEntry {
+  id: string;
+  week: number;
+  weightKg: number;
+  date: string;
+  note?: string;
+}
+
+export interface BabyName {
+  id: string;
+  name: string;
+  gender: 'boy' | 'girl' | 'unisex';
+  meaning: string;
+  origin: string;
+  popular?: boolean;
+}
+
+export interface BabyMoment {
+  id: string;
+  momentKey: string; // 'first_smile' | 'first_word' | 'first_step' | 'first_tooth' | 'birthday' | 'custom'
+  title: string;
+  emoji: string;
+  dateAchieved: string | null;
+  notes: string;
+}
+
+export interface FamilyEvent {
+  id: string;
+  title: string;
+  date: string;
+  time?: string;
+  category: 'activity' | 'appointment' | 'celebration' | 'reminder';
+  emoji: string;
+  completed?: boolean;
+}
+
 export interface ParentNote {
   id: string;
   title: string;

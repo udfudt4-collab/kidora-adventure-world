@@ -1,6 +1,7 @@
 import { createContext, useContext, useState, useEffect, useCallback, type ReactNode } from 'react';
 import { supabase, isSupabaseConfigured } from './supabase';
 import { defaultAvatar } from './avatar';
+import { defaultBabyMoments } from './baby';
 import type {
   ChildProfile,
   AvatarConfig,
@@ -12,6 +13,9 @@ import type {
   FamilyChallenge,
   ParentApprovalRequest,
   ParentNote,
+  WeightLogEntry,
+  BabyMoment,
+  FamilyEvent,
 } from './types';
 
 export const defaultControls: ChildProfileControls = {
@@ -56,6 +60,36 @@ const initialSampleChallenges: FamilyChallenge[] = [
   },
 ];
 
+const initialSampleEvents: FamilyEvent[] = [
+  {
+    id: 'fe-1',
+    title: 'Family Park & Nature Walk',
+    date: 'Saturday',
+    time: '10:00 AM',
+    category: 'activity',
+    emoji: '🌳',
+    completed: false,
+  },
+  {
+    id: 'fe-2',
+    title: 'Pediatrician Wellness Checkup',
+    date: 'Next Tuesday',
+    time: '3:30 PM',
+    category: 'appointment',
+    emoji: '🩺',
+    completed: false,
+  },
+  {
+    id: 'fe-3',
+    title: 'Friday Movie & Reading Night',
+    date: 'Friday',
+    time: '7:00 PM',
+    category: 'celebration',
+    emoji: '🍿',
+    completed: false,
+  },
+];
+
 interface AppState {
   // Current active child
   profile: ChildProfile | null;
@@ -68,6 +102,12 @@ interface AppState {
   familyChallenges: FamilyChallenge[];
   approvalRequests: ParentApprovalRequest[];
   parentNotes: ParentNote[];
+  // Pregnancy & Baby & Family Hub
+  pregnancyCurrentWeek: number;
+  pregnancyWeightLogs: WeightLogEntry[];
+  favoriteBabyNames: string[];
+  babyMoments: BabyMoment[];
+  familyPlannerEvents: FamilyEvent[];
   creations: Creation[];
   unlocks: Unlock[];
   loading: boolean;
@@ -99,6 +139,17 @@ interface AppState {
   resolveApproval: (requestId: string, status: 'approved' | 'denied') => void;
   addParentNote: (note: Omit<ParentNote, 'id' | 'date'>) => void;
   deleteParentNote: (noteId: string) => void;
+  // Pregnancy Hub Actions
+  setPregnancyWeek: (week: number) => void;
+  addWeightLog: (week: number, weightKg: number, note?: string) => void;
+  deleteWeightLog: (id: string) => void;
+  // Baby Hub Actions
+  toggleFavoriteBabyName: (nameId: string) => void;
+  saveBabyMoment: (momentId: string, dateAchieved: string, notes: string) => void;
+  // Family Planner Actions
+  addFamilyEvent: (event: Omit<FamilyEvent, 'id'>) => void;
+  deleteFamilyEvent: (id: string) => void;
+  toggleFamilyEventCompleted: (id: string) => void;
   exportFamilyData: () => string;
 }
 
@@ -140,6 +191,18 @@ export function AppProvider({ children: reactChildren }: { children: ReactNode }
   const [familyChallenges, setFamilyChallenges] = useState<FamilyChallenge[]>(initialSampleChallenges);
   const [approvalRequests, setApprovalRequests] = useState<ParentApprovalRequest[]>([]);
   const [parentNotes, setParentNotes] = useState<ParentNote[]>([]);
+
+  // Pregnancy & Baby Hub state
+  const [pregnancyWeek, setPregnancyWeekState] = useState<number>(20);
+  const [pregnancyWeightLogs, setPregnancyWeightLogs] = useState<WeightLogEntry[]>([
+    { id: 'wl-1', week: 8, weightKg: 58.0, date: 'Week 8' },
+    { id: 'wl-2', week: 14, weightKg: 59.5, date: 'Week 14' },
+    { id: 'wl-3', week: 20, weightKg: 61.2, date: 'Week 20' },
+  ]);
+  const [favoriteBabyNames, setFavoriteBabyNames] = useState<string[]>(['bn-1', 'bn-20', 'bn-40']);
+  const [babyMoments, setBabyMoments] = useState<BabyMoment[]>(defaultBabyMoments);
+  const [familyEvents, setFamilyEvents] = useState<FamilyEvent[]>(initialSampleEvents);
+
   const [creations, setCreations] = useState<Creation[]>([]);
   const [unlocks, setUnlocks] = useState<Unlock[]>([]);
   const [loading, setLoading] = useState(true);
@@ -156,7 +219,12 @@ export function AppProvider({ children: reactChildren }: { children: ReactNode }
       updatedRecs: ParentRecommendation[],
       updatedChallenges: FamilyChallenge[],
       updatedApprovals: ParentApprovalRequest[],
-      updatedNotes: ParentNote[]
+      updatedNotes: ParentNote[],
+      week: number,
+      weightLogs: WeightLogEntry[],
+      favNames: string[],
+      moments: BabyMoment[],
+      events: FamilyEvent[]
     ) => {
       try {
         localStorage.setItem('kidora_children', JSON.stringify(updatedChildren));
@@ -166,6 +234,11 @@ export function AppProvider({ children: reactChildren }: { children: ReactNode }
         localStorage.setItem('kidora_challenges', JSON.stringify(updatedChallenges));
         localStorage.setItem('kidora_approvals', JSON.stringify(updatedApprovals));
         localStorage.setItem('kidora_parent_notes', JSON.stringify(updatedNotes));
+        localStorage.setItem('kidora_preg_week', week.toString());
+        localStorage.setItem('kidora_weight_logs', JSON.stringify(weightLogs));
+        localStorage.setItem('kidora_fav_names', JSON.stringify(favNames));
+        localStorage.setItem('kidora_baby_moments', JSON.stringify(moments));
+        localStorage.setItem('kidora_family_events', JSON.stringify(events));
 
         // Legacy compatibility
         const currentActive = updatedChildren.find((c) => c.id === currentActiveId) ?? updatedChildren[0];
@@ -189,8 +262,26 @@ export function AppProvider({ children: reactChildren }: { children: ReactNode }
     const localChallenges = localStorage.getItem('kidora_challenges');
     const localApprovals = localStorage.getItem('kidora_approvals');
     const localNotes = localStorage.getItem('kidora_parent_notes');
+    const localPregWeek = localStorage.getItem('kidora_preg_week');
+    const localWeightLogs = localStorage.getItem('kidora_weight_logs');
+    const localFavNames = localStorage.getItem('kidora_fav_names');
+    const localMoments = localStorage.getItem('kidora_baby_moments');
+    const localEvents = localStorage.getItem('kidora_family_events');
 
     if (localPin) setParentPinState(localPin);
+    if (localPregWeek) setPregnancyWeekState(parseInt(localPregWeek, 10));
+    if (localWeightLogs) {
+      try { setPregnancyWeightLogs(JSON.parse(localWeightLogs)); } catch (e) {}
+    }
+    if (localFavNames) {
+      try { setFavoriteBabyNames(JSON.parse(localFavNames)); } catch (e) {}
+    }
+    if (localMoments) {
+      try { setBabyMoments(JSON.parse(localMoments)); } catch (e) {}
+    }
+    if (localEvents) {
+      try { setFamilyEvents(JSON.parse(localEvents)); } catch (e) {}
+    }
     if (localRecs) {
       try { setRecommendations(JSON.parse(localRecs)); } catch (e) {}
     }
@@ -295,9 +386,22 @@ export function AppProvider({ children: reactChildren }: { children: ReactNode }
   const switchChild = useCallback(
     (childId: string) => {
       setActiveChildId(childId);
-      persistFamilyToStorage(childrenList, childId, parentPin, recommendations, familyChallenges, approvalRequests, parentNotes);
+      persistFamilyToStorage(
+        childrenList,
+        childId,
+        parentPin,
+        recommendations,
+        familyChallenges,
+        approvalRequests,
+        parentNotes,
+        pregnancyWeek,
+        pregnancyWeightLogs,
+        favoriteBabyNames,
+        babyMoments,
+        familyEvents
+      );
     },
-    [childrenList, parentPin, recommendations, familyChallenges, approvalRequests, parentNotes, persistFamilyToStorage]
+    [childrenList, parentPin, recommendations, familyChallenges, approvalRequests, parentNotes, pregnancyWeek, pregnancyWeightLogs, favoriteBabyNames, babyMoments, familyEvents, persistFamilyToStorage]
   );
 
   const addChild = useCallback(
@@ -328,19 +432,45 @@ export function AppProvider({ children: reactChildren }: { children: ReactNode }
       const updated = [...childrenList, newChild];
       setChildrenList(updated);
       setActiveChildId(newId);
-      persistFamilyToStorage(updated, newId, parentPin, recommendations, familyChallenges, approvalRequests, parentNotes);
+      persistFamilyToStorage(
+        updated,
+        newId,
+        parentPin,
+        recommendations,
+        familyChallenges,
+        approvalRequests,
+        parentNotes,
+        pregnancyWeek,
+        pregnancyWeightLogs,
+        favoriteBabyNames,
+        babyMoments,
+        familyEvents
+      );
       return newId;
     },
-    [childrenList, parentPin, recommendations, familyChallenges, approvalRequests, parentNotes, persistFamilyToStorage]
+    [childrenList, parentPin, recommendations, familyChallenges, approvalRequests, parentNotes, pregnancyWeek, pregnancyWeightLogs, favoriteBabyNames, babyMoments, familyEvents, persistFamilyToStorage]
   );
 
   const updateChild = useCallback(
     async (childId: string, partial: Partial<ChildProfile>) => {
       const updated = childrenList.map((c) => (c.id === childId ? { ...c, ...partial } : c));
       setChildrenList(updated);
-      persistFamilyToStorage(updated, activeChildId, parentPin, recommendations, familyChallenges, approvalRequests, parentNotes);
+      persistFamilyToStorage(
+        updated,
+        activeChildId,
+        parentPin,
+        recommendations,
+        familyChallenges,
+        approvalRequests,
+        parentNotes,
+        pregnancyWeek,
+        pregnancyWeightLogs,
+        favoriteBabyNames,
+        babyMoments,
+        familyEvents
+      );
     },
-    [childrenList, activeChildId, parentPin, recommendations, familyChallenges, approvalRequests, parentNotes, persistFamilyToStorage]
+    [childrenList, activeChildId, parentPin, recommendations, familyChallenges, approvalRequests, parentNotes, pregnancyWeek, pregnancyWeightLogs, favoriteBabyNames, babyMoments, familyEvents, persistFamilyToStorage]
   );
 
   const deleteChild = useCallback(
@@ -349,9 +479,22 @@ export function AppProvider({ children: reactChildren }: { children: ReactNode }
       const nextActive = updated.length > 0 ? updated[0].id : '';
       setChildrenList(updated);
       setActiveChildId(nextActive);
-      persistFamilyToStorage(updated, nextActive, parentPin, recommendations, familyChallenges, approvalRequests, parentNotes);
+      persistFamilyToStorage(
+        updated,
+        nextActive,
+        parentPin,
+        recommendations,
+        familyChallenges,
+        approvalRequests,
+        parentNotes,
+        pregnancyWeek,
+        pregnancyWeightLogs,
+        favoriteBabyNames,
+        babyMoments,
+        familyEvents
+      );
     },
-    [childrenList, parentPin, recommendations, familyChallenges, approvalRequests, parentNotes, persistFamilyToStorage]
+    [childrenList, parentPin, recommendations, familyChallenges, approvalRequests, parentNotes, pregnancyWeek, pregnancyWeightLogs, favoriteBabyNames, babyMoments, familyEvents, persistFamilyToStorage]
   );
 
   const saveProfile = useCallback(
@@ -486,9 +629,22 @@ export function AppProvider({ children: reactChildren }: { children: ReactNode }
   const setParentPin = useCallback(
     (pin: string) => {
       setParentPinState(pin);
-      persistFamilyToStorage(childrenList, activeChildId, pin, recommendations, familyChallenges, approvalRequests, parentNotes);
+      persistFamilyToStorage(
+        childrenList,
+        activeChildId,
+        pin,
+        recommendations,
+        familyChallenges,
+        approvalRequests,
+        parentNotes,
+        pregnancyWeek,
+        pregnancyWeightLogs,
+        favoriteBabyNames,
+        babyMoments,
+        familyEvents
+      );
     },
-    [childrenList, activeChildId, recommendations, familyChallenges, approvalRequests, parentNotes, persistFamilyToStorage]
+    [childrenList, activeChildId, recommendations, familyChallenges, approvalRequests, parentNotes, pregnancyWeek, pregnancyWeightLogs, favoriteBabyNames, babyMoments, familyEvents, persistFamilyToStorage]
   );
 
   const verifyParentPin = useCallback(
@@ -508,18 +664,44 @@ export function AppProvider({ children: reactChildren }: { children: ReactNode }
       };
       const updated = [newRec, ...recommendations];
       setRecommendations(updated);
-      persistFamilyToStorage(childrenList, activeChildId, parentPin, updated, familyChallenges, approvalRequests, parentNotes);
+      persistFamilyToStorage(
+        childrenList,
+        activeChildId,
+        parentPin,
+        updated,
+        familyChallenges,
+        approvalRequests,
+        parentNotes,
+        pregnancyWeek,
+        pregnancyWeightLogs,
+        favoriteBabyNames,
+        babyMoments,
+        familyEvents
+      );
     },
-    [childrenList, activeChildId, parentPin, recommendations, familyChallenges, approvalRequests, parentNotes, persistFamilyToStorage]
+    [childrenList, activeChildId, parentPin, recommendations, familyChallenges, approvalRequests, parentNotes, pregnancyWeek, pregnancyWeightLogs, favoriteBabyNames, babyMoments, familyEvents, persistFamilyToStorage]
   );
 
   const completeRecommendation = useCallback(
     (recId: string) => {
       const updated = recommendations.map((r) => (r.id === recId ? { ...r, completed: true } : r));
       setRecommendations(updated);
-      persistFamilyToStorage(childrenList, activeChildId, parentPin, updated, familyChallenges, approvalRequests, parentNotes);
+      persistFamilyToStorage(
+        childrenList,
+        activeChildId,
+        parentPin,
+        updated,
+        familyChallenges,
+        approvalRequests,
+        parentNotes,
+        pregnancyWeek,
+        pregnancyWeightLogs,
+        favoriteBabyNames,
+        babyMoments,
+        familyEvents
+      );
     },
-    [childrenList, activeChildId, parentPin, recommendations, familyChallenges, approvalRequests, parentNotes, persistFamilyToStorage]
+    [childrenList, activeChildId, parentPin, recommendations, familyChallenges, approvalRequests, parentNotes, pregnancyWeek, pregnancyWeightLogs, favoriteBabyNames, babyMoments, familyEvents, persistFamilyToStorage]
   );
 
   const addFamilyChallenge = useCallback(
@@ -532,9 +714,22 @@ export function AppProvider({ children: reactChildren }: { children: ReactNode }
       };
       const updated = [newChallenge, ...familyChallenges];
       setFamilyChallenges(updated);
-      persistFamilyToStorage(childrenList, activeChildId, parentPin, recommendations, updated, approvalRequests, parentNotes);
+      persistFamilyToStorage(
+        childrenList,
+        activeChildId,
+        parentPin,
+        recommendations,
+        updated,
+        approvalRequests,
+        parentNotes,
+        pregnancyWeek,
+        pregnancyWeightLogs,
+        favoriteBabyNames,
+        babyMoments,
+        familyEvents
+      );
     },
-    [childrenList, activeChildId, parentPin, recommendations, familyChallenges, approvalRequests, parentNotes, persistFamilyToStorage]
+    [childrenList, activeChildId, parentPin, recommendations, familyChallenges, approvalRequests, parentNotes, pregnancyWeek, pregnancyWeightLogs, favoriteBabyNames, babyMoments, familyEvents, persistFamilyToStorage]
   );
 
   const toggleChallengeComplete = useCallback(
@@ -552,7 +747,6 @@ export function AppProvider({ children: reactChildren }: { children: ReactNode }
       );
       setFamilyChallenges(updatedChallenges);
 
-      // Award bonus stars if newly marked complete
       if (!isCompleted && challenge.starsReward > 0) {
         const targetChild = childrenList.find((c) => c.id === childId);
         if (targetChild) {
@@ -560,9 +754,22 @@ export function AppProvider({ children: reactChildren }: { children: ReactNode }
         }
       }
 
-      persistFamilyToStorage(childrenList, activeChildId, parentPin, recommendations, updatedChallenges, approvalRequests, parentNotes);
+      persistFamilyToStorage(
+        childrenList,
+        activeChildId,
+        parentPin,
+        recommendations,
+        updatedChallenges,
+        approvalRequests,
+        parentNotes,
+        pregnancyWeek,
+        pregnancyWeightLogs,
+        favoriteBabyNames,
+        babyMoments,
+        familyEvents
+      );
     },
-    [familyChallenges, childrenList, activeChildId, parentPin, recommendations, approvalRequests, parentNotes, updateChild, persistFamilyToStorage]
+    [familyChallenges, childrenList, activeChildId, parentPin, recommendations, approvalRequests, parentNotes, pregnancyWeek, pregnancyWeightLogs, favoriteBabyNames, babyMoments, familyEvents, updateChild, persistFamilyToStorage]
   );
 
   const requestApproval = useCallback(
@@ -575,18 +782,44 @@ export function AppProvider({ children: reactChildren }: { children: ReactNode }
       };
       const updated = [newReq, ...approvalRequests];
       setApprovalRequests(updated);
-      persistFamilyToStorage(childrenList, activeChildId, parentPin, recommendations, familyChallenges, updated, parentNotes);
+      persistFamilyToStorage(
+        childrenList,
+        activeChildId,
+        parentPin,
+        recommendations,
+        familyChallenges,
+        updated,
+        parentNotes,
+        pregnancyWeek,
+        pregnancyWeightLogs,
+        favoriteBabyNames,
+        babyMoments,
+        familyEvents
+      );
     },
-    [childrenList, activeChildId, parentPin, recommendations, familyChallenges, approvalRequests, parentNotes, persistFamilyToStorage]
+    [childrenList, activeChildId, parentPin, recommendations, familyChallenges, approvalRequests, parentNotes, pregnancyWeek, pregnancyWeightLogs, favoriteBabyNames, babyMoments, familyEvents, persistFamilyToStorage]
   );
 
   const resolveApproval = useCallback(
     (requestId: string, status: 'approved' | 'denied') => {
       const updated = approvalRequests.map((r) => (r.id === requestId ? { ...r, status } : r));
       setApprovalRequests(updated);
-      persistFamilyToStorage(childrenList, activeChildId, parentPin, recommendations, familyChallenges, updated, parentNotes);
+      persistFamilyToStorage(
+        childrenList,
+        activeChildId,
+        parentPin,
+        recommendations,
+        familyChallenges,
+        updated,
+        parentNotes,
+        pregnancyWeek,
+        pregnancyWeightLogs,
+        favoriteBabyNames,
+        babyMoments,
+        familyEvents
+      );
     },
-    [childrenList, activeChildId, parentPin, recommendations, familyChallenges, approvalRequests, parentNotes, persistFamilyToStorage]
+    [childrenList, activeChildId, parentPin, recommendations, familyChallenges, approvalRequests, parentNotes, pregnancyWeek, pregnancyWeightLogs, favoriteBabyNames, babyMoments, familyEvents, persistFamilyToStorage]
   );
 
   const addParentNote = useCallback(
@@ -598,18 +831,240 @@ export function AppProvider({ children: reactChildren }: { children: ReactNode }
       };
       const updated = [newNote, ...parentNotes];
       setParentNotes(updated);
-      persistFamilyToStorage(childrenList, activeChildId, parentPin, recommendations, familyChallenges, approvalRequests, updated);
+      persistFamilyToStorage(
+        childrenList,
+        activeChildId,
+        parentPin,
+        recommendations,
+        familyChallenges,
+        approvalRequests,
+        updated,
+        pregnancyWeek,
+        pregnancyWeightLogs,
+        favoriteBabyNames,
+        babyMoments,
+        familyEvents
+      );
     },
-    [childrenList, activeChildId, parentPin, recommendations, familyChallenges, approvalRequests, parentNotes, persistFamilyToStorage]
+    [childrenList, activeChildId, parentPin, recommendations, familyChallenges, approvalRequests, parentNotes, pregnancyWeek, pregnancyWeightLogs, favoriteBabyNames, babyMoments, familyEvents, persistFamilyToStorage]
   );
 
   const deleteParentNote = useCallback(
     (noteId: string) => {
       const updated = parentNotes.filter((n) => n.id !== noteId);
       setParentNotes(updated);
-      persistFamilyToStorage(childrenList, activeChildId, parentPin, recommendations, familyChallenges, approvalRequests, updated);
+      persistFamilyToStorage(
+        childrenList,
+        activeChildId,
+        parentPin,
+        recommendations,
+        familyChallenges,
+        approvalRequests,
+        updated,
+        pregnancyWeek,
+        pregnancyWeightLogs,
+        favoriteBabyNames,
+        babyMoments,
+        familyEvents
+      );
     },
-    [childrenList, activeChildId, parentPin, recommendations, familyChallenges, approvalRequests, parentNotes, persistFamilyToStorage]
+    [childrenList, activeChildId, parentPin, recommendations, familyChallenges, approvalRequests, parentNotes, pregnancyWeek, pregnancyWeightLogs, favoriteBabyNames, babyMoments, familyEvents, persistFamilyToStorage]
+  );
+
+  // Pregnancy Hub
+  const setPregnancyWeek = useCallback(
+    (week: number) => {
+      setPregnancyWeekState(week);
+      persistFamilyToStorage(
+        childrenList,
+        activeChildId,
+        parentPin,
+        recommendations,
+        familyChallenges,
+        approvalRequests,
+        parentNotes,
+        week,
+        pregnancyWeightLogs,
+        favoriteBabyNames,
+        babyMoments,
+        familyEvents
+      );
+    },
+    [childrenList, activeChildId, parentPin, recommendations, familyChallenges, approvalRequests, parentNotes, pregnancyWeightLogs, favoriteBabyNames, babyMoments, familyEvents, persistFamilyToStorage]
+  );
+
+  const addWeightLog = useCallback(
+    (week: number, weightKg: number, note?: string) => {
+      const newEntry: WeightLogEntry = {
+        id: `wl-${Date.now()}`,
+        week,
+        weightKg,
+        date: `Week ${week}`,
+        note,
+      };
+      const updated = [...pregnancyWeightLogs, newEntry].sort((a, b) => a.week - b.week);
+      setPregnancyWeightLogs(updated);
+      persistFamilyToStorage(
+        childrenList,
+        activeChildId,
+        parentPin,
+        recommendations,
+        familyChallenges,
+        approvalRequests,
+        parentNotes,
+        pregnancyWeek,
+        updated,
+        favoriteBabyNames,
+        babyMoments,
+        familyEvents
+      );
+    },
+    [childrenList, activeChildId, parentPin, recommendations, familyChallenges, approvalRequests, parentNotes, pregnancyWeek, pregnancyWeightLogs, favoriteBabyNames, babyMoments, familyEvents, persistFamilyToStorage]
+  );
+
+  const deleteWeightLog = useCallback(
+    (id: string) => {
+      const updated = pregnancyWeightLogs.filter((w) => w.id !== id);
+      setPregnancyWeightLogs(updated);
+      persistFamilyToStorage(
+        childrenList,
+        activeChildId,
+        parentPin,
+        recommendations,
+        familyChallenges,
+        approvalRequests,
+        parentNotes,
+        pregnancyWeek,
+        updated,
+        favoriteBabyNames,
+        babyMoments,
+        familyEvents
+      );
+    },
+    [childrenList, activeChildId, parentPin, recommendations, familyChallenges, approvalRequests, parentNotes, pregnancyWeek, pregnancyWeightLogs, favoriteBabyNames, babyMoments, familyEvents, persistFamilyToStorage]
+  );
+
+  // Baby Hub
+  const toggleFavoriteBabyName = useCallback(
+    (nameId: string) => {
+      const updated = favoriteBabyNames.includes(nameId)
+        ? favoriteBabyNames.filter((id) => id !== nameId)
+        : [...favoriteBabyNames, nameId];
+      setFavoriteBabyNames(updated);
+      persistFamilyToStorage(
+        childrenList,
+        activeChildId,
+        parentPin,
+        recommendations,
+        familyChallenges,
+        approvalRequests,
+        parentNotes,
+        pregnancyWeek,
+        pregnancyWeightLogs,
+        updated,
+        babyMoments,
+        familyEvents
+      );
+    },
+    [childrenList, activeChildId, parentPin, recommendations, familyChallenges, approvalRequests, parentNotes, pregnancyWeek, pregnancyWeightLogs, favoriteBabyNames, babyMoments, familyEvents, persistFamilyToStorage]
+  );
+
+  const saveBabyMoment = useCallback(
+    (momentId: string, dateAchieved: string, notes: string) => {
+      const updated = babyMoments.map((m) =>
+        m.id === momentId ? { ...m, dateAchieved: dateAchieved || null, notes } : m
+      );
+      setBabyMoments(updated);
+      persistFamilyToStorage(
+        childrenList,
+        activeChildId,
+        parentPin,
+        recommendations,
+        familyChallenges,
+        approvalRequests,
+        parentNotes,
+        pregnancyWeek,
+        pregnancyWeightLogs,
+        favoriteBabyNames,
+        updated,
+        familyEvents
+      );
+    },
+    [childrenList, activeChildId, parentPin, recommendations, familyChallenges, approvalRequests, parentNotes, pregnancyWeek, pregnancyWeightLogs, favoriteBabyNames, babyMoments, familyEvents, persistFamilyToStorage]
+  );
+
+  // Family Planner
+  const addFamilyEvent = useCallback(
+    (event: Omit<FamilyEvent, 'id'>) => {
+      const newEvent: FamilyEvent = {
+        ...event,
+        id: `fe-${Date.now()}`,
+        completed: false,
+      };
+      const updated = [...familyEvents, newEvent];
+      setFamilyEvents(updated);
+      persistFamilyToStorage(
+        childrenList,
+        activeChildId,
+        parentPin,
+        recommendations,
+        familyChallenges,
+        approvalRequests,
+        parentNotes,
+        pregnancyWeek,
+        pregnancyWeightLogs,
+        favoriteBabyNames,
+        babyMoments,
+        updated
+      );
+    },
+    [childrenList, activeChildId, parentPin, recommendations, familyChallenges, approvalRequests, parentNotes, pregnancyWeek, pregnancyWeightLogs, favoriteBabyNames, babyMoments, familyEvents, persistFamilyToStorage]
+  );
+
+  const deleteFamilyEvent = useCallback(
+    (id: string) => {
+      const updated = familyEvents.filter((e) => e.id !== id);
+      setFamilyEvents(updated);
+      persistFamilyToStorage(
+        childrenList,
+        activeChildId,
+        parentPin,
+        recommendations,
+        familyChallenges,
+        approvalRequests,
+        parentNotes,
+        pregnancyWeek,
+        pregnancyWeightLogs,
+        favoriteBabyNames,
+        babyMoments,
+        updated
+      );
+    },
+    [childrenList, activeChildId, parentPin, recommendations, familyChallenges, approvalRequests, parentNotes, pregnancyWeek, pregnancyWeightLogs, favoriteBabyNames, babyMoments, familyEvents, persistFamilyToStorage]
+  );
+
+  const toggleFamilyEventCompleted = useCallback(
+    (id: string) => {
+      const updated = familyEvents.map((e) =>
+        e.id === id ? { ...e, completed: !e.completed } : e
+      );
+      setFamilyEvents(updated);
+      persistFamilyToStorage(
+        childrenList,
+        activeChildId,
+        parentPin,
+        recommendations,
+        familyChallenges,
+        approvalRequests,
+        parentNotes,
+        pregnancyWeek,
+        pregnancyWeightLogs,
+        favoriteBabyNames,
+        babyMoments,
+        updated
+      );
+    },
+    [childrenList, activeChildId, parentPin, recommendations, familyChallenges, approvalRequests, parentNotes, pregnancyWeek, pregnancyWeightLogs, favoriteBabyNames, babyMoments, familyEvents, persistFamilyToStorage]
   );
 
   const exportFamilyData = useCallback(() => {
@@ -626,13 +1081,21 @@ export function AppProvider({ children: reactChildren }: { children: ReactNode }
           gardenItemsCount: c.gardenItems.length,
           controls: c.controls,
         })),
+        pregnancy: {
+          currentWeek: pregnancyWeek,
+          weightLogs: pregnancyWeightLogs,
+        },
+        baby: {
+          favoriteNamesCount: favoriteBabyNames.length,
+          momentsRecorded: babyMoments.filter((m) => m.dateAchieved !== null),
+        },
         challengesCount: familyChallenges.length,
         notesCount: parentNotes.length,
       },
       null,
       2
     );
-  }, [childrenList, familyChallenges, parentNotes]);
+  }, [childrenList, pregnancyWeek, pregnancyWeightLogs, favoriteBabyNames, babyMoments, familyChallenges, parentNotes]);
 
   return (
     <AppContext.Provider
@@ -645,6 +1108,11 @@ export function AppProvider({ children: reactChildren }: { children: ReactNode }
         familyChallenges,
         approvalRequests,
         parentNotes,
+        pregnancyCurrentWeek: pregnancyWeek,
+        pregnancyWeightLogs,
+        favoriteBabyNames,
+        babyMoments,
+        familyPlannerEvents: familyEvents,
         creations,
         unlocks,
         loading,
@@ -674,6 +1142,14 @@ export function AppProvider({ children: reactChildren }: { children: ReactNode }
         resolveApproval,
         addParentNote,
         deleteParentNote,
+        setPregnancyWeek,
+        addWeightLog,
+        deleteWeightLog,
+        toggleFavoriteBabyName,
+        saveBabyMoment,
+        addFamilyEvent,
+        deleteFamilyEvent,
+        toggleFamilyEventCompleted,
         exportFamilyData,
       }}
     >
