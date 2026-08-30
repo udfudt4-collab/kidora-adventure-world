@@ -348,4 +348,51 @@ export interface PremiumState {
   history: PremiumRewardLog[];
 }
 
+// ⭐ Parent Feedback & Reviews
+export type ParentReviewCategory = 'activities' | 'safety' | 'staff' | 'facilities' | 'learning';
+
+export interface ParentReview {
+  id: string;
+  rating: number; // 1 to 5
+  category: ParentReviewCategory;
+  comment: string;
+  authorName: string;
+  childAge?: number;
+  createdAt: string; // ISO string
+  helpfulCount: number;
+}
+
+// 😴 Child Sleep Tracking
+export type SleepQuality = 'peaceful' | 'deep' | 'restless' | 'fair';
+
+export interface SleepLogEntry {
+  id: string;
+  childId: string;
+  date: string; // YYYY-MM-DD
+  bedtime: string; // HH:mm
+  wakeTime: string; // HH:mm
+  durationHours: number; // e.g. 9.5
+  quality: SleepQuality;
+  notes?: string;
+}
+
+// 💧 Child Daily Hydration Tracking
+export interface HydrationLogEntry {
+  id: string;
+  childId: string;
+  date: string; // YYYY-MM-DD
+  glassesDrank: number;
+  targetGlasses: number;
+  mlPerGlass: number; // default 250ml
+  notes?: string;
+}
+
+export interface HydrationData {
+  targetGlasses: number;
+  mlPerGlass: number;
+  dailyIntakeByChild: Record<string, number>; // childId -> today's glasses count
+  historyLogs: HydrationLogEntry[];
+}
+
+
 

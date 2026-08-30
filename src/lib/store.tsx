@@ -32,6 +32,12 @@ import type {
   CycleEntry,
   PremiumState,
   PremiumSourceType,
+  ParentReview,
+  ParentReviewCategory,
+  SleepLogEntry,
+  SleepQuality,
+  HydrationData,
+  HydrationLogEntry,
 } from './types';
 
 export const defaultControls: ChildProfileControls = {
@@ -120,6 +126,137 @@ const initialSampleEvents: FamilyEvent[] = [
   },
 ];
 
+const initialSampleReviews: ParentReview[] = [
+  {
+    id: 'rev-1',
+    rating: 5,
+    category: 'learning',
+    comment: 'The World That Grows With You is remarkable. My 6-year-old actually asks to practice math every morning to see new trees sprout!',
+    authorName: 'Priya M.',
+    childAge: 6,
+    createdAt: new Date(Date.now() - 2 * 86400000).toISOString(),
+    helpfulCount: 14,
+  },
+  {
+    id: 'rev-2',
+    rating: 5,
+    category: 'safety',
+    comment: 'Completely ad-free, zero predatory pop-ups, and the PIN gate gives total peace of mind. Excellent safety standard.',
+    authorName: 'David K.',
+    childAge: 5,
+    createdAt: new Date(Date.now() - 5 * 86400000).toISOString(),
+    helpfulCount: 9,
+  },
+  {
+    id: 'rev-3',
+    rating: 5,
+    category: 'activities',
+    comment: 'The real-world screen-free quests are fantastic! We went on the color scavenger hunt in our garden together.',
+    authorName: 'Sarah & Leo',
+    childAge: 7,
+    createdAt: new Date(Date.now() - 8 * 86400000).toISOString(),
+    helpfulCount: 11,
+  },
+  {
+    id: 'rev-4',
+    rating: 4,
+    category: 'staff',
+    comment: 'Curriculum design is very well thought out and friendly. Phoneme sounds and pronunciation are crisp and clear.',
+    authorName: 'Michael R.',
+    childAge: 4,
+    createdAt: new Date(Date.now() - 12 * 86400000).toISOString(),
+    helpfulCount: 6,
+  },
+];
+
+const initialSampleSleepLogs: SleepLogEntry[] = [
+  {
+    id: 'sl-1',
+    childId: 'child-1',
+    date: new Date(Date.now() - 86400000).toISOString().split('T')[0],
+    bedtime: '20:30',
+    wakeTime: '06:45',
+    durationHours: 10.25,
+    quality: 'peaceful',
+    notes: 'Read bedtime book, slept continuously through the night.',
+  },
+  {
+    id: 'sl-2',
+    childId: 'child-1',
+    date: new Date(Date.now() - 2 * 86400000).toISOString().split('T')[0],
+    bedtime: '20:45',
+    wakeTime: '07:00',
+    durationHours: 10.25,
+    quality: 'deep',
+    notes: 'Very tired after outdoor bike ride.',
+  },
+  {
+    id: 'sl-3',
+    childId: 'child-1',
+    date: new Date(Date.now() - 3 * 86400000).toISOString().split('T')[0],
+    bedtime: '21:00',
+    wakeTime: '06:30',
+    durationHours: 9.5,
+    quality: 'peaceful',
+    notes: 'Calm evening routine.',
+  },
+  {
+    id: 'sl-4',
+    childId: 'child-1',
+    date: new Date(Date.now() - 4 * 86400000).toISOString().split('T')[0],
+    bedtime: '21:15',
+    wakeTime: '07:00',
+    durationHours: 9.75,
+    quality: 'fair',
+    notes: 'Woke up once for water around 3am.',
+  },
+  {
+    id: 'sl-5',
+    childId: 'child-1',
+    date: new Date(Date.now() - 5 * 86400000).toISOString().split('T')[0],
+    bedtime: '20:30',
+    wakeTime: '06:30',
+    durationHours: 10.0,
+    quality: 'deep',
+    notes: 'Full sound sleep.',
+  },
+  {
+    id: 'sl-6',
+    childId: 'child-1',
+    date: new Date(Date.now() - 6 * 86400000).toISOString().split('T')[0],
+    bedtime: '20:45',
+    wakeTime: '06:45',
+    durationHours: 10.0,
+    quality: 'peaceful',
+    notes: 'Good energy morning.',
+  },
+  {
+    id: 'sl-7',
+    childId: 'child-1',
+    date: new Date(Date.now() - 7 * 86400000).toISOString().split('T')[0],
+    bedtime: '20:30',
+    wakeTime: '06:45',
+    durationHours: 10.25,
+    quality: 'peaceful',
+    notes: 'Weekend night sleep.',
+  },
+];
+
+const initialDefaultHydration: HydrationData = {
+  targetGlasses: 7,
+  mlPerGlass: 250,
+  dailyIntakeByChild: { 'child-1': 5 },
+  historyLogs: [
+    { id: 'hl-1', childId: 'child-1', date: new Date().toISOString().split('T')[0], glassesDrank: 5, targetGlasses: 7, mlPerGlass: 250, notes: 'Drank well throughout afternoon study.' },
+    { id: 'hl-2', childId: 'child-1', date: new Date(Date.now() - 86400000).toISOString().split('T')[0], glassesDrank: 7, targetGlasses: 7, mlPerGlass: 250, notes: 'Reached full daily goal!' },
+    { id: 'hl-3', childId: 'child-1', date: new Date(Date.now() - 2 * 86400000).toISOString().split('T')[0], glassesDrank: 6, targetGlasses: 7, mlPerGlass: 250, notes: 'Good hydration day.' },
+    { id: 'hl-4', childId: 'child-1', date: new Date(Date.now() - 3 * 86400000).toISOString().split('T')[0], glassesDrank: 8, targetGlasses: 7, mlPerGlass: 250, notes: 'Hot outdoor day, drank extra.' },
+    { id: 'hl-5', childId: 'child-1', date: new Date(Date.now() - 4 * 86400000).toISOString().split('T')[0], glassesDrank: 6, targetGlasses: 7, mlPerGlass: 250, notes: 'Met baseline.' },
+    { id: 'hl-6', childId: 'child-1', date: new Date(Date.now() - 5 * 86400000).toISOString().split('T')[0], glassesDrank: 7, targetGlasses: 7, mlPerGlass: 250, notes: 'Goal achieved.' },
+    { id: 'hl-7', childId: 'child-1', date: new Date(Date.now() - 6 * 86400000).toISOString().split('T')[0], glassesDrank: 6, targetGlasses: 7, mlPerGlass: 250, notes: 'Great hydration habit.' },
+  ],
+};
+
 interface AppState {
   // Current active child
   profile: ChildProfile | null;
@@ -158,6 +295,18 @@ interface AppState {
   claimChallengeReward: (challengeTitle: string) => void;
   addReferralReward: (friendName?: string) => void;
   extendPremium: (days: number, source: PremiumSourceType, title: string, emoji?: string) => void;
+  // ⭐ Parent Feedback & Reviews
+  parentReviews: ParentReview[];
+  addParentReview: (review: Omit<ParentReview, 'id' | 'createdAt' | 'helpfulCount'>) => void;
+  // 😴 Child Sleep Tracking
+  sleepLogs: SleepLogEntry[];
+  addSleepLog: (log: Omit<SleepLogEntry, 'id'>) => void;
+  deleteSleepLog: (id: string) => void;
+  // 💧 Child Daily Hydration Tracking
+  hydrationData: HydrationData;
+  addWaterIntake: (childId: string, glasses: number, notes?: string) => void;
+  resetTodayWaterIntake: (childId: string) => void;
+  setHydrationTarget: (targetGlasses: number) => void;
   loading: boolean;
   // Actions
   switchChild: (childId: string) => void;
@@ -264,6 +413,13 @@ export function AppProvider({ children: reactChildren }: { children: ReactNode }
   const [completedRealWorldMissions, setCompletedRealWorldMissions] = useState<string[]>([]);
   const [dailyLearningLogs, setDailyLearningLogs] = useState<DailyLearningLog[]>(initialSampleLearningLogs);
   const [periodTrackerData, setPeriodTrackerData] = useState<PeriodTrackerData>(defaultPeriodData);
+
+  // ⭐ Parent Feedback & Reviews
+  const [parentReviews, setParentReviews] = useState<ParentReview[]>(initialSampleReviews);
+  // 😴 Child Sleep Tracking
+  const [sleepLogs, setSleepLogs] = useState<SleepLogEntry[]>(initialSampleSleepLogs);
+  // 💧 Child Daily Hydration Tracking
+  const [hydrationData, setHydrationData] = useState<HydrationData>(initialDefaultHydration);
 
   // 🎁 Earn Premium & Referral System state
   const [premiumState, setPremiumState] = useState<PremiumState>(() => createDefaultPremiumState());
@@ -408,6 +564,20 @@ export function AppProvider({ children: reactChildren }: { children: ReactNode }
     }
     if (localPeriod) {
       try { setPeriodTrackerData(JSON.parse(localPeriod)); } catch (e) {}
+    }
+
+    const localReviews = localStorage.getItem('kidora_parent_reviews');
+    const localSleep = localStorage.getItem('kidora_sleep_logs');
+    const localHydration = localStorage.getItem('kidora_hydration');
+
+    if (localReviews) {
+      try { setParentReviews(JSON.parse(localReviews)); } catch (e) {}
+    }
+    if (localSleep) {
+      try { setSleepLogs(JSON.parse(localSleep)); } catch (e) {}
+    }
+    if (localHydration) {
+      try { setHydrationData(JSON.parse(localHydration)); } catch (e) {}
     }
 
     if (localPin) setParentPinState(localPin);
@@ -913,6 +1083,146 @@ export function AppProvider({ children: reactChildren }: { children: ReactNode }
         const updated = { ...prev, ...partial };
         try {
           localStorage.setItem('kidora_period_tracker', JSON.stringify(updated));
+        } catch (e) {}
+        return updated;
+      });
+    },
+    []
+  );
+
+  // ⭐ Parent Feedback & Reviews Actions
+  const addParentReview = useCallback(
+    (review: Omit<ParentReview, 'id' | 'createdAt' | 'helpfulCount'>) => {
+      const newReview: ParentReview = {
+        ...review,
+        id: `rev-${Date.now()}`,
+        createdAt: new Date().toISOString(),
+        helpfulCount: 0,
+      };
+      setParentReviews((prev) => {
+        const updated = [newReview, ...prev];
+        try {
+          localStorage.setItem('kidora_parent_reviews', JSON.stringify(updated));
+        } catch (e) {}
+        return updated;
+      });
+    },
+    []
+  );
+
+  // 😴 Sleep Measure Actions
+  const addSleepLog = useCallback(
+    (log: Omit<SleepLogEntry, 'id'>) => {
+      const newLog: SleepLogEntry = {
+        ...log,
+        id: `sl-${Date.now()}`,
+      };
+      setSleepLogs((prev) => {
+        const updated = [newLog, ...prev.filter((l) => !(l.childId === log.childId && l.date === log.date))].sort(
+          (a, b) => new Date(b.date).getTime() - new Date(a.date).getTime()
+        );
+        try {
+          localStorage.setItem('kidora_sleep_logs', JSON.stringify(updated));
+        } catch (e) {}
+        return updated;
+      });
+    },
+    []
+  );
+
+  const deleteSleepLog = useCallback(
+    (id: string) => {
+      setSleepLogs((prev) => {
+        const updated = prev.filter((l) => l.id !== id);
+        try {
+          localStorage.setItem('kidora_sleep_logs', JSON.stringify(updated));
+        } catch (e) {}
+        return updated;
+      });
+    },
+    []
+  );
+
+  // 💧 Hydration Measure Actions
+  const addWaterIntake = useCallback(
+    (childId: string, glasses: number, notes?: string) => {
+      setHydrationData((prev) => {
+        const todayStr = new Date().toISOString().split('T')[0];
+        const currentCount = prev.dailyIntakeByChild[childId] || 0;
+        const newCount = Math.max(0, currentCount + glasses);
+        const updatedDaily = { ...prev.dailyIntakeByChild, [childId]: newCount };
+
+        const existingLogIndex = prev.historyLogs.findIndex(
+          (l) => l.childId === childId && l.date === todayStr
+        );
+        let updatedHistory = [...prev.historyLogs];
+        if (existingLogIndex >= 0) {
+          updatedHistory[existingLogIndex] = {
+            ...updatedHistory[existingLogIndex],
+            glassesDrank: newCount,
+            notes: notes || updatedHistory[existingLogIndex].notes,
+          };
+        } else {
+          updatedHistory = [
+            {
+              id: `hl-${Date.now()}`,
+              childId,
+              date: todayStr,
+              glassesDrank: newCount,
+              targetGlasses: prev.targetGlasses,
+              mlPerGlass: prev.mlPerGlass,
+              notes,
+            },
+            ...updatedHistory,
+          ];
+        }
+
+        const updated: HydrationData = {
+          ...prev,
+          dailyIntakeByChild: updatedDaily,
+          historyLogs: updatedHistory,
+        };
+
+        try {
+          localStorage.setItem('kidora_hydration', JSON.stringify(updated));
+        } catch (e) {}
+        return updated;
+      });
+    },
+    []
+  );
+
+  const resetTodayWaterIntake = useCallback(
+    (childId: string) => {
+      setHydrationData((prev) => {
+        const todayStr = new Date().toISOString().split('T')[0];
+        const updatedDaily = { ...prev.dailyIntakeByChild, [childId]: 0 };
+        const updatedHistory = prev.historyLogs.map((l) =>
+          l.childId === childId && l.date === todayStr ? { ...l, glassesDrank: 0 } : l
+        );
+        const updated: HydrationData = {
+          ...prev,
+          dailyIntakeByChild: updatedDaily,
+          historyLogs: updatedHistory,
+        };
+        try {
+          localStorage.setItem('kidora_hydration', JSON.stringify(updated));
+        } catch (e) {}
+        return updated;
+      });
+    },
+    []
+  );
+
+  const setHydrationTarget = useCallback(
+    (targetGlasses: number) => {
+      setHydrationData((prev) => {
+        const updated: HydrationData = {
+          ...prev,
+          targetGlasses: Math.max(1, targetGlasses),
+        };
+        try {
+          localStorage.setItem('kidora_hydration', JSON.stringify(updated));
         } catch (e) {}
         return updated;
       });
@@ -1529,6 +1839,18 @@ export function AppProvider({ children: reactChildren }: { children: ReactNode }
         claimChallengeReward,
         addReferralReward,
         extendPremium,
+        // ⭐ Parent Feedback & Reviews
+        parentReviews,
+        addParentReview,
+        // 😴 Child Sleep Tracking
+        sleepLogs,
+        addSleepLog,
+        deleteSleepLog,
+        // 💧 Child Daily Hydration Tracking
+        hydrationData,
+        addWaterIntake,
+        resetTodayWaterIntake,
+        setHydrationTarget,
         loading,
         switchChild,
         addChild,

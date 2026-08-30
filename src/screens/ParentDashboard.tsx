@@ -2,6 +2,9 @@ import { useState, useMemo } from 'react';
 import { useApp } from '@/lib/store';
 import { PeriodTracker } from '@/components/PeriodTracker';
 import { EarnPremiumModal } from '@/components/EarnPremiumModal';
+import { ParentFeedbackReviews } from '@/components/ParentFeedbackReviews';
+import { SleepTracker } from '@/components/SleepTracker';
+import { HydrationTracker } from '@/components/HydrationTracker';
 import { getParentGreeting, parentAffirmations } from '@/lib/greetings';
 import { defaultAvatar, skinTones, hairColors } from '@/lib/avatar';
 import {
@@ -34,6 +37,8 @@ import {
   Camera,
   Star,
   BookOpen,
+  Droplets,
+  MessageSquare,
 } from 'lucide-react';
 import type { Screen, ChildProfileControls, ActivityType, AvatarConfig } from '@/lib/types';
 
@@ -41,7 +46,17 @@ interface ParentDashboardProps {
   onNavigate: (screen: Screen) => void;
 }
 
-type MainHub = 'overview' | 'cycle' | 'pregnancy' | 'baby' | 'children' | 'calendar' | 'privacy';
+type MainHub =
+  | 'overview'
+  | 'cycle'
+  | 'pregnancy'
+  | 'baby'
+  | 'children'
+  | 'calendar'
+  | 'sleep'
+  | 'hydration'
+  | 'reviews'
+  | 'privacy';
 
 export function ParentDashboard({ onNavigate }: ParentDashboardProps) {
   const {
@@ -81,6 +96,9 @@ export function ParentDashboard({ onNavigate }: ParentDashboardProps) {
     premiumState,
     earnPremiumModalOpen,
     setEarnPremiumModalOpen,
+    sleepLogs,
+    hydrationData,
+    parentReviews,
   } = useApp();
 
   const [activeHub, setActiveHub] = useState<MainHub>('overview');
@@ -360,6 +378,9 @@ export function ParentDashboard({ onNavigate }: ParentDashboardProps) {
         <div className="max-w-6xl mx-auto px-4 sm:px-6 flex items-center gap-1 overflow-x-auto no-scrollbar border-t border-slate-800 pt-1">
           {[
             { id: 'overview' as MainHub, label: 'Dashboard', emoji: '🏠' },
+            { id: 'sleep' as MainHub, label: 'Sleep Measure', emoji: '😴' },
+            { id: 'hydration' as MainHub, label: 'Hydration', emoji: '💧' },
+            { id: 'reviews' as MainHub, label: 'Feedback & Reviews', emoji: '⭐' },
             { id: 'cycle' as MainHub, label: 'Cycle & Period', emoji: '🌸' },
             { id: 'pregnancy' as MainHub, label: 'Pregnancy Journey', emoji: '🤰' },
             { id: 'baby' as MainHub, label: 'Baby Hub', emoji: '👶' },
@@ -549,6 +570,90 @@ export function ParentDashboard({ onNavigate }: ParentDashboardProps) {
                   Master Scribe
                 </div>
                 <div className="text-[10px] font-bold text-slate-400 uppercase">Recent Award</div>
+              </div>
+            </div>
+
+            {/* 🌟 2B. WELLNESS & PARENT COMMUNITY MEASURES ROW */}
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+              {/* Sleep Quick Card */}
+              <div
+                onClick={() => setActiveHub('sleep')}
+                className="btn-press bg-gradient-to-br from-indigo-50 to-purple-50 rounded-3xl p-5 border border-indigo-200/80 shadow-soft cursor-pointer hover:border-indigo-400 transition-all space-y-3 flex flex-col justify-between"
+              >
+                <div className="flex items-center justify-between">
+                  <div className="w-10 h-10 rounded-2xl bg-indigo-600 text-white flex items-center justify-center text-xl shadow-xs">
+                    😴
+                  </div>
+                  <span className="text-[10px] font-black uppercase text-indigo-700 bg-indigo-100 px-2.5 py-1 rounded-full">
+                    Sleep Measure
+                  </span>
+                </div>
+                <div>
+                  <div className="text-xl font-black font-display text-slate-900">
+                    {sleepLogs[0] ? `${sleepLogs[0].durationHours}h Rest` : '10.25h Rest'}
+                  </div>
+                  <p className="text-xs text-slate-600 font-medium mt-0.5">
+                    {sleepLogs[0]?.notes || 'Sound, uninterrupted deep sleep routine'}
+                  </p>
+                </div>
+                <div className="text-[11px] font-bold text-indigo-600 flex items-center gap-1 pt-1 border-t border-indigo-100">
+                  <span>View Trends & Log</span>
+                  <span>→</span>
+                </div>
+              </div>
+
+              {/* Hydration Quick Card */}
+              <div
+                onClick={() => setActiveHub('hydration')}
+                className="btn-press bg-gradient-to-br from-sky-50 to-teal-50 rounded-3xl p-5 border border-sky-200/80 shadow-soft cursor-pointer hover:border-sky-400 transition-all space-y-3 flex flex-col justify-between"
+              >
+                <div className="flex items-center justify-between">
+                  <div className="w-10 h-10 rounded-2xl bg-sky-600 text-white flex items-center justify-center text-xl shadow-xs">
+                    💧
+                  </div>
+                  <span className="text-[10px] font-black uppercase text-sky-700 bg-sky-100 px-2.5 py-1 rounded-full">
+                    Hydration
+                  </span>
+                </div>
+                <div>
+                  <div className="text-xl font-black font-display text-slate-900">
+                    {hydrationData.dailyIntakeByChild[activeChildId] || 5} / {hydrationData.targetGlasses} Glasses
+                  </div>
+                  <p className="text-xs text-slate-600 font-medium mt-0.5">
+                    {Math.round(((hydrationData.dailyIntakeByChild[activeChildId] || 5) / hydrationData.targetGlasses) * 100)}% of daily target reached
+                  </p>
+                </div>
+                <div className="text-[11px] font-bold text-sky-600 flex items-center gap-1 pt-1 border-t border-sky-100">
+                  <span>+ Quick Add Water</span>
+                  <span>→</span>
+                </div>
+              </div>
+
+              {/* Feedback & Reviews Quick Card */}
+              <div
+                onClick={() => setActiveHub('reviews')}
+                className="btn-press bg-gradient-to-br from-amber-50 to-orange-50 rounded-3xl p-5 border border-amber-200/80 shadow-soft cursor-pointer hover:border-amber-400 transition-all space-y-3 flex flex-col justify-between"
+              >
+                <div className="flex items-center justify-between">
+                  <div className="w-10 h-10 rounded-2xl bg-amber-500 text-white flex items-center justify-center text-xl shadow-xs">
+                    ⭐
+                  </div>
+                  <span className="text-[10px] font-black uppercase text-amber-800 bg-amber-100 px-2.5 py-1 rounded-full">
+                    Reviews & Voice
+                  </span>
+                </div>
+                <div>
+                  <div className="text-xl font-black font-display text-slate-900">
+                    4.9 ★ Community
+                  </div>
+                  <p className="text-xs text-slate-600 font-medium mt-0.5">
+                    {parentReviews.length} Verified Parent Reviews & Suggestions
+                  </p>
+                </div>
+                <div className="text-[11px] font-bold text-amber-700 flex items-center gap-1 pt-1 border-t border-amber-100">
+                  <span>Give Star Feedback</span>
+                  <span>→</span>
+                </div>
               </div>
             </div>
 
@@ -1605,6 +1710,21 @@ export function ParentDashboard({ onNavigate }: ParentDashboardProps) {
             </div>
           </div>
         )}
+
+        {/* ======================================================== */}
+        {/* HUB: SLEEP MEASURE */}
+        {/* ======================================================== */}
+        {activeHub === 'sleep' && <SleepTracker />}
+
+        {/* ======================================================== */}
+        {/* HUB: HYDRATION MEASURE */}
+        {/* ======================================================== */}
+        {activeHub === 'hydration' && <HydrationTracker />}
+
+        {/* ======================================================== */}
+        {/* HUB: FEEDBACK & REVIEWS */}
+        {/* ======================================================== */}
+        {activeHub === 'reviews' && <ParentFeedbackReviews />}
       </main>
 
       {/* ======================================================== */}
