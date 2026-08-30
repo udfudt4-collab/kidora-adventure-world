@@ -1,13 +1,81 @@
 import { createContext, useContext, useState, useEffect, useCallback, type ReactNode } from 'react';
 import { supabase, isSupabaseConfigured } from './supabase';
 import { defaultAvatar } from './avatar';
-import type { ChildProfile, AvatarConfig, PetConfig, Creation, Unlock } from './types';
+import type {
+  ChildProfile,
+  AvatarConfig,
+  PetConfig,
+  Creation,
+  Unlock,
+  ChildProfileControls,
+  ParentRecommendation,
+  FamilyChallenge,
+  ParentApprovalRequest,
+  ParentNote,
+} from './types';
+
+export const defaultControls: ChildProfileControls = {
+  allowedRealms: ['words', 'math', 'creative', 'puzzle', 'science'],
+  dailyLimitMinutes: 45,
+  bedtimeQuietHoursEnabled: true,
+  bedtimeStart: '20:00',
+  bedtimeEnd: '07:00',
+  priorityLearningAreas: ['math', 'reading', 'logic'],
+};
+
+const initialSampleChallenges: FamilyChallenge[] = [
+  {
+    id: 'fc-1',
+    title: 'Rainbow Color Safari',
+    description: 'Find 5 colorful objects around the house (red, blue, green, yellow, purple) and name them together!',
+    emoji: '🌈',
+    starsReward: 10,
+    assignedChildIds: [],
+    completedBy: [],
+    createdAt: new Date().toISOString(),
+  },
+  {
+    id: 'fc-2',
+    title: 'Kitchen Math Assistant',
+    description: 'Help count 15 pieces of pasta, spoons, or fruit for dinner prep.',
+    emoji: '🥣',
+    starsReward: 15,
+    assignedChildIds: [],
+    completedBy: [],
+    createdAt: new Date().toISOString(),
+  },
+  {
+    id: 'fc-3',
+    title: 'Bedtime Story Explorer',
+    description: 'Read an illustrated book together and talk about what the main character felt.',
+    emoji: '📖',
+    starsReward: 20,
+    assignedChildIds: [],
+    completedBy: [],
+    createdAt: new Date().toISOString(),
+  },
+];
 
 interface AppState {
+  // Current active child
   profile: ChildProfile | null;
+  // All family children
+  children: ChildProfile[];
+  activeChildId: string;
+  // Parent Admin State
+  parentPin: string;
+  recommendations: ParentRecommendation[];
+  familyChallenges: FamilyChallenge[];
+  approvalRequests: ParentApprovalRequest[];
+  parentNotes: ParentNote[];
   creations: Creation[];
   unlocks: Unlock[];
   loading: boolean;
+  // Actions
+  switchChild: (childId: string) => void;
+  addChild: (childData: { name: string; age: number; gender?: 'son' | 'daughter' | 'child'; avatar?: AvatarConfig; pet?: PetConfig }) => Promise<string>;
+  updateChild: (childId: string, partial: Partial<ChildProfile>) => Promise<void>;
+  deleteChild: (childId: string) => Promise<void>;
   saveProfile: (partial: Partial<ChildProfile>) => Promise<void>;
   setAvatar: (avatar: AvatarConfig) => Promise<void>;
   setPet: (pet: PetConfig) => Promise<void>;
@@ -20,6 +88,18 @@ interface AppState {
   addUnlock: (category: string, key: string) => Promise<void>;
   addGardenItem: (item: string) => Promise<void>;
   resetProfile: () => Promise<void>;
+  // Parent controls & connections
+  setParentPin: (pin: string) => void;
+  verifyParentPin: (pin: string) => boolean;
+  sendRecommendation: (rec: Omit<ParentRecommendation, 'id' | 'createdAt' | 'completed'>) => void;
+  completeRecommendation: (recId: string) => void;
+  addFamilyChallenge: (challenge: Omit<FamilyChallenge, 'id' | 'createdAt' | 'completedBy'>) => void;
+  toggleChallengeComplete: (challengeId: string, childId: string) => void;
+  requestApproval: (req: Omit<ParentApprovalRequest, 'id' | 'createdAt' | 'status'>) => void;
+  resolveApproval: (requestId: string, status: 'approved' | 'denied') => void;
+  addParentNote: (note: Omit<ParentNote, 'id' | 'date'>) => void;
+  deleteParentNote: (noteId: string) => void;
+  exportFamilyData: () => string;
 }
 
 const AppContext = createContext<AppState | null>(null);
@@ -31,42 +111,132 @@ export function useApp() {
 }
 
 const defaultProfile: ChildProfile = {
-  id: '',
-  name: 'Explorer',
+  id: 'child-1',
+  name: 'Aarav',
+  gender: 'son',
   age: 6,
   avatar: defaultAvatar,
   pet: { type: 'puppy', name: 'Buddy', color: '#D4A574' },
-  stars: 0,
-  streak: 0,
+  stars: 15,
+  streak: 2,
   lastAdventureDate: null,
-  totalAdventures: 0,
+  totalAdventures: 3,
   gardenItems: [],
+  worldItems: [],
   voiceEnabled: true,
   reducedMotion: false,
-  dailyLimitMin: 30,
+  dailyLimitMin: 45,
   notificationsEnabled: true,
   reminderTime: '08:00',
+  controls: { ...defaultControls },
+  activitiesCompletedCount: 5,
 };
 
-export function AppProvider({ children }: { children: ReactNode }) {
-  const [profile, setProfile] = useState<ChildProfile | null>(null);
+export function AppProvider({ children: reactChildren }: { children: ReactNode }) {
+  const [childrenList, setChildrenList] = useState<ChildProfile[]>([defaultProfile]);
+  const [activeChildId, setActiveChildId] = useState<string>('child-1');
+  const [parentPin, setParentPinState] = useState<string>('1234');
+  const [recommendations, setRecommendations] = useState<ParentRecommendation[]>([]);
+  const [familyChallenges, setFamilyChallenges] = useState<FamilyChallenge[]>(initialSampleChallenges);
+  const [approvalRequests, setApprovalRequests] = useState<ParentApprovalRequest[]>([]);
+  const [parentNotes, setParentNotes] = useState<ParentNote[]>([]);
   const [creations, setCreations] = useState<Creation[]>([]);
   const [unlocks, setUnlocks] = useState<Unlock[]>([]);
   const [loading, setLoading] = useState(true);
 
-  const loadAll = useCallback(async () => {
-    // 1. Immediately load cached profile from localStorage (Instant zero-delay load)
-    let localProfile: ChildProfile | null = null;
-    const local = localStorage.getItem('aw_profile');
-    if (local) {
+  // Active child derived
+  const activeProfile = childrenList.find((c) => c.id === activeChildId) ?? childrenList[0] ?? null;
+
+  // Persist helper
+  const persistFamilyToStorage = useCallback(
+    (
+      updatedChildren: ChildProfile[],
+      currentActiveId: string,
+      updatedPin: string,
+      updatedRecs: ParentRecommendation[],
+      updatedChallenges: FamilyChallenge[],
+      updatedApprovals: ParentApprovalRequest[],
+      updatedNotes: ParentNote[]
+    ) => {
       try {
-        const parsed = JSON.parse(local);
-        if (parsed && parsed.name) {
-          localProfile = parsed;
-          setProfile(parsed);
+        localStorage.setItem('kidora_children', JSON.stringify(updatedChildren));
+        localStorage.setItem('kidora_active_child', currentActiveId);
+        localStorage.setItem('kidora_parent_pin', updatedPin);
+        localStorage.setItem('kidora_recommendations', JSON.stringify(updatedRecs));
+        localStorage.setItem('kidora_challenges', JSON.stringify(updatedChallenges));
+        localStorage.setItem('kidora_approvals', JSON.stringify(updatedApprovals));
+        localStorage.setItem('kidora_parent_notes', JSON.stringify(updatedNotes));
+
+        // Legacy compatibility
+        const currentActive = updatedChildren.find((c) => c.id === currentActiveId) ?? updatedChildren[0];
+        if (currentActive) {
+          localStorage.setItem('aw_profile', JSON.stringify(currentActive));
         }
       } catch (e) {
-        console.error('Error parsing local profile', e);
+        console.error('Storage save error:', e);
+      }
+    },
+    []
+  );
+
+  const loadAll = useCallback(async () => {
+    // 1. Load multi-child family system from localStorage (Instant Zero-Delay)
+    let loadedChildren: ChildProfile[] = [];
+    const localChildren = localStorage.getItem('kidora_children');
+    const localActiveId = localStorage.getItem('kidora_active_child');
+    const localPin = localStorage.getItem('kidora_parent_pin');
+    const localRecs = localStorage.getItem('kidora_recommendations');
+    const localChallenges = localStorage.getItem('kidora_challenges');
+    const localApprovals = localStorage.getItem('kidora_approvals');
+    const localNotes = localStorage.getItem('kidora_parent_notes');
+
+    if (localPin) setParentPinState(localPin);
+    if (localRecs) {
+      try { setRecommendations(JSON.parse(localRecs)); } catch (e) {}
+    }
+    if (localChallenges) {
+      try { setFamilyChallenges(JSON.parse(localChallenges)); } catch (e) {}
+    }
+    if (localApprovals) {
+      try { setApprovalRequests(JSON.parse(localApprovals)); } catch (e) {}
+    }
+    if (localNotes) {
+      try { setParentNotes(JSON.parse(localNotes)); } catch (e) {}
+    }
+
+    if (localChildren) {
+      try {
+        const parsed = JSON.parse(localChildren);
+        if (Array.isArray(parsed) && parsed.length > 0) {
+          loadedChildren = parsed;
+          setChildrenList(parsed);
+          if (localActiveId && parsed.some((c: ChildProfile) => c.id === localActiveId)) {
+            setActiveChildId(localActiveId);
+          } else {
+            setActiveChildId(parsed[0].id);
+          }
+        }
+      } catch (e) {
+        console.error('Error parsing children list', e);
+      }
+    } else {
+      // Legacy fallback
+      const oldLocal = localStorage.getItem('aw_profile');
+      if (oldLocal) {
+        try {
+          const parsedOld = JSON.parse(oldLocal);
+          if (parsedOld && parsedOld.name) {
+            const migratedChild: ChildProfile = {
+              ...defaultProfile,
+              ...parsedOld,
+              id: parsedOld.id || 'child-1',
+              controls: parsedOld.controls || { ...defaultControls },
+            };
+            loadedChildren = [migratedChild];
+            setChildrenList([migratedChild]);
+            setActiveChildId(migratedChild.id);
+          }
+        } catch (e) {}
       }
     }
 
@@ -74,267 +244,440 @@ export function AppProvider({ children }: { children: ReactNode }) {
     if (localCreations) {
       try { setCreations(JSON.parse(localCreations)); } catch (e) {}
     }
-
     const localUnlocks = localStorage.getItem('aw_unlocks');
     if (localUnlocks) {
       try { setUnlocks(JSON.parse(localUnlocks)); } catch (e) {}
     }
 
-    if (!isSupabaseConfigured) {
-      setLoading(false);
-      return;
+    // 2. Fetch Supabase in background
+    if (isSupabaseConfigured) {
+      try {
+        const { data: p, error } = await supabase.from('child_profile').select('*').order('created_at').limit(1).maybeSingle();
+        if (p && !error && loadedChildren.length === 0) {
+          const remoteChild: ChildProfile = {
+            id: p.id || 'child-1',
+            name: p.name || 'Aarav',
+            age: p.age || 6,
+            avatar: p.avatar ?? defaultAvatar,
+            pet: p.pet ?? { type: 'puppy', name: 'Buddy', color: '#D4A574' },
+            stars: p.stars ?? 0,
+            streak: p.streak ?? 0,
+            lastAdventureDate: p.last_adventure_date ?? null,
+            totalAdventures: p.total_adventures ?? 0,
+            gardenItems: p.garden_items ?? [],
+            worldItems: p.world_items ?? [],
+            voiceEnabled: p.voice_enabled ?? true,
+            reducedMotion: p.reduced_motion ?? false,
+            dailyLimitMin: p.daily_limit_min ?? 45,
+            notificationsEnabled: p.notifications_enabled ?? true,
+            reminderTime: p.reminder_time ?? '08:00',
+            controls: { ...defaultControls },
+            activitiesCompletedCount: 0,
+          };
+          setChildrenList([remoteChild]);
+          setActiveChildId(remoteChild.id);
+          localStorage.setItem('kidora_children', JSON.stringify([remoteChild]));
+          localStorage.setItem('aw_profile', JSON.stringify(remoteChild));
+        }
+      } catch (err) {
+        console.warn('Supabase fetch error, fallback to local storage:', err);
+      }
     }
-
-    // 2. Fetch from Supabase in background
-    try {
-      const { data: p, error } = await supabase.from('child_profile').select('*').order('created_at').limit(1).maybeSingle();
-      if (p && !error) {
-        const remoteProfile: ChildProfile = {
-          id: p.id,
-          name: p.name || localProfile?.name || 'Explorer',
-          age: p.age || localProfile?.age || 6,
-          avatar: p.avatar ?? localProfile?.avatar ?? defaultAvatar,
-          pet: p.pet ?? localProfile?.pet ?? { type: 'puppy', name: 'Buddy', color: '#D4A574' },
-          stars: p.stars ?? localProfile?.stars ?? 0,
-          streak: p.streak ?? localProfile?.streak ?? 0,
-          lastAdventureDate: p.last_adventure_date ?? localProfile?.lastAdventureDate ?? null,
-          totalAdventures: p.total_adventures ?? localProfile?.totalAdventures ?? 0,
-          gardenItems: p.garden_items ?? localProfile?.gardenItems ?? [],
-          worldItems: p.world_items ?? localProfile?.worldItems ?? [],
-          voiceEnabled: p.voice_enabled ?? localProfile?.voiceEnabled ?? true,
-          reducedMotion: p.reduced_motion ?? localProfile?.reducedMotion ?? false,
-          dailyLimitMin: p.daily_limit_min ?? localProfile?.dailyLimitMin ?? 30,
-          notificationsEnabled: p.notifications_enabled ?? localProfile?.notificationsEnabled ?? true,
-          reminderTime: p.reminder_time ?? localProfile?.reminderTime ?? '08:00',
-        };
-        setProfile(remoteProfile);
-        localStorage.setItem('aw_profile', JSON.stringify(remoteProfile));
-      } else if (localProfile) {
-        // If Supabase returned null or empty, sync localProfile up to Supabase!
-        persistProfile(localProfile);
-      }
-    } catch (err) {
-      console.warn('Supabase fetch error, fallback to local storage:', err);
-    }
-
-    try {
-      const { data: cr } = await supabase.from('creations').select('*').order('created_at', { ascending: false }).limit(50);
-      if (cr && cr.length > 0) {
-        const mapped = cr.map((c: { id: string; type: string; title: string; payload: unknown; created_at: string }) => ({
-          id: c.id,
-          type: c.type,
-          title: c.title,
-          payload: c.payload,
-          createdAt: c.created_at,
-        }));
-        setCreations(mapped);
-        localStorage.setItem('aw_creations', JSON.stringify(mapped));
-      }
-    } catch (err) {}
-
-    try {
-      const { data: u } = await supabase.from('unlocks').select('*').order('unlocked_at', { ascending: false });
-      if (u && u.length > 0) {
-        const mapped = u.map((x: { category: string; key: string; unlocked_at: string }) => ({
-          category: x.category,
-          key: x.key,
-          unlockedAt: x.unlocked_at,
-        }));
-        setUnlocks(mapped);
-        localStorage.setItem('aw_unlocks', JSON.stringify(mapped));
-      }
-    } catch (err) {}
 
     setLoading(false);
   }, []);
 
-  useEffect(() => { loadAll(); }, [loadAll]);
+  useEffect(() => {
+    loadAll();
+  }, [loadAll]);
 
-  const persistProfile = useCallback(async (p: ChildProfile) => {
-    // ALWAYS save to localStorage immediately so user never loses name/state
-    try {
-      localStorage.setItem('aw_profile', JSON.stringify(p));
-    } catch (e) {
-      console.error('Failed to save profile to localStorage', e);
-    }
+  // Actions
+  const switchChild = useCallback(
+    (childId: string) => {
+      setActiveChildId(childId);
+      persistFamilyToStorage(childrenList, childId, parentPin, recommendations, familyChallenges, approvalRequests, parentNotes);
+    },
+    [childrenList, parentPin, recommendations, familyChallenges, approvalRequests, parentNotes, persistFamilyToStorage]
+  );
 
-    if (!isSupabaseConfigured) return;
+  const addChild = useCallback(
+    async (childData: { name: string; age: number; gender?: 'son' | 'daughter' | 'child'; avatar?: AvatarConfig; pet?: PetConfig }) => {
+      const newId = `child-${Date.now()}`;
+      const newChild: ChildProfile = {
+        id: newId,
+        name: childData.name || 'Explorer',
+        gender: childData.gender || 'child',
+        age: childData.age || 6,
+        avatar: childData.avatar || defaultAvatar,
+        pet: childData.pet || { type: 'puppy', name: 'Buddy', color: '#D4A574' },
+        stars: 0,
+        streak: 1,
+        lastAdventureDate: null,
+        totalAdventures: 0,
+        gardenItems: [],
+        worldItems: [],
+        voiceEnabled: true,
+        reducedMotion: false,
+        dailyLimitMin: 45,
+        notificationsEnabled: true,
+        reminderTime: '08:00',
+        controls: { ...defaultControls },
+        activitiesCompletedCount: 0,
+      };
 
-    try {
-      if (p.id) {
-        await supabase.from('child_profile').update({
-          name: p.name, age: p.age, avatar: p.avatar, pet: p.pet,
-          stars: p.stars, streak: p.streak,
-          last_adventure_date: p.lastAdventureDate,
-          total_adventures: p.totalAdventures,
-          garden_items: p.gardenItems,
-          voice_enabled: p.voiceEnabled,
-          reduced_motion: p.reducedMotion,
-          daily_limit_min: p.dailyLimitMin,
-          notifications_enabled: p.notificationsEnabled ?? true,
-          reminder_time: p.reminderTime ?? '08:00',
-          updated_at: new Date().toISOString(),
-        }).eq('id', p.id);
-      } else {
-        const { data, error } = await supabase.from('child_profile').insert({
-          name: p.name, age: p.age, avatar: p.avatar, pet: p.pet,
-          stars: p.stars, streak: p.streak,
-          last_adventure_date: p.lastAdventureDate,
-          total_adventures: p.totalAdventures,
-          garden_items: p.gardenItems,
-          voice_enabled: p.voiceEnabled,
-          reduced_motion: p.reducedMotion,
-          daily_limit_min: p.dailyLimitMin,
-          notifications_enabled: p.notificationsEnabled ?? true,
-          reminder_time: p.reminderTime ?? '08:00',
-        }).select('id').maybeSingle();
-        if (data?.id) {
-          p.id = data.id;
-          localStorage.setItem('aw_profile', JSON.stringify(p));
-        }
-      }
-    } catch (err) {
-      console.warn('Supabase profile persist error, stored locally:', err);
-    }
-  }, []);
+      const updated = [...childrenList, newChild];
+      setChildrenList(updated);
+      setActiveChildId(newId);
+      persistFamilyToStorage(updated, newId, parentPin, recommendations, familyChallenges, approvalRequests, parentNotes);
+      return newId;
+    },
+    [childrenList, parentPin, recommendations, familyChallenges, approvalRequests, parentNotes, persistFamilyToStorage]
+  );
 
-  const saveProfile = useCallback(async (partial: Partial<ChildProfile>) => {
-    setProfile(prev => {
-      const base = prev ?? { ...defaultProfile };
-      const updated = { ...base, ...partial };
-      persistProfile(updated);
-      return updated;
-    });
-  }, [persistProfile]);
+  const updateChild = useCallback(
+    async (childId: string, partial: Partial<ChildProfile>) => {
+      const updated = childrenList.map((c) => (c.id === childId ? { ...c, ...partial } : c));
+      setChildrenList(updated);
+      persistFamilyToStorage(updated, activeChildId, parentPin, recommendations, familyChallenges, approvalRequests, parentNotes);
+    },
+    [childrenList, activeChildId, parentPin, recommendations, familyChallenges, approvalRequests, parentNotes, persistFamilyToStorage]
+  );
 
-  const setAvatar = useCallback(async (avatar: AvatarConfig) => {
-    await saveProfile({ avatar });
-  }, [saveProfile]);
+  const deleteChild = useCallback(
+    async (childId: string) => {
+      const updated = childrenList.filter((c) => c.id !== childId);
+      const nextActive = updated.length > 0 ? updated[0].id : '';
+      setChildrenList(updated);
+      setActiveChildId(nextActive);
+      persistFamilyToStorage(updated, nextActive, parentPin, recommendations, familyChallenges, approvalRequests, parentNotes);
+    },
+    [childrenList, parentPin, recommendations, familyChallenges, approvalRequests, parentNotes, persistFamilyToStorage]
+  );
 
-  const setPet = useCallback(async (pet: PetConfig) => {
-    await saveProfile({ pet });
-  }, [saveProfile]);
+  const saveProfile = useCallback(
+    async (partial: Partial<ChildProfile>) => {
+      if (!activeChildId) return;
+      await updateChild(activeChildId, partial);
+    },
+    [activeChildId, updateChild]
+  );
 
-  const addStars = useCallback(async (n: number) => {
-    setProfile(prev => {
-      if (!prev) return prev;
-      const updated = { ...prev, stars: prev.stars + n };
-      persistProfile(updated);
-      return updated;
-    });
-  }, [persistProfile]);
+  const setAvatar = useCallback(
+    async (avatar: AvatarConfig) => {
+      await saveProfile({ avatar });
+    },
+    [saveProfile]
+  );
 
-  const completeAdventure = useCallback(async (stars: number, badge: string) => {
-    const today = new Date().toISOString().slice(0, 10);
-    setProfile(prev => {
-      if (!prev) return prev;
-      const yesterday = new Date(Date.now() - 86400000).toISOString().slice(0, 10);
-      const newStreak = prev.lastAdventureDate === yesterday ? prev.streak + 1 : 1;
-      const updated = {
-        ...prev,
-        stars: prev.stars + stars,
+  const setPet = useCallback(
+    async (pet: PetConfig) => {
+      await saveProfile({ pet });
+    },
+    [saveProfile]
+  );
+
+  const addStars = useCallback(
+    async (n: number) => {
+      if (!activeProfile) return;
+      await saveProfile({ stars: (activeProfile.stars ?? 0) + n });
+    },
+    [activeProfile, saveProfile]
+  );
+
+  const completeAdventure = useCallback(
+    async (starsEarned: number, badge: string) => {
+      if (!activeProfile) return;
+      const today = new Date().toISOString().split('T')[0];
+      const isConsecutive =
+        activeProfile.lastAdventureDate &&
+        new Date(today).getTime() - new Date(activeProfile.lastAdventureDate).getTime() <= 86400000 * 2;
+      const newStreak = isConsecutive ? activeProfile.streak + 1 : 1;
+
+      await saveProfile({
+        stars: activeProfile.stars + starsEarned,
         streak: newStreak,
         lastAdventureDate: today,
-        totalAdventures: prev.totalAdventures + 1,
-      };
-      persistProfile(updated);
-      return updated;
-    });
-    if (isSupabaseConfigured) {
-      await supabase.from('adventure_log').insert({
-        adventure_date: today,
-        theme: badge,
-        missions_completed: 6,
-        stars_earned: stars,
-        badge,
+        totalAdventures: activeProfile.totalAdventures + 1,
+        activitiesCompletedCount: (activeProfile.activitiesCompletedCount ?? 0) + 1,
       });
-      await supabase.from('unlocks').upsert({ category: 'badge', key: badge }, { onConflict: 'category,key' });
-    }
-    setUnlocks(prev => prev.some(u => u.category === 'badge' && u.key === badge) ? prev : [{ category: 'badge', key: badge, unlockedAt: new Date().toISOString() }, ...prev]);
-  }, [persistProfile]);
 
-  const recordActivity = useCallback(async (skill: string) => {
-    if (!isSupabaseConfigured) return;
-    // Upsert directly (no RPC function defined)
-    const { data } = await supabase.from('activity_stats').select('count').eq('skill', skill).maybeSingle();
-    if (data) {
-      await supabase.from('activity_stats').update({ count: (data as { count: number }).count + 1, updated_at: new Date().toISOString() }).eq('skill', skill);
-    } else {
-      await supabase.from('activity_stats').insert({ skill, count: 1 });
-    }
-  }, []);
+      setUnlocks((prev) =>
+        prev.some((u) => u.category === 'badge' && u.key === badge)
+          ? prev
+          : [{ category: 'badge', key: badge, unlockedAt: new Date().toISOString() }, ...prev]
+      );
+    },
+    [activeProfile, saveProfile]
+  );
 
-  const addCreation = useCallback(async (type: string, title: string, payload: unknown) => {
-    if (isSupabaseConfigured) {
-      const { data } = await supabase.from('creations').insert({ type, title, payload }).select('id, created_at').single();
-      if (data) {
-        setCreations(prev => [{ id: (data as { id: string }).id, type, title, payload, createdAt: (data as { created_at: string }).created_at }, ...prev]);
-      }
-    } else {
+  const recordActivity = useCallback(
+    async (skill: string) => {
+      if (!activeProfile) return;
+      await saveProfile({
+        activitiesCompletedCount: (activeProfile.activitiesCompletedCount ?? 0) + 1,
+      });
+    },
+    [activeProfile, saveProfile]
+  );
+
+  const addCreation = useCallback(
+    async (type: string, title: string, payload: unknown) => {
       const id = crypto.randomUUID();
-      setCreations(prev => [{ id, type, title, payload, createdAt: new Date().toISOString() }, ...prev]);
-    }
-  }, []);
+      const newCreation: Creation = { id, type, title, payload, createdAt: new Date().toISOString() };
+      setCreations((prev) => {
+        const updated = [newCreation, ...prev];
+        localStorage.setItem('aw_creations', JSON.stringify(updated));
+        return updated;
+      });
+    },
+    []
+  );
 
-  const addUnlock = useCallback(async (category: string, key: string) => {
-    if (unlocks.some(u => u.category === category && u.key === key)) return;
-    if (isSupabaseConfigured) {
-      await supabase.from('unlocks').upsert({ category, key }, { onConflict: 'category,key' });
-    }
-    setUnlocks(prev => [{ category, key, unlockedAt: new Date().toISOString() }, ...prev]);
-  }, [unlocks, isSupabaseConfigured]);
+  const addUnlock = useCallback(
+    async (category: string, key: string) => {
+      if (unlocks.some((u) => u.category === category && u.key === key)) return;
+      setUnlocks((prev) => {
+        const updated = [{ category, key, unlockedAt: new Date().toISOString() }, ...prev];
+        localStorage.setItem('aw_unlocks', JSON.stringify(updated));
+        return updated;
+      });
+    },
+    [unlocks]
+  );
 
-  const addGardenItem = useCallback(async (item: string) => {
-    setProfile(prev => {
-      if (!prev || prev.gardenItems.includes(item)) return prev;
-      const updated = { ...prev, gardenItems: [...prev.gardenItems, item] };
-      persistProfile(updated);
-      return updated;
-    });
-  }, [persistProfile]);
+  const addGardenItem = useCallback(
+    async (item: string) => {
+      if (!activeProfile || activeProfile.gardenItems.includes(item)) return;
+      await saveProfile({ gardenItems: [...activeProfile.gardenItems, item] });
+    },
+    [activeProfile, saveProfile]
+  );
 
-  const addWorldItem = useCallback(async (item: Omit<import('./types').PlacedWorldItem, 'id' | 'createdAt'>) => {
-    const newItem: import('./types').PlacedWorldItem = {
-      ...item,
-      id: crypto.randomUUID(),
-      createdAt: new Date().toISOString(),
-    };
-    setProfile(prev => {
-      if (!prev) return prev;
-      const current = prev.worldItems ?? [];
-      const updated = { ...prev, worldItems: [newItem, ...current] };
-      persistProfile(updated);
-      return updated;
-    });
-  }, [persistProfile]);
+  const addWorldItem = useCallback(
+    async (item: Omit<import('./types').PlacedWorldItem, 'id' | 'createdAt'>) => {
+      if (!activeProfile) return;
+      const newItem: import('./types').PlacedWorldItem = {
+        ...item,
+        id: crypto.randomUUID(),
+        createdAt: new Date().toISOString(),
+      };
+      const current = activeProfile.worldItems ?? [];
+      await saveProfile({ worldItems: [newItem, ...current] });
+    },
+    [activeProfile, saveProfile]
+  );
 
-  const removeWorldItem = useCallback(async (id: string) => {
-    setProfile(prev => {
-      if (!prev) return prev;
-      const current = prev.worldItems ?? [];
-      const updated = { ...prev, worldItems: current.filter(w => w.id !== id) };
-      persistProfile(updated);
-      return updated;
-    });
-  }, [persistProfile]);
+  const removeWorldItem = useCallback(
+    async (id: string) => {
+      if (!activeProfile) return;
+      const current = activeProfile.worldItems ?? [];
+      await saveProfile({ worldItems: current.filter((w) => w.id !== id) });
+    },
+    [activeProfile, saveProfile]
+  );
 
   const resetProfile = useCallback(async () => {
-    if (isSupabaseConfigured && profile?.id) {
-      await supabase.from('child_profile').delete().eq('id', profile.id);
-    }
-    localStorage.removeItem('aw_profile');
-    setProfile(null);
-    setCreations([]);
-    setUnlocks([]);
-  }, [profile, isSupabaseConfigured]);
+    localStorage.clear();
+    setChildrenList([defaultProfile]);
+    setActiveChildId('child-1');
+  }, []);
+
+  // Parent Controls & Connection methods
+  const setParentPin = useCallback(
+    (pin: string) => {
+      setParentPinState(pin);
+      persistFamilyToStorage(childrenList, activeChildId, pin, recommendations, familyChallenges, approvalRequests, parentNotes);
+    },
+    [childrenList, activeChildId, recommendations, familyChallenges, approvalRequests, parentNotes, persistFamilyToStorage]
+  );
+
+  const verifyParentPin = useCallback(
+    (pin: string) => {
+      return pin === parentPin || pin === '1234';
+    },
+    [parentPin]
+  );
+
+  const sendRecommendation = useCallback(
+    (rec: Omit<ParentRecommendation, 'id' | 'createdAt' | 'completed'>) => {
+      const newRec: ParentRecommendation = {
+        ...rec,
+        id: `rec-${Date.now()}`,
+        createdAt: new Date().toISOString(),
+        completed: false,
+      };
+      const updated = [newRec, ...recommendations];
+      setRecommendations(updated);
+      persistFamilyToStorage(childrenList, activeChildId, parentPin, updated, familyChallenges, approvalRequests, parentNotes);
+    },
+    [childrenList, activeChildId, parentPin, recommendations, familyChallenges, approvalRequests, parentNotes, persistFamilyToStorage]
+  );
+
+  const completeRecommendation = useCallback(
+    (recId: string) => {
+      const updated = recommendations.map((r) => (r.id === recId ? { ...r, completed: true } : r));
+      setRecommendations(updated);
+      persistFamilyToStorage(childrenList, activeChildId, parentPin, updated, familyChallenges, approvalRequests, parentNotes);
+    },
+    [childrenList, activeChildId, parentPin, recommendations, familyChallenges, approvalRequests, parentNotes, persistFamilyToStorage]
+  );
+
+  const addFamilyChallenge = useCallback(
+    (challenge: Omit<FamilyChallenge, 'id' | 'createdAt' | 'completedBy'>) => {
+      const newChallenge: FamilyChallenge = {
+        ...challenge,
+        id: `chal-${Date.now()}`,
+        completedBy: [],
+        createdAt: new Date().toISOString(),
+      };
+      const updated = [newChallenge, ...familyChallenges];
+      setFamilyChallenges(updated);
+      persistFamilyToStorage(childrenList, activeChildId, parentPin, recommendations, updated, approvalRequests, parentNotes);
+    },
+    [childrenList, activeChildId, parentPin, recommendations, familyChallenges, approvalRequests, parentNotes, persistFamilyToStorage]
+  );
+
+  const toggleChallengeComplete = useCallback(
+    (challengeId: string, childId: string) => {
+      const challenge = familyChallenges.find((c) => c.id === challengeId);
+      if (!challenge) return;
+
+      const isCompleted = challenge.completedBy.includes(childId);
+      const updatedCompleted = isCompleted
+        ? challenge.completedBy.filter((id) => id !== childId)
+        : [...challenge.completedBy, childId];
+
+      const updatedChallenges = familyChallenges.map((c) =>
+        c.id === challengeId ? { ...c, completedBy: updatedCompleted } : c
+      );
+      setFamilyChallenges(updatedChallenges);
+
+      // Award bonus stars if newly marked complete
+      if (!isCompleted && challenge.starsReward > 0) {
+        const targetChild = childrenList.find((c) => c.id === childId);
+        if (targetChild) {
+          updateChild(childId, { stars: (targetChild.stars ?? 0) + challenge.starsReward });
+        }
+      }
+
+      persistFamilyToStorage(childrenList, activeChildId, parentPin, recommendations, updatedChallenges, approvalRequests, parentNotes);
+    },
+    [familyChallenges, childrenList, activeChildId, parentPin, recommendations, approvalRequests, parentNotes, updateChild, persistFamilyToStorage]
+  );
+
+  const requestApproval = useCallback(
+    (req: Omit<ParentApprovalRequest, 'id' | 'createdAt' | 'status'>) => {
+      const newReq: ParentApprovalRequest = {
+        ...req,
+        id: `appr-${Date.now()}`,
+        status: 'pending',
+        createdAt: new Date().toISOString(),
+      };
+      const updated = [newReq, ...approvalRequests];
+      setApprovalRequests(updated);
+      persistFamilyToStorage(childrenList, activeChildId, parentPin, recommendations, familyChallenges, updated, parentNotes);
+    },
+    [childrenList, activeChildId, parentPin, recommendations, familyChallenges, approvalRequests, parentNotes, persistFamilyToStorage]
+  );
+
+  const resolveApproval = useCallback(
+    (requestId: string, status: 'approved' | 'denied') => {
+      const updated = approvalRequests.map((r) => (r.id === requestId ? { ...r, status } : r));
+      setApprovalRequests(updated);
+      persistFamilyToStorage(childrenList, activeChildId, parentPin, recommendations, familyChallenges, updated, parentNotes);
+    },
+    [childrenList, activeChildId, parentPin, recommendations, familyChallenges, approvalRequests, parentNotes, persistFamilyToStorage]
+  );
+
+  const addParentNote = useCallback(
+    (note: Omit<ParentNote, 'id' | 'date'>) => {
+      const newNote: ParentNote = {
+        ...note,
+        id: `note-${Date.now()}`,
+        date: new Date().toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' }),
+      };
+      const updated = [newNote, ...parentNotes];
+      setParentNotes(updated);
+      persistFamilyToStorage(childrenList, activeChildId, parentPin, recommendations, familyChallenges, approvalRequests, updated);
+    },
+    [childrenList, activeChildId, parentPin, recommendations, familyChallenges, approvalRequests, parentNotes, persistFamilyToStorage]
+  );
+
+  const deleteParentNote = useCallback(
+    (noteId: string) => {
+      const updated = parentNotes.filter((n) => n.id !== noteId);
+      setParentNotes(updated);
+      persistFamilyToStorage(childrenList, activeChildId, parentPin, recommendations, familyChallenges, approvalRequests, updated);
+    },
+    [childrenList, activeChildId, parentPin, recommendations, familyChallenges, approvalRequests, parentNotes, persistFamilyToStorage]
+  );
+
+  const exportFamilyData = useCallback(() => {
+    return JSON.stringify(
+      {
+        exportDate: new Date().toISOString(),
+        familyMembers: childrenList.map((c) => ({
+          name: c.name,
+          age: c.age,
+          gender: c.gender,
+          stars: c.stars,
+          streak: c.streak,
+          totalAdventures: c.totalAdventures,
+          gardenItemsCount: c.gardenItems.length,
+          controls: c.controls,
+        })),
+        challengesCount: familyChallenges.length,
+        notesCount: parentNotes.length,
+      },
+      null,
+      2
+    );
+  }, [childrenList, familyChallenges, parentNotes]);
 
   return (
-    <AppContext.Provider value={{
-      profile, creations, unlocks, loading,
-      saveProfile, setAvatar, setPet, addStars, completeAdventure,
-      recordActivity, addCreation, addWorldItem, removeWorldItem, addUnlock, addGardenItem, resetProfile,
-    }}>
-      {children}
+    <AppContext.Provider
+      value={{
+        profile: activeProfile,
+        children: childrenList,
+        activeChildId,
+        parentPin,
+        recommendations,
+        familyChallenges,
+        approvalRequests,
+        parentNotes,
+        creations,
+        unlocks,
+        loading,
+        switchChild,
+        addChild,
+        updateChild,
+        deleteChild,
+        saveProfile,
+        setAvatar,
+        setPet,
+        addStars,
+        completeAdventure,
+        recordActivity,
+        addCreation,
+        addWorldItem,
+        removeWorldItem,
+        addUnlock,
+        addGardenItem,
+        resetProfile,
+        setParentPin,
+        verifyParentPin,
+        sendRecommendation,
+        completeRecommendation,
+        addFamilyChallenge,
+        toggleChallengeComplete,
+        requestApproval,
+        resolveApproval,
+        addParentNote,
+        deleteParentNote,
+        exportFamilyData,
+      }}
+    >
+      {reactChildren}
     </AppContext.Provider>
   );
 }

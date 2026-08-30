@@ -14,12 +14,18 @@ interface HomeProps {
 }
 
 export function Home({ onNavigate }: HomeProps) {
-  const { profile } = useApp();
+  const { profile, recommendations, completeRecommendation, familyChallenges } = useApp();
   const [selectedCharacter, setSelectedCharacter] = useState(kidoraCharacters[0]);
 
   if (!profile) return null;
 
   const currentStars = profile.stars ?? 0;
+
+  // Active parent recommendation for this child
+  const activeRec = recommendations.find((r) => r.childId === profile.id && !r.completed);
+
+  // Active family challenges
+  const activeChallenges = familyChallenges.slice(0, 2);
 
   const realms = [
     {
@@ -193,6 +199,36 @@ export function Home({ onNavigate }: HomeProps) {
             </div>
           </div>
         </section>
+
+        {/* PARENT RECOMMENDATION BANNER (If parent sent a quest) */}
+        {activeRec && (
+          <section className="max-w-5xl mx-auto px-4 sm:px-6 pt-6">
+            <div className="bg-gradient-to-r from-rose-500 via-pink-500 to-amber-500 rounded-3xl p-5 text-white shadow-pop flex flex-col sm:flex-row items-center justify-between gap-4 animate-pop-in">
+              <div className="flex items-center gap-3.5">
+                <div className="w-12 h-12 rounded-2xl bg-white/20 backdrop-blur-md flex items-center justify-center text-3xl shrink-0">
+                  {activeRec.emoji}
+                </div>
+                <div>
+                  <span className="text-[10px] font-black uppercase tracking-widest bg-white/20 px-2 py-0.5 rounded-full">
+                    Recommended by Your Parent ❤️
+                  </span>
+                  <h3 className="text-lg font-black font-display mt-0.5">{activeRec.title}</h3>
+                  <p className="text-xs text-rose-100 italic">"{activeRec.message}"</p>
+                </div>
+              </div>
+              <button
+                type="button"
+                onClick={() => {
+                  completeRecommendation(activeRec.id);
+                  onNavigate('play');
+                }}
+                className="btn-press bg-white text-rose-600 font-black font-display text-xs px-5 py-3 rounded-2xl shadow-soft whitespace-nowrap cursor-pointer hover:bg-rose-50"
+              >
+                Play Activity Now 🚀
+              </button>
+            </div>
+          </section>
+        )}
 
         {/* 3. INTERACTIVE LIVING WORLD LANDSCAPE */}
         <section className="max-w-5xl mx-auto px-4 sm:px-6 py-10">

@@ -67,9 +67,59 @@ export interface PetConfig {
   accessory?: string;
 }
 
+export interface ChildProfileControls {
+  allowedRealms: string[]; // ['words', 'math', 'creative', 'puzzle', 'science']
+  dailyLimitMinutes: number; // e.g. 30, 45, 60, 0 (unlimited)
+  bedtimeQuietHoursEnabled: boolean;
+  bedtimeStart: string; // e.g. "20:00"
+  bedtimeEnd: string; // e.g. "07:00"
+  priorityLearningAreas: string[];
+}
+
+export interface ParentRecommendation {
+  id: string;
+  childId: string;
+  activityType: ActivityType;
+  title: string;
+  emoji: string;
+  message: string;
+  createdAt: string;
+  completed: boolean;
+}
+
+export interface FamilyChallenge {
+  id: string;
+  title: string;
+  description: string;
+  emoji: string;
+  starsReward: number;
+  assignedChildIds: string[];
+  completedBy: string[]; // childIds who completed
+  createdAt: string;
+}
+
+export interface ParentApprovalRequest {
+  id: string;
+  childId: string;
+  childName: string;
+  actionType: 'unlock_realm' | 'change_avatar' | 'external_share' | 'custom';
+  details: string;
+  status: 'pending' | 'approved' | 'denied';
+  createdAt: string;
+}
+
+export interface ParentNote {
+  id: string;
+  title: string;
+  content: string;
+  date: string;
+  category: 'milestone' | 'growth' | 'memory' | 'health';
+}
+
 export interface ChildProfile {
   id: string;
   name: string;
+  gender?: 'son' | 'daughter' | 'child';
   age: number;
   avatar: AvatarConfig;
   pet: PetConfig;
@@ -84,6 +134,8 @@ export interface ChildProfile {
   dailyLimitMin: number;
   notificationsEnabled?: boolean;
   reminderTime?: string;
+  controls?: ChildProfileControls;
+  activitiesCompletedCount?: number;
 }
 
 export interface Mission {
