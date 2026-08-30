@@ -241,17 +241,32 @@ export async function shareAchievementAsImage(data: CardData): Promise<{ shared:
     const fileName = `Kidora-Certificate-${(data.childName || 'Scholar').replace(/\s+/g, '-')}.png`;
     const file = new File([blob], fileName, { type: 'image/png' });
 
-    // Check if Web Share API with files is supported
+    // 1. If Web Share API with files is supported (e.g. mobile Chrome/Safari, Android Capacitor WebView)
     if (navigator.canShare && navigator.canShare({ files: [file] })) {
-      await navigator.share({
-        title: `Certificate of Excellence: ${data.childName}`,
-        text: `🎓 Proud moment! Here is ${data.childName}'s official Certificate of Excellence from Kidora Adventure Academy! 🌟`,
-        files: [file],
-      });
-      return { shared: true, downloaded: false };
+      try {
+        await navigator.share({
+          title: `Certificate of Excellence: ${data.childName}`,
+          text: `🎓 Proud moment! Here is ${data.childName}'s official Certificate of Excellence from Kidora Adventure Academy! 🌟`,
+          files: [file],
+        });
+        return { shared: true, downloaded: false };
+      } catch (shareErr) {
+        console.warn('Native share cancelled or failed, falling back to download:', shareErr);
+      }
     }
 
-    // Fallback: Download the clean PNG certificate image and open WhatsApp
+    // 2. Try copying image directly to clipboard for 1-click Ctrl+V paste into WhatsApp
+    try {
+      if (navigator.clipboard && window.ClipboardItem) {
+        await navigator.clipboard.write([
+          new ClipboardItem({ 'image/png': blob }),
+        ]);
+      }
+    } catch (clipErr) {
+      console.warn('Clipboard image write not supported in this browser:', clipErr);
+    }
+
+    // 3. Download the high-resolution certificate PNG directly to device
     const url = URL.createObjectURL(blob);
     const a = document.createElement('a');
     a.href = url;
@@ -261,8 +276,8 @@ export async function shareAchievementAsImage(data: CardData): Promise<{ shared:
     document.body.removeChild(a);
     URL.revokeObjectURL(url);
 
-    // Open WhatsApp
-    const waText = `🎓 *Proud moment!* Here is *${data.childName}*'s official Certificate of Excellence from *Kidora Adventure Academy*! 🌟`;
+    // 4. Open WhatsApp with formatted text
+    const waText = `🎓 *Proud moment!* Here is *${data.childName}*'s official Certificate of Excellence from *Kidora Adventure Academy*! 🌟 (Certificate image downloaded & ready to attach!)`;
     const waUrl = `https://api.whatsapp.com/send?text=${encodeURIComponent(waText)}`;
     window.open(waUrl, '_blank');
 

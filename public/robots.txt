@@ -1,0 +1,5 @@
+# Robots.txt for Kidora Adventure World
+User-agent: *
+Allow: /
+
+Sitemap: https://kidora-adventure-world.vercel.app/sitemap.xml

@@ -1,6 +1,8 @@
 export type Screen =
   | 'onboarding'
   | 'home'
+  | 'play'
+  | 'learn'
   | 'adventure'
   | 'activity'
   | 'world'
@@ -9,6 +11,13 @@ export type Screen =
   | 'pets'
   | 'create'
   | 'parent'
+  | 'parents'
+  | 'about'
+  | 'privacy'
+  | 'safety'
+  | 'terms'
+  | 'contact'
+  | 'parent-guide'
   | 'settings';
 
 export type ActivityType =

@@ -55,37 +55,95 @@ export function AppProvider({ children }: { children: ReactNode }) {
   const [loading, setLoading] = useState(true);
 
   const loadAll = useCallback(async () => {
-    if (!isSupabaseConfigured) {
-      const local = localStorage.getItem('aw_profile');
-      if (local) {
-        setProfile(JSON.parse(local));
+    // 1. Immediately load cached profile from localStorage (Instant zero-delay load)
+    let localProfile: ChildProfile | null = null;
+    const local = localStorage.getItem('aw_profile');
+    if (local) {
+      try {
+        const parsed = JSON.parse(local);
+        if (parsed && parsed.name) {
+          localProfile = parsed;
+          setProfile(parsed);
+        }
+      } catch (e) {
+        console.error('Error parsing local profile', e);
       }
+    }
+
+    const localCreations = localStorage.getItem('aw_creations');
+    if (localCreations) {
+      try { setCreations(JSON.parse(localCreations)); } catch (e) {}
+    }
+
+    const localUnlocks = localStorage.getItem('aw_unlocks');
+    if (localUnlocks) {
+      try { setUnlocks(JSON.parse(localUnlocks)); } catch (e) {}
+    }
+
+    if (!isSupabaseConfigured) {
       setLoading(false);
       return;
     }
 
-    const { data: p } = await supabase.from('child_profile').select('*').order('created_at').limit(1).maybeSingle();
-    if (p) {
-      setProfile({
-        id: p.id, name: p.name, age: p.age,
-        avatar: p.avatar ?? defaultAvatar,
-        pet: p.pet ?? { type: 'puppy', name: 'Buddy', color: '#D4A574' },
-        stars: p.stars ?? 0, streak: p.streak ?? 0,
-        lastAdventureDate: p.last_adventure_date ?? null,
-        totalAdventures: p.total_adventures ?? 0,
-        gardenItems: p.garden_items ?? [],
-        voiceEnabled: p.voice_enabled ?? true,
-        reducedMotion: p.reduced_motion ?? false,
-        dailyLimitMin: p.daily_limit_min ?? 30,
-        notificationsEnabled: p.notifications_enabled ?? true,
-        reminderTime: p.reminder_time ?? '08:00',
-      });
+    // 2. Fetch from Supabase in background
+    try {
+      const { data: p, error } = await supabase.from('child_profile').select('*').order('created_at').limit(1).maybeSingle();
+      if (p && !error) {
+        const remoteProfile: ChildProfile = {
+          id: p.id,
+          name: p.name || localProfile?.name || 'Explorer',
+          age: p.age || localProfile?.age || 6,
+          avatar: p.avatar ?? localProfile?.avatar ?? defaultAvatar,
+          pet: p.pet ?? localProfile?.pet ?? { type: 'puppy', name: 'Buddy', color: '#D4A574' },
+          stars: p.stars ?? localProfile?.stars ?? 0,
+          streak: p.streak ?? localProfile?.streak ?? 0,
+          lastAdventureDate: p.last_adventure_date ?? localProfile?.lastAdventureDate ?? null,
+          totalAdventures: p.total_adventures ?? localProfile?.totalAdventures ?? 0,
+          gardenItems: p.garden_items ?? localProfile?.gardenItems ?? [],
+          worldItems: p.world_items ?? localProfile?.worldItems ?? [],
+          voiceEnabled: p.voice_enabled ?? localProfile?.voiceEnabled ?? true,
+          reducedMotion: p.reduced_motion ?? localProfile?.reducedMotion ?? false,
+          dailyLimitMin: p.daily_limit_min ?? localProfile?.dailyLimitMin ?? 30,
+          notificationsEnabled: p.notifications_enabled ?? localProfile?.notificationsEnabled ?? true,
+          reminderTime: p.reminder_time ?? localProfile?.reminderTime ?? '08:00',
+        };
+        setProfile(remoteProfile);
+        localStorage.setItem('aw_profile', JSON.stringify(remoteProfile));
+      } else if (localProfile) {
+        // If Supabase returned null or empty, sync localProfile up to Supabase!
+        persistProfile(localProfile);
+      }
+    } catch (err) {
+      console.warn('Supabase fetch error, fallback to local storage:', err);
     }
-    const { data: cr } = await supabase.from('creations').select('*').order('created_at', { ascending: false }).limit(50);
-    if (cr) setCreations(cr.map((c: { id: string; type: string; title: string; payload: unknown; created_at: string }) => ({ id: c.id, type: c.type, title: c.title, payload: c.payload, createdAt: c.created_at })));
 
-    const { data: u } = await supabase.from('unlocks').select('*').order('unlocked_at', { ascending: false });
-    if (u) setUnlocks(u.map((x: { category: string; key: string; unlocked_at: string }) => ({ category: x.category, key: x.key, unlockedAt: x.unlocked_at })));
+    try {
+      const { data: cr } = await supabase.from('creations').select('*').order('created_at', { ascending: false }).limit(50);
+      if (cr && cr.length > 0) {
+        const mapped = cr.map((c: { id: string; type: string; title: string; payload: unknown; created_at: string }) => ({
+          id: c.id,
+          type: c.type,
+          title: c.title,
+          payload: c.payload,
+          createdAt: c.created_at,
+        }));
+        setCreations(mapped);
+        localStorage.setItem('aw_creations', JSON.stringify(mapped));
+      }
+    } catch (err) {}
+
+    try {
+      const { data: u } = await supabase.from('unlocks').select('*').order('unlocked_at', { ascending: false });
+      if (u && u.length > 0) {
+        const mapped = u.map((x: { category: string; key: string; unlocked_at: string }) => ({
+          category: x.category,
+          key: x.key,
+          unlockedAt: x.unlocked_at,
+        }));
+        setUnlocks(mapped);
+        localStorage.setItem('aw_unlocks', JSON.stringify(mapped));
+      }
+    } catch (err) {}
 
     setLoading(false);
   }, []);
@@ -93,38 +151,50 @@ export function AppProvider({ children }: { children: ReactNode }) {
   useEffect(() => { loadAll(); }, [loadAll]);
 
   const persistProfile = useCallback(async (p: ChildProfile) => {
-    if (!isSupabaseConfigured) {
+    // ALWAYS save to localStorage immediately so user never loses name/state
+    try {
       localStorage.setItem('aw_profile', JSON.stringify(p));
-      return;
+    } catch (e) {
+      console.error('Failed to save profile to localStorage', e);
     }
-    if (p.id) {
-      await supabase.from('child_profile').update({
-        name: p.name, age: p.age, avatar: p.avatar, pet: p.pet,
-        stars: p.stars, streak: p.streak,
-        last_adventure_date: p.lastAdventureDate,
-        total_adventures: p.totalAdventures,
-        garden_items: p.gardenItems,
-        voice_enabled: p.voiceEnabled,
-        reduced_motion: p.reducedMotion,
-        daily_limit_min: p.dailyLimitMin,
-        notifications_enabled: p.notificationsEnabled ?? true,
-        reminder_time: p.reminderTime ?? '08:00',
-        updated_at: new Date().toISOString(),
-      }).eq('id', p.id);
-    } else {
-      const { data } = await supabase.from('child_profile').insert({
-        name: p.name, age: p.age, avatar: p.avatar, pet: p.pet,
-        stars: p.stars, streak: p.streak,
-        last_adventure_date: p.lastAdventureDate,
-        total_adventures: p.totalAdventures,
-        garden_items: p.gardenItems,
-        voice_enabled: p.voiceEnabled,
-        reduced_motion: p.reducedMotion,
-        daily_limit_min: p.dailyLimitMin,
-        notifications_enabled: p.notificationsEnabled ?? true,
-        reminder_time: p.reminderTime ?? '08:00',
-      }).select('id').single();
-      if (data) p.id = data.id;
+
+    if (!isSupabaseConfigured) return;
+
+    try {
+      if (p.id) {
+        await supabase.from('child_profile').update({
+          name: p.name, age: p.age, avatar: p.avatar, pet: p.pet,
+          stars: p.stars, streak: p.streak,
+          last_adventure_date: p.lastAdventureDate,
+          total_adventures: p.totalAdventures,
+          garden_items: p.gardenItems,
+          voice_enabled: p.voiceEnabled,
+          reduced_motion: p.reducedMotion,
+          daily_limit_min: p.dailyLimitMin,
+          notifications_enabled: p.notificationsEnabled ?? true,
+          reminder_time: p.reminderTime ?? '08:00',
+          updated_at: new Date().toISOString(),
+        }).eq('id', p.id);
+      } else {
+        const { data, error } = await supabase.from('child_profile').insert({
+          name: p.name, age: p.age, avatar: p.avatar, pet: p.pet,
+          stars: p.stars, streak: p.streak,
+          last_adventure_date: p.lastAdventureDate,
+          total_adventures: p.totalAdventures,
+          garden_items: p.gardenItems,
+          voice_enabled: p.voiceEnabled,
+          reduced_motion: p.reducedMotion,
+          daily_limit_min: p.dailyLimitMin,
+          notifications_enabled: p.notificationsEnabled ?? true,
+          reminder_time: p.reminderTime ?? '08:00',
+        }).select('id').maybeSingle();
+        if (data?.id) {
+          p.id = data.id;
+          localStorage.setItem('aw_profile', JSON.stringify(p));
+        }
+      }
+    } catch (err) {
+      console.warn('Supabase profile persist error, stored locally:', err);
     }
   }, []);
 

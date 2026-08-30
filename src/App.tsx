@@ -9,6 +9,9 @@ import { Pets } from '@/screens/Pets';
 import { Create } from '@/screens/Create';
 import { ParentDashboard } from '@/screens/ParentDashboard';
 import { MyKidora } from '@/screens/MyKidora';
+import { PlayHub } from '@/screens/PlayHub';
+import { LearnHub } from '@/screens/LearnHub';
+import { ParentsSection } from '@/screens/ParentsSection';
 import type { Screen } from '@/lib/types';
 
 function AppContent() {
@@ -39,6 +42,8 @@ function AppContent() {
 
   switch (screen) {
     case 'home': return <Home onNavigate={navigate} />;
+    case 'play': return <PlayHub onNavigate={navigate} />;
+    case 'learn': return <LearnHub onNavigate={navigate} />;
     case 'adventure': return <Adventure onNavigate={navigate} />;
     case 'world': return <WorldMap onNavigate={navigate} />;
     case 'collections': return <MyKidora onNavigate={navigate} />;
@@ -46,6 +51,13 @@ function AppContent() {
     case 'pets': return <Pets onNavigate={navigate} />;
     case 'create': return <Create onNavigate={navigate} />;
     case 'parent': return <ParentDashboard onNavigate={navigate} />;
+    case 'parents': return <ParentsSection initialTab="guide" onNavigate={navigate} />;
+    case 'parent-guide': return <ParentsSection initialTab="guide" onNavigate={navigate} />;
+    case 'about': return <ParentsSection initialTab="about" onNavigate={navigate} />;
+    case 'safety': return <ParentsSection initialTab="safety" onNavigate={navigate} />;
+    case 'privacy': return <ParentsSection initialTab="privacy" onNavigate={navigate} />;
+    case 'terms': return <ParentsSection initialTab="terms" onNavigate={navigate} />;
+    case 'contact': return <ParentsSection initialTab="contact" onNavigate={navigate} />;
     default: return <Home onNavigate={navigate} />;
   }
 }

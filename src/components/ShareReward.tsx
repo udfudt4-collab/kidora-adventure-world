@@ -17,27 +17,35 @@ export function ShareReward({ reward, childName, onClose }: ShareRewardProps) {
   const [copied, setCopied] = useState(false);
   const [copiedLink, setCopiedLink] = useState(false);
 
-  const handleDownload = () => {
-    // Create a downloadable image from the card
-    const card = cardRef.current;
-    if (!card) return;
+  const [shareFeedback, setShareFeedback] = useState<string | null>(null);
 
-    // Use SVG foreignObject to capture the card as an image
-    const svgString = `<svg xmlns="http://www.w3.org/2000/svg" width="400" height="520">
-      <foreignObject width="100%" height="100%">
-        <div xmlns="http://www.w3.org/1999/xhtml" style="width:400px;height:520px;">
-          ${card.outerHTML}
-        </div>
-      </foreignObject>
-    </svg>`;
+  const handleDownload = async () => {
+    try {
+      const { generateAchievementImageBlob } = await import('@/lib/imageCardGenerator');
+      const blob = await generateAchievementImageBlob({
+        childName,
+        emoji: reward.certificateEmoji || '🏆',
+        headline: `BADGE UNLOCKED! 🏆`,
+        subtext: `${childName} ${reward.certificateMessage}`,
+        stars: 3,
+        badgeName: reward.badgeName,
+        theme: reward.theme,
+      });
 
-    const blob = new Blob([svgString], { type: 'image/svg+xml' });
-    const url = URL.createObjectURL(blob);
-    const link = document.createElement('a');
-    link.href = url;
-    link.download = `kidora-${tab}-${childName}.svg`;
-    link.click();
-    URL.revokeObjectURL(url);
+      const url = URL.createObjectURL(blob);
+      const link = document.createElement('a');
+      link.href = url;
+      link.download = `Kidora-Certificate-${childName.replace(/\s+/g, '-')}.png`;
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+      URL.revokeObjectURL(url);
+
+      setShareFeedback('✅ Certificate PNG saved to your downloads!');
+      setTimeout(() => setShareFeedback(null), 3000);
+    } catch (e) {
+      console.error('Download error', e);
+    }
   };
 
   const getShareTextForTab = () => {
@@ -54,15 +62,20 @@ export function ShareReward({ reward, childName, onClose }: ShareRewardProps) {
   };
 
   const handleShareWhatsApp = async () => {
-    await shareAchievementAsImage({
+    const res = await shareAchievementAsImage({
       childName,
       emoji: reward.certificateEmoji || '🏆',
       headline: `BADGE UNLOCKED! 🏆`,
       subtext: `${childName} ${reward.certificateMessage}`,
-      stars: 18,
+      stars: 3,
       badgeName: reward.badgeName,
       theme: reward.theme,
     });
+
+    if (res.downloaded) {
+      setShareFeedback('✅ Certificate PNG downloaded & copied to clipboard! Paste directly in WhatsApp!');
+      setTimeout(() => setShareFeedback(null), 4000);
+    }
   };
 
   const handleShareText = () => {
@@ -214,10 +227,17 @@ export function ShareReward({ reward, childName, onClose }: ShareRewardProps) {
             <span className="text-lg">💬</span> Share on WhatsApp / Status
           </button>
 
+          {/* Feedback Alert Banner */}
+          {shareFeedback && (
+            <div className="mt-2.5 p-2.5 bg-emerald-50 border border-emerald-300 rounded-xl text-emerald-800 text-xs font-bold text-center animate-pop-in">
+              {shareFeedback}
+            </div>
+          )}
+
           {/* Action buttons */}
           <div className="flex gap-2 mt-2">
             <Button variant="ghost" size="md" onClick={handleDownload} className="flex-1">
-              📥 Save Card
+              📥 Download PNG
             </Button>
             <Button variant="primary" size="md" onClick={handleShareText} className="flex-1">
               {copied ? '✅ Copied!' : '📤 More Apps'}
