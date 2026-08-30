@@ -3,10 +3,10 @@ import { useApp } from '@/lib/store';
 import { defaultAvatar, skinTones, hairColors } from '@/lib/avatar';
 import {
   getWeekData,
-  pregnancyWeeks,
   pregnancyFoodGuide,
   prenatalExercises,
-  doctorQuestions,
+  medicalDisclaimer,
+  weightTrackingGuidance,
 } from '@/lib/pregnancy';
 import { babyNamesDatabase, babyMilestoneStages } from '@/lib/baby';
 import {
@@ -28,6 +28,9 @@ import {
   CheckCircle,
   XCircle,
   HelpCircle,
+  Camera,
+  Star,
+  BookOpen,
 } from 'lucide-react';
 import type { Screen, ChildProfileControls, ActivityType, AvatarConfig } from '@/lib/types';
 
@@ -35,7 +38,7 @@ interface ParentDashboardProps {
   onNavigate: (screen: Screen) => void;
 }
 
-type MainHub = 'today' | 'pregnancy' | 'baby' | 'children' | 'family' | 'privacy';
+type MainHub = 'overview' | 'pregnancy' | 'baby' | 'children' | 'calendar' | 'privacy';
 
 export function ParentDashboard({ onNavigate }: ParentDashboardProps) {
   const {
@@ -73,60 +76,78 @@ export function ParentDashboard({ onNavigate }: ParentDashboardProps) {
     exportFamilyData,
   } = useApp();
 
-  const [activeHub, setActiveHub] = useState<MainHub>('today');
+  const [activeHub, setActiveHub] = useState<MainHub>('overview');
   const [selectedChildId, setSelectedChildId] = useState<string>(activeChildId);
 
-  // Sub-tab states
-  const [pregnancySubTab, setPregnancySubTab] = useState<'week' | 'weight' | 'food' | 'exercise' | 'doctor'>('week');
-  const [babySubTab, setBabySubTab] = useState<'names' | 'milestones' | 'moments'>('names');
+  // Sub-tabs
+  const [pregnancySubTab, setPregnancySubTab] = useState<'journey' | 'weight' | 'foods' | 'exercises'>('journey');
+  const [babySubTab, setBabySubTab] = useState<'development' | 'moments' | 'names' | 'compare'>('development');
 
-  // Baby Names filter
+  // Baby Names state
   const [nameSearch, setNameSearch] = useState('');
   const [nameGenderFilter, setNameGenderFilter] = useState<'all' | 'boy' | 'girl' | 'unisex' | 'fav'>('all');
+  const [nameLetterFilter, setNameLetterFilter] = useState<string>('ALL');
 
-  // Add child modal state
+  // Modals
   const [showAddChildModal, setShowAddChildModal] = useState(false);
   const [newChildName, setNewChildName] = useState('');
   const [newChildAge, setNewChildAge] = useState(6);
   const [newChildGender, setNewChildGender] = useState<'son' | 'daughter' | 'child'>('son');
 
-  // Weight log modal state
   const [showWeightModal, setShowWeightModal] = useState(false);
   const [weightInput, setWeightInput] = useState('62.0');
   const [weightWeekInput, setWeightWeekInput] = useState(pregnancyCurrentWeek);
 
-  // Recommendation modal state
   const [showRecModal, setShowRecModal] = useState(false);
   const [recActivity, setRecActivity] = useState<ActivityType>('math');
   const [recTitle, setRecTitle] = useState('Math Mountain Challenge');
   const [recMessage, setRecMessage] = useState('Let us count crystals together today!');
 
-  // Challenge modal state
   const [showChallengeModal, setShowChallengeModal] = useState(false);
   const [chalTitle, setChalTitle] = useState('');
   const [chalDesc, setChalDesc] = useState('');
   const [chalStars, setChalStars] = useState(15);
 
-  // Family event state
   const [showEventModal, setShowEventModal] = useState(false);
   const [eventTitle, setEventTitle] = useState('');
   const [eventDate, setEventDate] = useState('Saturday');
   const [eventTime, setEventTime] = useState('10:00 AM');
   const [eventCategory, setEventCategory] = useState<'activity' | 'appointment' | 'celebration' | 'reminder'>('activity');
 
-  // Notes state
-  const [newNoteTitle, setNewNoteTitle] = useState('');
-  const [newNoteContent, setNewNoteContent] = useState('');
-  const [newNoteCategory, setNewNoteCategory] = useState<'milestone' | 'growth' | 'memory' | 'health'>('milestone');
+  const [showMomentModal, setShowMomentModal] = useState(false);
+  const [momentTitle, setMomentTitle] = useState('');
+  const [momentDate, setMomentDate] = useState(new Date().toISOString().split('T')[0]);
+  const [momentNote, setMomentNote] = useState('');
 
-  // PIN state
   const [newPin, setNewPin] = useState('');
   const [pinSaved, setPinSaved] = useState(false);
 
-  // Active child & week data
   const selectedChild = familyChildren.find((c) => c.id === selectedChildId) ?? familyChildren[0];
   const activeChild = familyChildren.find((c) => c.id === activeChildId) ?? familyChildren[0];
   const currentWeekInfo = getWeekData(pregnancyCurrentWeek);
+
+  // Name of the Day
+  const nameOfTheDay = babyNamesDatabase[2]; // e.g. Leo
+
+  // Filtered baby names
+  const alphabet = ['ALL', 'A', 'B', 'C', 'D', 'E', 'I', 'K', 'L', 'M', 'N', 'O', 'R', 'S', 'T', 'V', 'Z'];
+  const filteredBabyNames = babyNamesDatabase.filter((n) => {
+    const matchesSearch =
+      n.name.toLowerCase().includes(nameSearch.toLowerCase()) ||
+      n.meaning.toLowerCase().includes(nameSearch.toLowerCase()) ||
+      n.origin.toLowerCase().includes(nameSearch.toLowerCase());
+    if (!matchesSearch) return false;
+
+    if (nameLetterFilter !== 'ALL' && !n.name.toUpperCase().startsWith(nameLetterFilter)) {
+      return false;
+    }
+
+    if (nameGenderFilter === 'fav') return favoriteBabyNames.includes(n.id);
+    if (nameGenderFilter === 'all') return true;
+    return n.gender === nameGenderFilter;
+  });
+
+  const favoriteNamesList = babyNamesDatabase.filter((n) => favoriteBabyNames.includes(n.id));
 
   // Handlers
   const handleAddChildSubmit = async (e: React.FormEvent) => {
@@ -239,20 +260,6 @@ export function ParentDashboard({ onNavigate }: ParentDashboardProps) {
     setShowEventModal(false);
   };
 
-  const handleAddNoteSubmit = (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!newNoteTitle.trim()) return;
-
-    addParentNote({
-      title: newNoteTitle.trim(),
-      content: newNoteContent.trim(),
-      category: newNoteCategory,
-    });
-
-    setNewNoteTitle('');
-    setNewNoteContent('');
-  };
-
   const handleSavePin = (e: React.FormEvent) => {
     e.preventDefault();
     if (newPin.length === 4 && /^\d+$/.test(newPin)) {
@@ -274,19 +281,6 @@ export function ParentDashboard({ onNavigate }: ParentDashboardProps) {
     URL.revokeObjectURL(url);
   };
 
-  // Filtered baby names
-  const filteredBabyNames = babyNamesDatabase.filter((name) => {
-    const matchesSearch =
-      name.name.toLowerCase().includes(nameSearch.toLowerCase()) ||
-      name.meaning.toLowerCase().includes(nameSearch.toLowerCase()) ||
-      name.origin.toLowerCase().includes(nameSearch.toLowerCase());
-
-    if (!matchesSearch) return false;
-    if (nameGenderFilter === 'fav') return favoriteBabyNames.includes(name.id);
-    if (nameGenderFilter === 'all') return true;
-    return name.gender === nameGenderFilter;
-  });
-
   const pendingApprovalsCount = approvalRequests.filter((r) => r.status === 'pending').length;
 
   return (
@@ -300,7 +294,7 @@ export function ParentDashboard({ onNavigate }: ParentDashboardProps) {
             </div>
             <div>
               <h1 className="font-black font-display text-base tracking-tight text-white flex items-center gap-2">
-                Good morning, Parent 👋
+                Good Morning, Parent 👋
               </h1>
               <p className="text-[10px] text-emerald-400 font-bold">
                 Kidora Family & Parenting Hub • Protected Zone
@@ -308,21 +302,19 @@ export function ParentDashboard({ onNavigate }: ParentDashboardProps) {
             </div>
           </div>
 
-          <div className="flex items-center gap-2">
-            <button
-              type="button"
-              onClick={() => onNavigate('home')}
-              className="btn-press bg-white/10 hover:bg-white/20 text-white font-bold text-xs px-3.5 py-2 rounded-xl transition-colors cursor-pointer"
-            >
-              ← Back to World 🏠
-            </button>
-          </div>
+          <button
+            type="button"
+            onClick={() => onNavigate('home')}
+            className="btn-press bg-white/10 hover:bg-white/20 text-white font-bold text-xs px-3.5 py-2 rounded-xl transition-colors cursor-pointer"
+          >
+            ← Back to Kidora World 🏠
+          </button>
         </div>
 
-        {/* Clean Hub Navigation */}
+        {/* Real-App Main Hub Navigation */}
         <div className="max-w-6xl mx-auto px-4 sm:px-6 flex items-center gap-1 overflow-x-auto no-scrollbar border-t border-slate-800 pt-1">
           {[
-            { id: 'today' as MainHub, label: 'Today for Family', emoji: '⭐' },
+            { id: 'overview' as MainHub, label: 'Dashboard', emoji: '🏠' },
             { id: 'pregnancy' as MainHub, label: 'Pregnancy Journey', emoji: '🤰' },
             { id: 'baby' as MainHub, label: 'Baby Hub', emoji: '👶' },
             {
@@ -330,7 +322,7 @@ export function ParentDashboard({ onNavigate }: ParentDashboardProps) {
               label: `My Children ${pendingApprovalsCount > 0 ? `(${pendingApprovalsCount})` : ''}`,
               emoji: '🧒',
             },
-            { id: 'family' as MainHub, label: 'Family & Planner', emoji: '❤️' },
+            { id: 'calendar' as MainHub, label: 'Family Planner', emoji: '📅' },
             { id: 'privacy' as MainHub, label: 'Security & PIN', emoji: '🔒' },
           ].map((hub) => (
             <button
@@ -353,106 +345,24 @@ export function ParentDashboard({ onNavigate }: ParentDashboardProps) {
       {/* Main Content Area */}
       <main className="flex-1 max-w-6xl w-full mx-auto px-4 sm:px-6 py-6">
         {/* ======================================================== */}
-        {/* HUB 0: TODAY FOR MY FAMILY (Daily 3 Dynamic Action Cards) */}
+        {/* HUB 0: REAL-APP MAIN DASHBOARD */}
         {/* ======================================================== */}
-        {activeHub === 'today' && (
+        {activeHub === 'overview' && (
           <div className="space-y-6 animate-pop-in">
-            {/* 1. "TODAY FOR MY FAMILY" 3 DYNAMIC ACTION CARDS */}
-            <div>
-              <div className="flex items-center justify-between mb-3">
-                <h2 className="text-xl font-black font-display text-slate-800 flex items-center gap-2">
-                  <span>⭐</span> Today for My Family
-                </h2>
-                <span className="text-xs font-bold text-slate-400">
-                  {new Date().toLocaleDateString('en-US', { weekday: 'long', month: 'short', day: 'numeric' })}
-                </span>
-              </div>
-
-              <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                {/* Card 1: For Active Child */}
-                <div className="bg-gradient-to-br from-indigo-500 via-purple-600 to-pink-500 rounded-3xl p-5 text-white shadow-soft flex flex-col justify-between space-y-4">
-                  <div className="space-y-1">
-                    <span className="text-[10px] font-black uppercase tracking-wider bg-white/20 px-2 py-0.5 rounded-full">
-                      🧒 For {activeChild?.name || 'Explorer'}
-                    </span>
-                    <h3 className="text-lg font-black font-display mt-1">Try Math Mountain Summit</h3>
-                    <p className="text-xs text-indigo-100 leading-relaxed">
-                      Encourage {activeChild?.name} with 5 arithmetic riddles to earn +15 bonus stars today!
-                    </p>
-                  </div>
-                  <button
-                    type="button"
-                    onClick={() => {
-                      setSelectedChildId(activeChild?.id || '');
-                      setShowRecModal(true);
-                    }}
-                    className="btn-press bg-white text-indigo-700 font-bold text-xs py-2.5 px-4 rounded-xl shadow-xs hover:bg-indigo-50 cursor-pointer text-center"
-                  >
-                    Send to {activeChild?.name} ❤️
-                  </button>
-                </div>
-
-                {/* Card 2: Baby & Development */}
-                <div className="bg-gradient-to-br from-rose-500 to-orange-500 rounded-3xl p-5 text-white shadow-soft flex flex-col justify-between space-y-4">
-                  <div className="space-y-1">
-                    <span className="text-[10px] font-black uppercase tracking-wider bg-white/20 px-2 py-0.5 rounded-full">
-                      🤰 Week {pregnancyCurrentWeek} • {currentWeekInfo.fruitEmoji} Size of a {currentWeekInfo.fruitComparison}
-                    </span>
-                    <h3 className="text-lg font-black font-display mt-1">Fetal Growth Milestone</h3>
-                    <p className="text-xs text-rose-100 leading-relaxed line-clamp-2">
-                      {currentWeekInfo.babyDevelopment}
-                    </p>
-                  </div>
-                  <button
-                    type="button"
-                    onClick={() => {
-                      setActiveHub('pregnancy');
-                      setPregnancySubTab('week');
-                    }}
-                    className="btn-press bg-white text-rose-700 font-bold text-xs py-2.5 px-4 rounded-xl shadow-xs hover:bg-rose-50 cursor-pointer text-center"
-                  >
-                    Open Week Tracker →
-                  </button>
-                </div>
-
-                {/* Card 3: Family Activity */}
-                <div className="bg-gradient-to-br from-emerald-500 to-teal-600 rounded-3xl p-5 text-white shadow-soft flex flex-col justify-between space-y-4">
-                  <div className="space-y-1">
-                    <span className="text-[10px] font-black uppercase tracking-wider bg-white/20 px-2 py-0.5 rounded-full">
-                      👨‍👩‍👧 Family Bonding
-                    </span>
-                    <h3 className="text-lg font-black font-display mt-1">Rainbow Color Safari</h3>
-                    <p className="text-xs text-emerald-100 leading-relaxed">
-                      Find 5 colorful objects around the house together before bedtime!
-                    </p>
-                  </div>
-                  <button
-                    type="button"
-                    onClick={() => {
-                      setActiveHub('family');
-                    }}
-                    className="btn-press bg-white text-emerald-800 font-bold text-xs py-2.5 px-4 rounded-xl shadow-xs hover:bg-emerald-50 cursor-pointer text-center"
-                  >
-                    View Family Missions 🚀
-                  </button>
-                </div>
-              </div>
-            </div>
-
-            {/* 2. MY CHILDREN QUICK SUMMARY */}
+            {/* 1. YOUR FAMILY QUICK BAR */}
             <div className="bg-white rounded-3xl p-6 border border-slate-200 shadow-soft space-y-4">
               <div className="flex items-center justify-between">
                 <div>
-                  <h3 className="text-lg font-black font-display text-slate-800">
-                    My Children ({familyChildren.length})
-                  </h3>
-                  <p className="text-xs text-slate-400">Independent learning journeys and controls.</p>
+                  <span className="text-[10px] font-bold text-emerald-600 uppercase tracking-widest">
+                    Family Profiles
+                  </span>
+                  <h2 className="text-xl font-black font-display text-slate-800">Your Family</h2>
                 </div>
 
                 <button
                   type="button"
                   onClick={() => setShowAddChildModal(true)}
-                  className="btn-press text-xs font-bold text-emerald-600 hover:text-emerald-700 bg-emerald-50 px-3 py-1.5 rounded-xl cursor-pointer"
+                  className="btn-press text-xs font-bold text-emerald-700 bg-emerald-50 hover:bg-emerald-100 px-3 py-1.5 rounded-xl cursor-pointer"
                 >
                   + Add Child
                 </button>
@@ -464,59 +374,52 @@ export function ParentDashboard({ onNavigate }: ParentDashboardProps) {
                   return (
                     <div
                       key={child.id}
-                      className={`p-4 rounded-2xl border transition-all ${
-                        isActive ? 'border-emerald-500 bg-emerald-50/30 ring-2 ring-emerald-500/20' : 'border-slate-200 bg-slate-50'
+                      className={`p-4 rounded-2xl border transition-all space-y-3 ${
+                        isActive
+                          ? 'border-emerald-500 bg-emerald-50/20 ring-2 ring-emerald-500/20'
+                          : 'border-slate-200 bg-slate-50'
                       }`}
                     >
-                      <div className="flex items-center justify-between mb-3">
+                      <div className="flex items-center justify-between">
                         <div className="flex items-center gap-2.5">
                           <span className="text-2xl">
                             {child.gender === 'daughter' ? '👧' : child.gender === 'son' ? '👦' : '🧒'}
                           </span>
                           <div>
-                            <h4 className="font-bold text-sm text-slate-800">{child.name}</h4>
+                            <h4 className="font-black font-display text-sm text-slate-800">{child.name}</h4>
                             <span className="text-[10px] text-slate-400 font-bold">Age {child.age}</span>
                           </div>
                         </div>
-                        {isActive && (
-                          <span className="text-[10px] font-black text-emerald-700 bg-emerald-100 px-2 py-0.5 rounded-full">
-                            Active
-                          </span>
-                        )}
+                        <span className="text-xs font-black text-amber-600 bg-amber-50 px-2 py-0.5 rounded-lg border border-amber-200">
+                          ⭐ {child.stars ?? 0} XP
+                        </span>
                       </div>
 
-                      <div className="flex items-center justify-between text-xs text-slate-600 bg-white p-2 rounded-xl border border-slate-200/60 mb-3">
-                        <span>⭐ {child.stars ?? 0} Stars</span>
-                        <span>🎮 {child.totalAdventures ?? 0} Quests</span>
+                      <div className="text-[11px] text-slate-500 flex items-center justify-between bg-white p-2 rounded-xl border border-slate-200/60">
+                        <span>🎖️ {child.totalAdventures ?? 0} Badges</span>
+                        <span className="text-emerald-600 font-bold">🟢 Active Today</span>
                       </div>
 
                       <div className="flex gap-2">
-                        {!isActive ? (
-                          <button
-                            type="button"
-                            onClick={() => switchChild(child.id)}
-                            className="btn-press flex-1 py-1.5 rounded-lg bg-slate-900 text-white font-bold text-xs cursor-pointer"
-                          >
-                            Switch
-                          </button>
-                        ) : (
-                          <button
-                            type="button"
-                            onClick={() => onNavigate('home')}
-                            className="btn-press flex-1 py-1.5 rounded-lg bg-emerald-600 text-white font-bold text-xs cursor-pointer"
-                          >
-                            Open World
-                          </button>
-                        )}
+                        <button
+                          type="button"
+                          onClick={() => {
+                            setSelectedChildId(child.id);
+                            setShowRecModal(true);
+                          }}
+                          className="btn-press flex-1 py-2 rounded-xl bg-gradient-to-r from-indigo-600 to-purple-600 text-white font-bold text-xs shadow-xs cursor-pointer text-center"
+                        >
+                          Send Challenge →
+                        </button>
                         <button
                           type="button"
                           onClick={() => {
                             setSelectedChildId(child.id);
                             setActiveHub('children');
                           }}
-                          className="btn-press px-2.5 py-1.5 rounded-lg border border-slate-200 hover:bg-slate-100 text-slate-700 font-bold text-xs cursor-pointer"
+                          className="btn-press px-3 py-2 rounded-xl border border-slate-200 hover:bg-slate-100 text-slate-700 font-bold text-xs cursor-pointer"
                         >
-                          ⚙️ Controls
+                          ⚙️
                         </button>
                       </div>
                     </div>
@@ -525,26 +428,138 @@ export function ParentDashboard({ onNavigate }: ParentDashboardProps) {
               </div>
             </div>
 
-            {/* 3. QUICK ACCESS TOOLS TILES */}
-            <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+            {/* 2. "☀️ TODAY FOR YOUR FAMILY" 4 ACTION CARDS */}
+            <div className="space-y-3">
+              <div className="flex items-center justify-between">
+                <h3 className="text-lg font-black font-display text-slate-800 flex items-center gap-2">
+                  <span>☀️</span> Today for Your Family
+                </h3>
+                <span className="text-xs font-bold text-slate-400">
+                  {new Date().toLocaleDateString('en-US', { weekday: 'long', month: 'short', day: 'numeric' })}
+                </span>
+              </div>
+
+              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+                {/* 1. For Child */}
+                <div className="bg-gradient-to-br from-indigo-500 to-purple-600 rounded-3xl p-5 text-white shadow-soft flex flex-col justify-between space-y-4">
+                  <div>
+                    <span className="text-[10px] font-black uppercase tracking-wider bg-white/20 px-2 py-0.5 rounded-full">
+                      🧒 For {activeChild?.name || 'Child'}
+                    </span>
+                    <h4 className="text-base font-black font-display mt-2">10-Min Puzzle Quest</h4>
+                    <p className="text-xs text-indigo-100 leading-relaxed mt-1">
+                      Momo's pattern puzzle for logical thinking and +15 bonus stars.
+                    </p>
+                  </div>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setSelectedChildId(activeChild?.id || '');
+                      setShowRecModal(true);
+                    }}
+                    className="btn-press bg-white text-indigo-700 font-bold text-xs py-2 px-3 rounded-xl shadow-xs hover:bg-indigo-50 cursor-pointer text-center"
+                  >
+                    Send to {activeChild?.name} ❤️
+                  </button>
+                </div>
+
+                {/* 2. For You (Pregnancy) */}
+                <div className="bg-gradient-to-br from-rose-500 to-pink-600 rounded-3xl p-5 text-white shadow-soft flex flex-col justify-between space-y-4">
+                  <div>
+                    <span className="text-[10px] font-black uppercase tracking-wider bg-white/20 px-2 py-0.5 rounded-full">
+                      🤰 For You
+                    </span>
+                    <h4 className="text-base font-black font-display mt-2">
+                      Week {pregnancyCurrentWeek} Guide ({currentWeekInfo.fruitEmoji})
+                    </h4>
+                    <p className="text-xs text-rose-100 leading-relaxed mt-1">
+                      Baby is size of a {currentWeekInfo.fruitComparison}. Read wellness & stretches.
+                    </p>
+                  </div>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setActiveHub('pregnancy');
+                      setPregnancySubTab('journey');
+                    }}
+                    className="btn-press bg-white text-rose-700 font-bold text-xs py-2 px-3 rounded-xl shadow-xs hover:bg-rose-50 cursor-pointer text-center"
+                  >
+                    Read Week Guide →
+                  </button>
+                </div>
+
+                {/* 3. For Baby */}
+                <div className="bg-gradient-to-br from-sky-500 to-teal-600 rounded-3xl p-5 text-white shadow-soft flex flex-col justify-between space-y-4">
+                  <div>
+                    <span className="text-[10px] font-black uppercase tracking-wider bg-white/20 px-2 py-0.5 rounded-full">
+                      👶 For Baby
+                    </span>
+                    <h4 className="text-base font-black font-display mt-2">Talk & Smile Play</h4>
+                    <p className="text-xs text-sky-100 leading-relaxed mt-1">
+                      Spend 5 minutes making responsive face-to-face vocal coos and smiles.
+                    </p>
+                  </div>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setActiveHub('baby');
+                      setBabySubTab('development');
+                    }}
+                    className="btn-press bg-white text-sky-800 font-bold text-xs py-2 px-3 rounded-xl shadow-xs hover:bg-sky-50 cursor-pointer text-center"
+                  >
+                    View Activity →
+                  </button>
+                </div>
+
+                {/* 4. Family Together */}
+                <div className="bg-gradient-to-br from-amber-500 to-orange-600 rounded-3xl p-5 text-white shadow-soft flex flex-col justify-between space-y-4">
+                  <div>
+                    <span className="text-[10px] font-black uppercase tracking-wider bg-white/20 px-2 py-0.5 rounded-full">
+                      ❤️ Together
+                    </span>
+                    <h4 className="text-base font-black font-display mt-2">Rainbow Color Safari</h4>
+                    <p className="text-xs text-amber-100 leading-relaxed mt-1">
+                      Find 5 colorful objects around the house together before dinner!
+                    </p>
+                  </div>
+                  <button
+                    type="button"
+                    onClick={() => setActiveHub('calendar')}
+                    className="btn-press bg-white text-amber-800 font-bold text-xs py-2 px-3 rounded-xl shadow-xs hover:bg-amber-50 cursor-pointer text-center"
+                  >
+                    Start Mission 🚀
+                  </button>
+                </div>
+              </div>
+            </div>
+
+            {/* 3. FAMILY JOURNEY & TOOLS HUB DIRECTORY TILES */}
+            <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
               {[
-                { label: 'Baby Names Directory', emoji: '👶', hub: 'baby' as MainHub, sub: 'names' },
-                { label: 'Weight Tracker', emoji: '⚖️', hub: 'pregnancy' as MainHub, sub: 'weight' },
-                { label: 'Pregnancy Foods', emoji: '🥗', hub: 'pregnancy' as MainHub, sub: 'food' },
-                { label: 'Trimester Exercise', emoji: '🧘‍♀️', hub: 'pregnancy' as MainHub, sub: 'exercise' },
-              ].map((tile, i) => (
+                { title: 'Pregnancy Journey', desc: 'Week-by-week guide', emoji: '🤰', hub: 'pregnancy' as MainHub, sub: 'journey' },
+                { title: 'Baby Development', desc: '0–3y 5-Domain stages', emoji: '👶', hub: 'baby' as MainHub, sub: 'development' },
+                { title: 'Baby Moments', desc: 'Private milestone timeline', emoji: '📸', hub: 'baby' as MainHub, sub: 'moments' },
+                { title: 'Baby Names Directory', desc: `${favoriteBabyNames.length} saved favorites ❤️`, emoji: '👶', hub: 'baby' as MainHub, sub: 'names' },
+                { title: 'Weight Tracker', desc: 'Supportive health curve', emoji: '⚖️', hub: 'pregnancy' as MainHub, sub: 'weight' },
+                { title: 'Pregnancy Foods', desc: 'Superfoods & safety', emoji: '🥗', hub: 'pregnancy' as MainHub, sub: 'foods' },
+                { title: 'Exercise Guide', desc: 'Trimester safe stretches', emoji: '🧘‍♀️', hub: 'pregnancy' as MainHub, sub: 'exercises' },
+                { title: 'Family Planner', desc: 'Weekly schedule & dates', emoji: '📅', hub: 'calendar' as MainHub, sub: '' },
+              ].map((tile, idx) => (
                 <button
-                  key={i}
+                  key={idx}
                   type="button"
                   onClick={() => {
                     setActiveHub(tile.hub);
                     if (tile.hub === 'pregnancy') setPregnancySubTab(tile.sub as any);
                     if (tile.hub === 'baby') setBabySubTab(tile.sub as any);
                   }}
-                  className="btn-press bg-white p-4 rounded-2xl border border-slate-200 shadow-soft text-left hover:border-slate-300 transition-all cursor-pointer flex items-center gap-3"
+                  className="btn-press bg-white p-4 rounded-3xl border border-slate-200 shadow-soft text-left hover:border-slate-300 transition-all cursor-pointer space-y-2 flex flex-col justify-between"
                 >
-                  <span className="text-2xl">{tile.emoji}</span>
-                  <span className="text-xs font-black font-display text-slate-800">{tile.label}</span>
+                  <span className="text-3xl">{tile.emoji}</span>
+                  <div>
+                    <h4 className="font-black font-display text-xs text-slate-800">{tile.title}</h4>
+                    <p className="text-[10px] text-slate-400 leading-tight">{tile.desc}</p>
+                  </div>
                 </button>
               ))}
             </div>
@@ -552,18 +567,17 @@ export function ParentDashboard({ onNavigate }: ParentDashboardProps) {
         )}
 
         {/* ======================================================== */}
-        {/* HUB 1: PREGNANCY JOURNEY */}
+        {/* HUB 1: UNIFIED PREGNANCY JOURNEY */}
         {/* ======================================================== */}
         {activeHub === 'pregnancy' && (
           <div className="space-y-6 animate-pop-in">
-            {/* Sub Tabs */}
+            {/* Sub-Nav Pills */}
             <div className="flex items-center gap-1 overflow-x-auto no-scrollbar bg-white p-1.5 rounded-2xl border border-slate-200 shadow-soft">
               {[
-                { id: 'week' as const, label: 'Week Tracker', emoji: '📅' },
+                { id: 'journey' as const, label: 'Weekly Journey', emoji: '🤰' },
                 { id: 'weight' as const, label: 'Weight Tracker', emoji: '⚖️' },
-                { id: 'food' as const, label: 'Food Guide', emoji: '🥗' },
-                { id: 'exercise' as const, label: 'Exercises', emoji: '🧘‍♀️' },
-                { id: 'doctor' as const, label: 'Doctor Questions', emoji: '🩺' },
+                { id: 'foods' as const, label: 'Food Guide', emoji: '🥗' },
+                { id: 'exercises' as const, label: 'Safe Exercises', emoji: '🧘‍♀️' },
               ].map((st) => (
                 <button
                   key={st.id}
@@ -581,78 +595,106 @@ export function ParentDashboard({ onNavigate }: ParentDashboardProps) {
               ))}
             </div>
 
-            {/* Sub-Tab 1: Week Tracker */}
-            {pregnancySubTab === 'week' && (
-              <div className="space-y-6">
-                {/* Week Selector Slider & Hero */}
-                <div className="bg-white rounded-3xl p-6 sm:p-8 border border-slate-200 shadow-soft space-y-6">
-                  <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
-                    <div>
-                      <span className="text-xs font-bold text-rose-500 uppercase tracking-wider">
-                        Trimester {currentWeekInfo.trimester} • Week {pregnancyCurrentWeek} of 40
-                      </span>
-                      <h2 className="text-2xl font-black font-display text-slate-800 mt-0.5">
-                        Your Baby is the Size of a {currentWeekInfo.fruitComparison} {currentWeekInfo.fruitEmoji}
-                      </h2>
-                    </div>
+            {/* Medical Disclaimer Banner */}
+            <div className="bg-rose-50/70 border border-rose-200 rounded-2xl p-4 text-xs text-rose-900 leading-relaxed flex items-start gap-3">
+              <span className="text-lg">🩺</span>
+              <p>{medicalDisclaimer}</p>
+            </div>
 
-                    <div className="flex items-center gap-2">
-                      <span className="text-xs font-bold text-slate-500">Jump to Week:</span>
-                      <select
-                        value={pregnancyCurrentWeek}
-                        onChange={(e) => setPregnancyWeek(parseInt(e.target.value, 10))}
-                        className="text-xs font-bold p-2 rounded-xl border border-slate-300 bg-white"
-                      >
-                        {Array.from({ length: 40 }, (_, i) => i + 1).map((w) => (
-                          <option key={w} value={w}>
-                            Week {w}
-                          </option>
-                        ))}
-                      </select>
-                    </div>
+            {/* 1. Weekly Journey Integrated Flow */}
+            {pregnancySubTab === 'journey' && (
+              <div className="bg-white rounded-3xl p-6 sm:p-8 border border-slate-200 shadow-soft space-y-6">
+                {/* Week Selector Header */}
+                <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 border-b border-slate-100 pb-4">
+                  <div>
+                    <span className="text-xs font-bold text-rose-500 uppercase tracking-wider">
+                      Trimester {currentWeekInfo.trimester} • Week {pregnancyCurrentWeek} of 40
+                    </span>
+                    <h2 className="text-2xl font-black font-display text-slate-800 mt-0.5">
+                      Baby is the size of a {currentWeekInfo.fruitComparison} {currentWeekInfo.fruitEmoji}
+                    </h2>
                   </div>
 
-                  {/* Visual Fruit Card */}
-                  <div className="grid grid-cols-1 md:grid-cols-3 gap-4 bg-rose-50/50 p-6 rounded-3xl border border-rose-200/80 items-center">
-                    <div className="text-center md:text-left space-y-1">
-                      <div className="text-6xl mb-2">{currentWeekInfo.fruitEmoji}</div>
-                      <div className="text-sm font-black font-display text-slate-800">{currentWeekInfo.fruitComparison}</div>
-                      <div className="text-xs text-slate-500 font-medium">
-                        ~{currentWeekInfo.lengthCm} cm length • ~{currentWeekInfo.weightGrams} g weight
-                      </div>
-                    </div>
+                  <div className="flex items-center gap-2">
+                    <span className="text-xs font-bold text-slate-500">Jump to Week:</span>
+                    <select
+                      value={pregnancyCurrentWeek}
+                      onChange={(e) => setPregnancyWeek(parseInt(e.target.value, 10))}
+                      className="text-xs font-bold p-2.5 rounded-xl border border-slate-300 bg-white shadow-xs"
+                    >
+                      {Array.from({ length: 40 }, (_, i) => i + 1).map((w) => (
+                        <option key={w} value={w}>
+                          Week {w}
+                        </option>
+                      ))}
+                    </select>
+                  </div>
+                </div>
 
-                    <div className="md:col-span-2 space-y-3">
-                      <div className="bg-white p-4 rounded-2xl border border-rose-100 shadow-xs space-y-1">
-                        <span className="text-[10px] font-bold text-rose-600 uppercase">Baby Development</span>
-                        <p className="text-xs text-slate-700 leading-relaxed font-medium">
-                          {currentWeekInfo.babyDevelopment}
-                        </p>
-                      </div>
-
-                      <div className="bg-white p-4 rounded-2xl border border-rose-100 shadow-xs space-y-1">
-                        <span className="text-[10px] font-bold text-indigo-600 uppercase">Mother's Body & Tip</span>
-                        <p className="text-xs text-slate-700 leading-relaxed font-medium">
-                          {currentWeekInfo.motherBody} 💡 <em>{currentWeekInfo.weeklyTip}</em>
-                        </p>
-                      </div>
+                {/* Integrated Journey Cascade Cards */}
+                <div className="space-y-4">
+                  {/* Step 1: Baby Development */}
+                  <div className="p-5 rounded-2xl bg-slate-50 border border-slate-200 space-y-2">
+                    <div className="flex items-center gap-2 text-rose-600 font-bold text-xs uppercase tracking-wider">
+                      <span>👶</span> Baby Development ({currentWeekInfo.lengthCm} cm • {currentWeekInfo.weightGrams} g)
                     </div>
+                    <p className="text-xs text-slate-700 leading-relaxed font-medium">
+                      {currentWeekInfo.babyDevelopment}
+                    </p>
+                  </div>
+
+                  {/* Step 2: Mother's Wellbeing */}
+                  <div className="p-5 rounded-2xl bg-slate-50 border border-slate-200 space-y-2">
+                    <div className="flex items-center gap-2 text-indigo-600 font-bold text-xs uppercase tracking-wider">
+                      <span>🌸</span> Mother's Wellbeing & Changes
+                    </div>
+                    <p className="text-xs text-slate-700 leading-relaxed font-medium">
+                      {currentWeekInfo.motherBody} 💡 <em>{currentWeekInfo.weeklyTip}</em>
+                    </p>
+                  </div>
+
+                  {/* Step 3: Food & Nutrition */}
+                  <div className="p-5 rounded-2xl bg-slate-50 border border-slate-200 space-y-2">
+                    <div className="flex items-center gap-2 text-emerald-600 font-bold text-xs uppercase tracking-wider">
+                      <span>🥗</span> Weekly Nutrition Focus
+                    </div>
+                    <p className="text-xs text-slate-700 leading-relaxed font-medium">
+                      {currentWeekInfo.superfoods}
+                    </p>
+                  </div>
+
+                  {/* Step 4: Safe Exercise */}
+                  <div className="p-5 rounded-2xl bg-slate-50 border border-slate-200 space-y-2">
+                    <div className="flex items-center gap-2 text-purple-600 font-bold text-xs uppercase tracking-wider">
+                      <span>🧘‍♀️</span> Recommended Safe Activity
+                    </div>
+                    <p className="text-xs text-slate-700 leading-relaxed font-medium">
+                      {currentWeekInfo.safeExercise}
+                    </p>
+                  </div>
+
+                  {/* Step 5: Doctor Question */}
+                  <div className="p-5 rounded-2xl bg-slate-50 border border-slate-200 space-y-2">
+                    <div className="flex items-center gap-2 text-amber-600 font-bold text-xs uppercase tracking-wider">
+                      <span>🩺</span> Question for Your Doctor
+                    </div>
+                    <p className="text-xs text-slate-700 leading-relaxed font-medium italic">
+                      "{currentWeekInfo.doctorQuestion}"
+                    </p>
                   </div>
                 </div>
               </div>
             )}
 
-            {/* Sub-Tab 2: Weight Tracker */}
+            {/* 2. Weight Gain Tracker */}
             {pregnancySubTab === 'weight' && (
               <div className="bg-white rounded-3xl p-6 sm:p-8 border border-slate-200 shadow-soft space-y-6">
                 <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 border-b border-slate-100 pb-4">
                   <div>
                     <h3 className="text-xl font-black font-display text-slate-800">
-                      Pregnancy Weight Gain Tracker
+                      My Weight Journey
                     </h3>
-                    <p className="text-xs text-slate-400 mt-0.5">
-                      Monitor healthy weight progression across trimesters.
-                    </p>
+                    <p className="text-xs text-slate-400 mt-0.5">{weightTrackingGuidance}</p>
                   </div>
 
                   <button
@@ -667,8 +709,8 @@ export function ParentDashboard({ onNavigate }: ParentDashboardProps) {
                 {/* Interactive SVG Progress Chart */}
                 <div className="bg-slate-50 p-6 rounded-3xl border border-slate-200 space-y-3">
                   <div className="flex items-center justify-between text-xs font-bold text-slate-600">
-                    <span>Weight Progression (kg)</span>
-                    <span className="text-emerald-600">Healthy Trajectory ✓</span>
+                    <span>Weight History (kg)</span>
+                    <span className="text-slate-400">Personal Health Record</span>
                   </div>
 
                   <div className="h-40 w-full flex items-end justify-between gap-2 pt-4 border-b border-slate-200">
@@ -690,18 +732,14 @@ export function ParentDashboard({ onNavigate }: ParentDashboardProps) {
                   </div>
                 </div>
 
-                {/* Weight Logs Table */}
+                {/* Weight Log List */}
                 <div className="space-y-2">
-                  <h4 className="text-xs font-bold text-slate-700 uppercase">Recent Log Entries</h4>
                   {pregnancyWeightLogs.map((entry) => (
                     <div
                       key={entry.id}
-                      className="flex items-center justify-between p-3 rounded-xl bg-slate-50 border border-slate-200/80 text-xs"
+                      className="flex items-center justify-between p-3.5 rounded-xl bg-slate-50 border border-slate-200/80 text-xs"
                     >
-                      <div>
-                        <span className="font-bold text-slate-800">Week {entry.week}</span>
-                        {entry.note && <span className="text-slate-400 ml-2">({entry.note})</span>}
-                      </div>
+                      <span className="font-bold text-slate-800">Week {entry.week}</span>
                       <div className="flex items-center gap-3">
                         <span className="font-black text-rose-600">{entry.weightKg} kg</span>
                         <button
@@ -718,14 +756,13 @@ export function ParentDashboard({ onNavigate }: ParentDashboardProps) {
               </div>
             )}
 
-            {/* Sub-Tab 3: Food Guide */}
-            {pregnancySubTab === 'food' && (
+            {/* 3. Foods Guide */}
+            {pregnancySubTab === 'foods' && (
               <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                 <div className="bg-white rounded-3xl p-6 border border-slate-200 shadow-soft space-y-4">
-                  <div className="flex items-center gap-2 text-emerald-600 pb-2 border-b border-slate-100">
-                    <span className="text-2xl">🥗</span>
-                    <h3 className="font-black font-display text-base text-slate-800">Pregnancy Superfoods</h3>
-                  </div>
+                  <h3 className="font-black font-display text-base text-slate-800 flex items-center gap-2">
+                    <span>🥗</span> Pregnancy Superfoods
+                  </h3>
                   <div className="space-y-3">
                     {pregnancyFoodGuide
                       .filter((f) => f.category === 'superfood')
@@ -735,17 +772,16 @@ export function ParentDashboard({ onNavigate }: ParentDashboardProps) {
                             <span className="text-xl">{item.emoji}</span>
                             <h4 className="font-bold text-xs text-slate-800">{item.name}</h4>
                           </div>
-                          <p className="text-[11px] text-slate-600 leading-snug">{item.reason}</p>
+                          <p className="text-[11px] text-slate-600">{item.reason}</p>
                         </div>
                       ))}
                   </div>
                 </div>
 
                 <div className="bg-white rounded-3xl p-6 border border-slate-200 shadow-soft space-y-4">
-                  <div className="flex items-center gap-2 text-rose-600 pb-2 border-b border-slate-100">
-                    <span className="text-2xl">⚠️</span>
-                    <h3 className="font-black font-display text-base text-slate-800">Foods to Strictly Avoid</h3>
-                  </div>
+                  <h3 className="font-black font-display text-base text-slate-800 flex items-center gap-2">
+                    <span>⚠️</span> Foods to Avoid
+                  </h3>
                   <div className="space-y-3">
                     {pregnancyFoodGuide
                       .filter((f) => f.category === 'avoid')
@@ -755,7 +791,7 @@ export function ParentDashboard({ onNavigate }: ParentDashboardProps) {
                             <span className="text-xl">{item.emoji}</span>
                             <h4 className="font-bold text-xs text-slate-800">{item.name}</h4>
                           </div>
-                          <p className="text-[11px] text-slate-600 leading-snug">{item.reason}</p>
+                          <p className="text-[11px] text-slate-600">{item.reason}</p>
                         </div>
                       ))}
                   </div>
@@ -763,73 +799,41 @@ export function ParentDashboard({ onNavigate }: ParentDashboardProps) {
               </div>
             )}
 
-            {/* Sub-Tab 4: Exercise Guide */}
-            {pregnancySubTab === 'exercise' && (
-              <div className="bg-white rounded-3xl p-6 sm:p-8 border border-slate-200 shadow-soft space-y-6">
-                <div className="border-b border-slate-100 pb-3">
-                  <h3 className="text-xl font-black font-display text-slate-800">
-                    Safe Prenatal Exercises & Stretches
-                  </h3>
-                  <p className="text-xs text-slate-400">Gentle routines to support stamina, flexibility, and pelvic health.</p>
-                </div>
-
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                  {prenatalExercises.map((ex, idx) => (
-                    <div key={idx} className="p-5 rounded-2xl bg-slate-50 border border-slate-200 space-y-2">
-                      <div className="flex items-center justify-between">
-                        <span className="text-3xl">{ex.emoji}</span>
-                        <span className="text-[10px] font-bold text-indigo-600 bg-indigo-50 px-2.5 py-0.5 rounded-full">
-                          {ex.trimesterSafe}
-                        </span>
-                      </div>
-                      <h4 className="font-bold text-sm text-slate-800">{ex.title}</h4>
-                      <p className="text-xs text-slate-600 font-medium">{ex.benefit}</p>
-                      <p className="text-xs text-slate-500 italic bg-white p-2.5 rounded-xl border border-slate-200/60">
-                        {ex.steps}
-                      </p>
+            {/* 4. Exercise Guide */}
+            {pregnancySubTab === 'exercises' && (
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                {prenatalExercises.map((ex, idx) => (
+                  <div key={idx} className="bg-white p-6 rounded-3xl border border-slate-200 shadow-soft space-y-2">
+                    <div className="flex items-center justify-between">
+                      <span className="text-3xl">{ex.emoji}</span>
+                      <span className="text-[10px] font-bold text-indigo-600 bg-indigo-50 px-2 py-0.5 rounded-full">
+                        {ex.trimesterSafe}
+                      </span>
                     </div>
-                  ))}
-                </div>
-              </div>
-            )}
-
-            {/* Sub-Tab 5: Doctor Questions */}
-            {pregnancySubTab === 'doctor' && (
-              <div className="bg-white rounded-3xl p-6 sm:p-8 border border-slate-200 shadow-soft space-y-4">
-                <div className="border-b border-slate-100 pb-3">
-                  <h3 className="text-xl font-black font-display text-slate-800">
-                    Doctor Checkup Discussion Questions
-                  </h3>
-                  <p className="text-xs text-slate-400">Handy checklist to discuss at your next prenatal appointment.</p>
-                </div>
-
-                <div className="space-y-2.5">
-                  {doctorQuestions.map((q, idx) => (
-                    <div
-                      key={idx}
-                      className="p-3.5 rounded-2xl bg-slate-50 border border-slate-200/80 text-xs text-slate-700 font-medium flex items-start gap-3"
-                    >
-                      <span className="text-emerald-600 font-bold">Q{idx + 1}.</span>
-                      <p className="leading-relaxed">{q}</p>
-                    </div>
-                  ))}
-                </div>
+                    <h4 className="font-bold text-sm text-slate-800">{ex.title}</h4>
+                    <p className="text-xs text-slate-600">{ex.benefit}</p>
+                    <p className="text-xs text-slate-500 italic bg-slate-50 p-2.5 rounded-xl border border-slate-200/60">
+                      {ex.steps}
+                    </p>
+                  </div>
+                ))}
               </div>
             )}
           </div>
         )}
 
         {/* ======================================================== */}
-        {/* HUB 2: BABY HUB */}
+        {/* HUB 2: BABY HUB & MOMENTS */}
         {/* ======================================================== */}
         {activeHub === 'baby' && (
           <div className="space-y-6 animate-pop-in">
-            {/* Sub Tabs */}
+            {/* Sub-Nav Pills */}
             <div className="flex items-center gap-1 overflow-x-auto no-scrollbar bg-white p-1.5 rounded-2xl border border-slate-200 shadow-soft">
               {[
-                { id: 'names' as const, label: `Baby Names (${favoriteBabyNames.length} ❤️)`, emoji: '👶' },
-                { id: 'milestones' as const, label: '0–2y Milestones', emoji: '👣' },
-                { id: 'moments' as const, label: 'Baby Moments Journal', emoji: '📖' },
+                { id: 'development' as const, label: '0–3y Development & Play', emoji: '🧠' },
+                { id: 'moments' as const, label: '📸 Baby Moments Timeline', emoji: '📸' },
+                { id: 'names' as const, label: `Find Baby Name (${favoriteBabyNames.length} ❤️)`, emoji: '👶' },
+                { id: 'compare' as const, label: 'Compare Favorites', emoji: '⚖️' },
               ].map((st) => (
                 <button
                   key={st.id}
@@ -847,54 +851,202 @@ export function ParentDashboard({ onNavigate }: ParentDashboardProps) {
               ))}
             </div>
 
-            {/* Sub-Tab 1: Baby Names Directory */}
-            {babySubTab === 'names' && (
+            {/* 1. 5-Domain Development Stages & "Try This Together" */}
+            {babySubTab === 'development' && (
+              <div className="space-y-4">
+                {babyMilestoneStages.map((stage, idx) => (
+                  <div key={idx} className="bg-white rounded-3xl p-6 sm:p-8 border border-slate-200 shadow-soft space-y-5">
+                    <div className="flex items-center gap-3 border-b border-slate-100 pb-3">
+                      <span className="text-3xl">{stage.emoji}</span>
+                      <div>
+                        <span className="text-[10px] font-bold text-sky-600 uppercase tracking-wider">
+                          {stage.ageRange}
+                        </span>
+                        <h3 className="text-xl font-black font-display text-slate-800">{stage.stageName}</h3>
+                      </div>
+                    </div>
+
+                    {/* 5 Domains Grid */}
+                    <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-3 text-xs">
+                      <div className="p-3.5 rounded-2xl bg-slate-50 border border-slate-200/80 space-y-1">
+                        <span className="font-black font-display text-indigo-600 flex items-center gap-1">
+                          <span>🧠</span> Cognitive
+                        </span>
+                        <p className="text-slate-600 leading-snug">{stage.cognitive}</p>
+                      </div>
+
+                      <div className="p-3.5 rounded-2xl bg-slate-50 border border-slate-200/80 space-y-1">
+                        <span className="font-black font-display text-teal-600 flex items-center gap-1">
+                          <span>👀</span> Sensory
+                        </span>
+                        <p className="text-slate-600 leading-snug">{stage.sensory}</p>
+                      </div>
+
+                      <div className="p-3.5 rounded-2xl bg-slate-50 border border-slate-200/80 space-y-1">
+                        <span className="font-black font-display text-amber-600 flex items-center gap-1">
+                          <span>🗣️</span> Communication
+                        </span>
+                        <p className="text-slate-600 leading-snug">{stage.communication}</p>
+                      </div>
+
+                      <div className="p-3.5 rounded-2xl bg-slate-50 border border-slate-200/80 space-y-1">
+                        <span className="font-black font-display text-rose-600 flex items-center gap-1">
+                          <span>🏃</span> Movement
+                        </span>
+                        <p className="text-slate-600 leading-snug">{stage.movement}</p>
+                      </div>
+
+                      <div className="p-3.5 rounded-2xl bg-slate-50 border border-slate-200/80 space-y-1 sm:col-span-2 md:col-span-2">
+                        <span className="font-black font-display text-pink-600 flex items-center gap-1">
+                          <span>❤️</span> Social & Emotional
+                        </span>
+                        <p className="text-slate-600 leading-snug">{stage.social}</p>
+                      </div>
+                    </div>
+
+                    {/* "TRY THIS TOGETHER" INTERACTIVE ACTION CARD */}
+                    <div className="bg-gradient-to-r from-sky-50 to-indigo-50 border border-sky-200 rounded-2xl p-4 flex items-center justify-between gap-4">
+                      <div className="space-y-0.5">
+                        <span className="text-[10px] font-black uppercase tracking-widest text-sky-700">
+                          Try This Together
+                        </span>
+                        <h4 className="font-bold text-sm text-slate-800">{stage.tryThisTogether.title}</h4>
+                        <p className="text-xs text-slate-600 leading-relaxed">
+                          {stage.tryThisTogether.description}
+                        </p>
+                      </div>
+                      <span className="text-3xl shrink-0">{stage.tryThisTogether.emoji}</span>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            )}
+
+            {/* 2. Baby Moments Private Timeline */}
+            {babySubTab === 'moments' && (
               <div className="bg-white rounded-3xl p-6 sm:p-8 border border-slate-200 shadow-soft space-y-6">
                 <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 border-b border-slate-100 pb-4">
                   <div>
                     <h3 className="text-xl font-black font-display text-slate-800">
-                      Baby Names Directory
+                      Our Baby's Journey ❤️
                     </h3>
                     <p className="text-xs text-slate-400 mt-0.5">
-                      Explore meaningful names and save your favorites with ❤️.
+                      Private memory timeline stored safely on your device.
                     </p>
-                  </div>
-
-                  {/* Search input */}
-                  <div className="relative w-full sm:w-64">
-                    <Search className="w-4 h-4 absolute left-3 top-3 text-slate-400" />
-                    <input
-                      type="text"
-                      value={nameSearch}
-                      onChange={(e) => setNameSearch(e.target.value)}
-                      placeholder="Search names or meanings..."
-                      className="w-full text-xs font-medium pl-9 pr-3 py-2.5 rounded-xl border border-slate-300 focus:outline-none focus:border-sky-500"
-                    />
                   </div>
                 </div>
 
-                {/* Filter Pills */}
-                <div className="flex gap-2 overflow-x-auto no-scrollbar">
-                  {[
-                    { id: 'all' as const, label: 'All Names' },
-                    { id: 'boy' as const, label: '👦 Boys' },
-                    { id: 'girl' as const, label: '👧 Girls' },
-                    { id: 'unisex' as const, label: '✨ Unisex' },
-                    { id: 'fav' as const, label: `❤️ Favorites (${favoriteBabyNames.length})` },
-                  ].map((f) => (
-                    <button
-                      key={f.id}
-                      type="button"
-                      onClick={() => setNameGenderFilter(f.id)}
-                      className={`btn-press text-xs font-bold px-3 py-1.5 rounded-xl transition-all cursor-pointer ${
-                        nameGenderFilter === f.id
-                          ? 'bg-slate-900 text-white'
-                          : 'bg-slate-100 text-slate-600 hover:bg-slate-200'
-                      }`}
+                <div className="space-y-4">
+                  {babyMoments.map((moment) => (
+                    <div
+                      key={moment.id}
+                      className="p-4 rounded-2xl bg-slate-50 border border-slate-200 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4"
                     >
-                      {f.label}
-                    </button>
+                      <div className="flex items-center gap-3">
+                        <span className="text-3xl">{moment.emoji}</span>
+                        <div>
+                          <h4 className="font-black font-display text-sm text-slate-800">{moment.title}</h4>
+                          {moment.notes && <p className="text-xs text-slate-600 italic">"{moment.notes}"</p>}
+                        </div>
+                      </div>
+
+                      <div className="flex items-center gap-2 w-full sm:w-auto">
+                        <input
+                          type="date"
+                          value={moment.dateAchieved || ''}
+                          onChange={(e) => saveBabyMoment(moment.id, e.target.value, moment.notes)}
+                          className="text-xs font-bold p-2 rounded-xl bg-white border border-slate-300"
+                        />
+                        <input
+                          type="text"
+                          value={moment.notes}
+                          onChange={(e) => saveBabyMoment(moment.id, moment.dateAchieved || '', e.target.value)}
+                          placeholder="Note / memory..."
+                          className="flex-1 sm:w-48 text-xs font-medium p-2 rounded-xl bg-white border border-slate-300"
+                        />
+                      </div>
+                    </div>
                   ))}
+                </div>
+              </div>
+            )}
+
+            {/* 3. Advanced Baby Names Directory */}
+            {babySubTab === 'names' && (
+              <div className="bg-white rounded-3xl p-6 sm:p-8 border border-slate-200 shadow-soft space-y-6">
+                {/* Name of the Day Spotlight */}
+                <div className="bg-gradient-to-r from-amber-400 via-orange-400 to-rose-500 rounded-3xl p-5 text-white shadow-soft flex items-center justify-between gap-4">
+                  <div className="space-y-1">
+                    <span className="text-[10px] font-black uppercase tracking-wider bg-white/20 px-2 py-0.5 rounded-full">
+                      ✨ Name of the Day
+                    </span>
+                    <h4 className="text-xl font-black font-display">{nameOfTheDay.name}</h4>
+                    <p className="text-xs text-amber-100">"{nameOfTheDay.meaning}" • {nameOfTheDay.origin}</p>
+                  </div>
+                  <button
+                    type="button"
+                    onClick={() => toggleFavoriteBabyName(nameOfTheDay.id)}
+                    className="text-2xl p-2 bg-white/20 rounded-2xl cursor-pointer hover:scale-110 transition-transform"
+                  >
+                    {favoriteBabyNames.includes(nameOfTheDay.id) ? '❤️' : '🤍'}
+                  </button>
+                </div>
+
+                {/* Filters & Search */}
+                <div className="space-y-3">
+                  <div className="flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-3">
+                    <div className="relative flex-1">
+                      <Search className="w-4 h-4 absolute left-3 top-3 text-slate-400" />
+                      <input
+                        type="text"
+                        value={nameSearch}
+                        onChange={(e) => setNameSearch(e.target.value)}
+                        placeholder="Search by name, meaning, or origin..."
+                        className="w-full text-xs font-medium pl-9 pr-3 py-2.5 rounded-xl border border-slate-300 focus:outline-none focus:border-sky-500"
+                      />
+                    </div>
+
+                    <div className="flex gap-1.5 overflow-x-auto no-scrollbar">
+                      {[
+                        { id: 'all' as const, label: 'All' },
+                        { id: 'boy' as const, label: '👦 Boys' },
+                        { id: 'girl' as const, label: '👧 Girls' },
+                        { id: 'unisex' as const, label: '✨ Unisex' },
+                        { id: 'fav' as const, label: `❤️ (${favoriteBabyNames.length})` },
+                      ].map((f) => (
+                        <button
+                          key={f.id}
+                          type="button"
+                          onClick={() => setNameGenderFilter(f.id)}
+                          className={`btn-press text-xs font-bold px-3 py-2 rounded-xl cursor-pointer whitespace-nowrap ${
+                            nameGenderFilter === f.id
+                              ? 'bg-slate-900 text-white'
+                              : 'bg-slate-100 text-slate-600 hover:bg-slate-200'
+                          }`}
+                        >
+                          {f.label}
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+
+                  {/* A-Z Letter Filter Bar */}
+                  <div className="flex gap-1 overflow-x-auto no-scrollbar py-1">
+                    {alphabet.map((letter) => (
+                      <button
+                        key={letter}
+                        type="button"
+                        onClick={() => setNameLetterFilter(letter)}
+                        className={`px-2.5 py-1 rounded-lg text-xs font-bold cursor-pointer transition-colors ${
+                          nameLetterFilter === letter
+                            ? 'bg-sky-500 text-white'
+                            : 'bg-slate-50 text-slate-500 hover:bg-slate-100'
+                        }`}
+                      >
+                        {letter}
+                      </button>
+                    ))}
+                  </div>
                 </div>
 
                 {/* Names Grid */}
@@ -904,7 +1056,7 @@ export function ParentDashboard({ onNavigate }: ParentDashboardProps) {
                     return (
                       <div
                         key={n.id}
-                        className="p-4 rounded-2xl bg-slate-50 border border-slate-200/80 space-y-1.5 flex flex-col justify-between"
+                        className="p-4 rounded-2xl bg-slate-50 border border-slate-200 space-y-1.5 flex flex-col justify-between"
                       >
                         <div className="flex items-start justify-between">
                           <div>
@@ -921,7 +1073,6 @@ export function ParentDashboard({ onNavigate }: ParentDashboardProps) {
                             type="button"
                             onClick={() => toggleFavoriteBabyName(n.id)}
                             className="text-lg p-1 hover:scale-110 transition-transform cursor-pointer"
-                            title="Toggle Favorite"
                           >
                             {isFav ? '❤️' : '🤍'}
                           </button>
@@ -935,103 +1086,66 @@ export function ParentDashboard({ onNavigate }: ParentDashboardProps) {
               </div>
             )}
 
-            {/* Sub-Tab 2: Milestones 0-2y */}
-            {babySubTab === 'milestones' && (
-              <div className="space-y-4">
-                {babyMilestoneStages.map((stage, idx) => (
-                  <div key={idx} className="bg-white rounded-3xl p-6 border border-slate-200 shadow-soft space-y-4">
-                    <div className="flex items-center gap-3 border-b border-slate-100 pb-3">
-                      <span className="text-3xl">{stage.emoji}</span>
-                      <div>
-                        <span className="text-[10px] font-bold text-sky-600 uppercase tracking-wider">
-                          {stage.ageRange}
-                        </span>
-                        <h4 className="text-lg font-black font-display text-slate-800">{stage.stageName}</h4>
-                      </div>
-                    </div>
+            {/* 4. Compare Favorites Table */}
+            {babySubTab === 'compare' && (
+              <div className="bg-white rounded-3xl p-6 sm:p-8 border border-slate-200 shadow-soft space-y-4">
+                <h3 className="text-xl font-black font-display text-slate-800">
+                  Compare Favourite Names ({favoriteNamesList.length})
+                </h3>
 
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4 text-xs">
-                      <div className="bg-slate-50 p-4 rounded-2xl space-y-2">
-                        <span className="font-bold text-slate-700 block">Motor Skills</span>
-                        <ul className="space-y-1 text-slate-600 list-disc list-inside">
-                          {stage.motorSkills.map((m, i) => (
-                            <li key={i}>{m}</li>
-                          ))}
-                        </ul>
-                      </div>
-
-                      <div className="bg-slate-50 p-4 rounded-2xl space-y-2">
-                        <span className="font-bold text-slate-700 block">Social & Cognitive</span>
-                        <ul className="space-y-1 text-slate-600 list-disc list-inside">
-                          {stage.cognitiveSocial.map((m, i) => (
-                            <li key={i}>{m}</li>
-                          ))}
-                        </ul>
-                      </div>
-                    </div>
-
-                    <div className="bg-sky-50/60 p-3.5 rounded-2xl border border-sky-100 text-xs text-sky-900 leading-relaxed">
-                      💡 <strong>Parent Tip:</strong> {stage.parentTips}
-                    </div>
+                {favoriteNamesList.length > 0 ? (
+                  <div className="overflow-x-auto">
+                    <table className="w-full text-left text-xs">
+                      <thead>
+                        <tr className="border-b border-slate-200 text-slate-400 uppercase">
+                          <th className="py-3 px-2">Name</th>
+                          <th className="py-3 px-2">Gender</th>
+                          <th className="py-3 px-2">Origin</th>
+                          <th className="py-3 px-2">Meaning</th>
+                          <th className="py-3 px-2">Remove</th>
+                        </tr>
+                      </thead>
+                      <tbody className="divide-y divide-slate-100">
+                        {favoriteNamesList.map((n) => (
+                          <tr key={n.id} className="hover:bg-slate-50">
+                            <td className="py-3 px-2 font-black font-display text-slate-800">{n.name}</td>
+                            <td className="py-3 px-2 text-slate-600 capitalize">{n.gender}</td>
+                            <td className="py-3 px-2 text-slate-600">{n.origin}</td>
+                            <td className="py-3 px-2 text-slate-600 italic">"{n.meaning}"</td>
+                            <td className="py-3 px-2">
+                              <button
+                                type="button"
+                                onClick={() => toggleFavoriteBabyName(n.id)}
+                                className="text-rose-500 font-bold hover:underline cursor-pointer"
+                              >
+                                Remove ❤️
+                              </button>
+                            </td>
+                          </tr>
+                        ))}
+                      </tbody>
+                    </table>
                   </div>
-                ))}
-              </div>
-            )}
-
-            {/* Sub-Tab 3: Baby Moments Journal */}
-            {babySubTab === 'moments' && (
-              <div className="bg-white rounded-3xl p-6 sm:p-8 border border-slate-200 shadow-soft space-y-6">
-                <div className="border-b border-slate-100 pb-3">
-                  <h3 className="text-xl font-black font-display text-slate-800">
-                    Baby Moments & Memory Log
-                  </h3>
-                  <p className="text-xs text-slate-400">Record private milestone dates and notes.</p>
-                </div>
-
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                  {babyMoments.map((moment) => (
-                    <div
-                      key={moment.id}
-                      className="p-4 rounded-2xl bg-slate-50 border border-slate-200 space-y-2"
-                    >
-                      <div className="flex items-center gap-2">
-                        <span className="text-2xl">{moment.emoji}</span>
-                        <h4 className="font-bold text-sm text-slate-800">{moment.title}</h4>
-                      </div>
-
-                      <div className="flex gap-2">
-                        <input
-                          type="date"
-                          value={moment.dateAchieved || ''}
-                          onChange={(e) => saveBabyMoment(moment.id, e.target.value, moment.notes)}
-                          className="text-xs font-bold p-2 rounded-xl bg-white border border-slate-300"
-                        />
-                        <input
-                          type="text"
-                          value={moment.notes}
-                          onChange={(e) => saveBabyMoment(moment.id, moment.dateAchieved || '', e.target.value)}
-                          placeholder="Memories / notes..."
-                          className="flex-1 text-xs font-medium p-2 rounded-xl bg-white border border-slate-300"
-                        />
-                      </div>
-                    </div>
-                  ))}
-                </div>
+                ) : (
+                  <p className="text-xs text-slate-400 py-6 text-center">
+                    No favourite names saved yet. Browse the Baby Names tab and tap ❤️ to add to your compare list!
+                  </p>
+                )}
               </div>
             )}
           </div>
         )}
 
         {/* ======================================================== */}
-        {/* HUB 3: MY CHILDREN (Controls & Multi-Child Manager) */}
+        {/* HUB 3: MY CHILDREN & CO-LEARNING */}
         {/* ======================================================== */}
         {activeHub === 'children' && selectedChild && (
           <div className="space-y-6 animate-pop-in">
-            {/* Child Picker Header */}
+            {/* Child Selector */}
             <div className="bg-white p-6 rounded-3xl border border-slate-200 shadow-soft flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
               <div>
                 <span className="text-xs font-bold text-emerald-600 uppercase tracking-wider">
-                  Configuring Controls for:
+                  Configuring Explorer
                 </span>
                 <h2 className="text-2xl font-black font-display text-slate-800 mt-0.5">
                   {selectedChild.name} (Age {selectedChild.age})
@@ -1056,12 +1170,37 @@ export function ParentDashboard({ onNavigate }: ParentDashboardProps) {
               </div>
             </div>
 
-            {/* Controls Grid */}
+            {/* 1. WEEKLY ADVENTURE DOMAIN STARS */}
+            <div className="bg-white rounded-3xl p-6 border border-slate-200 shadow-soft space-y-4">
+              <h3 className="font-black font-display text-base text-slate-800">
+                🎯 {selectedChild.name}'s Weekly Learning Progress
+              </h3>
+
+              <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+                <div className="p-4 rounded-2xl bg-indigo-50/50 border border-indigo-100 space-y-1">
+                  <span className="text-xs font-bold text-indigo-700">🧮 Mathematics</span>
+                  <div className="text-base text-amber-500 font-bold">⭐⭐⭐⭐ (85%)</div>
+                  <p className="text-[10px] text-slate-500">Addition & counting confidence</p>
+                </div>
+                <div className="p-4 rounded-2xl bg-emerald-50/50 border border-emerald-100 space-y-1">
+                  <span className="text-xs font-bold text-emerald-700">🌳 Phonics & Reading</span>
+                  <div className="text-base text-amber-500 font-bold">⭐⭐⭐ (70%)</div>
+                  <p className="text-[10px] text-slate-500">Letter sound recognition</p>
+                </div>
+                <div className="p-4 rounded-2xl bg-pink-50/50 border border-pink-100 space-y-1">
+                  <span className="text-xs font-bold text-pink-700">🎨 Creativity & Art</span>
+                  <div className="text-base text-amber-500 font-bold">⭐⭐⭐⭐⭐ (100%)</div>
+                  <p className="text-[10px] text-slate-500">Living sanctuary creations</p>
+                </div>
+              </div>
+            </div>
+
+            {/* 2. CONTROLS GRID */}
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
               {/* Realm Access */}
               <div className="bg-white rounded-3xl border border-slate-200 shadow-soft p-6 space-y-4">
                 <h3 className="font-black font-display text-base text-slate-800">
-                  🎮 Realm & Game Permissions
+                  🎮 Realm Access Permissions
                 </h3>
                 <div className="space-y-2.5">
                   {[
@@ -1102,51 +1241,26 @@ export function ParentDashboard({ onNavigate }: ParentDashboardProps) {
                 </div>
               </div>
 
-              {/* Screen Time & Bedtime Limits */}
+              {/* Screen Time */}
               <div className="bg-white rounded-3xl border border-slate-200 shadow-soft p-6 space-y-4">
                 <h3 className="font-black font-display text-base text-slate-800">
-                  ⏰ Screen Time Limits
+                  ⏰ Daily Screen Time Limit
                 </h3>
-
-                <div>
-                  <label className="text-xs font-bold text-slate-700 block mb-1.5">Daily Session Limit</label>
-                  <div className="grid grid-cols-4 gap-2">
-                    {[15, 30, 45, 60].map((mins) => (
-                      <button
-                        key={mins}
-                        type="button"
-                        onClick={() => handleUpdateControls({ dailyLimitMinutes: mins })}
-                        className={`btn-press py-2 rounded-xl text-xs font-bold transition-all cursor-pointer ${
-                          (selectedChild.controls?.dailyLimitMinutes ?? 45) === mins
-                            ? 'bg-indigo-600 text-white shadow-xs'
-                            : 'bg-slate-100 text-slate-600 hover:bg-slate-200'
-                        }`}
-                      >
-                        {mins} min
-                      </button>
-                    ))}
-                  </div>
-                </div>
-
-                <div className="bg-indigo-50/60 p-4 rounded-2xl border border-indigo-100 space-y-2">
-                  <div className="flex items-center justify-between">
-                    <span className="text-xs font-bold text-indigo-950">🌙 Bedtime Quiet Hours</span>
+                <div className="grid grid-cols-4 gap-2">
+                  {[15, 30, 45, 60].map((mins) => (
                     <button
+                      key={mins}
                       type="button"
-                      onClick={() =>
-                        handleUpdateControls({
-                          bedtimeQuietHoursEnabled: !(selectedChild.controls?.bedtimeQuietHoursEnabled ?? true),
-                        })
-                      }
-                      className={`btn-press w-11 h-6 rounded-full transition-colors flex items-center p-0.5 cursor-pointer ${
-                        (selectedChild.controls?.bedtimeQuietHoursEnabled ?? true)
-                          ? 'bg-indigo-600 justify-end'
-                          : 'bg-slate-300 justify-start'
+                      onClick={() => handleUpdateControls({ dailyLimitMinutes: mins })}
+                      className={`btn-press py-2 rounded-xl text-xs font-bold transition-all cursor-pointer ${
+                        (selectedChild.controls?.dailyLimitMinutes ?? 45) === mins
+                          ? 'bg-indigo-600 text-white shadow-xs'
+                          : 'bg-slate-100 text-slate-600 hover:bg-slate-200'
                       }`}
                     >
-                      <div className="w-5 h-5 rounded-full bg-white shadow-xs" />
+                      {mins} min
                     </button>
-                  </div>
+                  ))}
                 </div>
               </div>
             </div>
@@ -1154,30 +1268,41 @@ export function ParentDashboard({ onNavigate }: ParentDashboardProps) {
         )}
 
         {/* ======================================================== */}
-        {/* HUB 4: FAMILY & PLANNER */}
+        {/* HUB 4: UNIFIED FAMILY CALENDAR & PLANNER */}
         {/* ======================================================== */}
-        {activeHub === 'family' && (
+        {activeHub === 'calendar' && (
           <div className="space-y-6 animate-pop-in">
-            {/* Weekly Schedule Planner */}
-            <div className="bg-white rounded-3xl p-6 sm:p-8 border border-slate-200 shadow-soft space-y-4">
+            <div className="bg-white rounded-3xl p-6 sm:p-8 border border-slate-200 shadow-soft space-y-6">
               <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 border-b border-slate-100 pb-4">
                 <div>
                   <h3 className="text-xl font-black font-display text-slate-800">
-                    Weekly Family Planner
+                    📅 Unified Family Planner
                   </h3>
-                  <p className="text-xs text-slate-400 mt-0.5">Organize family activities and important appointments.</p>
+                  <p className="text-xs text-slate-400 mt-0.5">
+                    Single family schedule combining quests, activities, doctor checkups, and celebrations.
+                  </p>
                 </div>
 
-                <button
-                  type="button"
-                  onClick={() => setShowEventModal(true)}
-                  className="btn-press bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-xs px-4 py-2.5 rounded-xl shadow-xs flex items-center gap-1.5 cursor-pointer"
-                >
-                  <Plus className="w-4 h-4" /> Add Event
-                </button>
+                <div className="flex gap-2">
+                  <button
+                    type="button"
+                    onClick={() => setShowEventModal(true)}
+                    className="btn-press bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-xs px-4 py-2.5 rounded-xl shadow-xs flex items-center gap-1.5 cursor-pointer"
+                  >
+                    <Plus className="w-4 h-4" /> Add Event
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setShowChallengeModal(true)}
+                    className="btn-press bg-amber-500 hover:bg-amber-600 text-white font-bold text-xs px-4 py-2.5 rounded-xl shadow-xs flex items-center gap-1.5 cursor-pointer"
+                  >
+                    <Plus className="w-4 h-4" /> Add Mission
+                  </button>
+                </div>
               </div>
 
-              <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
+              {/* Master Calendar Feed */}
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                 {familyPlannerEvents.map((evt) => (
                   <div
                     key={evt.id}
@@ -1209,35 +1334,6 @@ export function ParentDashboard({ onNavigate }: ParentDashboardProps) {
                     >
                       Delete
                     </button>
-                  </div>
-                ))}
-              </div>
-            </div>
-
-            {/* Family Challenges */}
-            <div className="bg-white rounded-3xl p-6 sm:p-8 border border-slate-200 shadow-soft space-y-4">
-              <div className="flex items-center justify-between border-b border-slate-100 pb-3">
-                <h3 className="text-xl font-black font-display text-slate-800">
-                  Family Real-World Missions
-                </h3>
-                <button
-                  type="button"
-                  onClick={() => setShowChallengeModal(true)}
-                  className="text-xs font-bold text-amber-600 bg-amber-50 px-3 py-1.5 rounded-xl cursor-pointer"
-                >
-                  + New Mission
-                </button>
-              </div>
-
-              <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                {familyChallenges.map((chal) => (
-                  <div key={chal.id} className="p-4 rounded-2xl bg-amber-50/40 border border-amber-200 space-y-2">
-                    <div className="flex items-center justify-between">
-                      <span className="text-2xl">{chal.emoji}</span>
-                      <span className="text-xs font-black text-amber-700">+{chal.starsReward} ⭐</span>
-                    </div>
-                    <h4 className="font-bold text-sm text-slate-800">{chal.title}</h4>
-                    <p className="text-xs text-slate-600 leading-snug">{chal.description}</p>
                   </div>
                 ))}
               </div>
@@ -1282,7 +1378,7 @@ export function ParentDashboard({ onNavigate }: ParentDashboardProps) {
             <div className="bg-white rounded-3xl border border-slate-200 shadow-soft p-6 space-y-4">
               <div className="flex items-center gap-2 pb-2 border-b border-slate-100">
                 <Shield className="w-5 h-5 text-emerald-600" />
-                <h3 className="font-black font-display text-base text-slate-800">Data Portability</h3>
+                <h3 className="font-black font-display text-base text-slate-800">Data Portability (COPPA)</h3>
               </div>
               <p className="text-xs text-slate-600">
                 Download a complete JSON export of all family records, learning metrics, and pregnancy logs.
@@ -1300,13 +1396,12 @@ export function ParentDashboard({ onNavigate }: ParentDashboardProps) {
       </main>
 
       {/* ======================================================== */}
-      {/* MODAL: ADD CHILD */}
+      {/* MODALS */}
       {/* ======================================================== */}
       {showAddChildModal && (
         <div className="fixed inset-0 z-50 bg-slate-900/70 backdrop-blur-sm flex items-center justify-center p-4">
           <div className="bg-white rounded-4xl shadow-pop max-w-sm w-full p-6 animate-pop-in">
             <h3 className="text-xl font-black font-display text-slate-800 mb-1">Add Child Profile</h3>
-            <p className="text-xs text-slate-400 mb-4">Each child gets their own adventure world.</p>
             <form onSubmit={handleAddChildSubmit} className="space-y-4">
               <input
                 type="text"
@@ -1356,9 +1451,6 @@ export function ParentDashboard({ onNavigate }: ParentDashboardProps) {
         </div>
       )}
 
-      {/* ======================================================== */}
-      {/* MODAL: LOG WEIGHT */}
-      {/* ======================================================== */}
       {showWeightModal && (
         <div className="fixed inset-0 z-50 bg-slate-900/70 backdrop-blur-sm flex items-center justify-center p-4">
           <div className="bg-white rounded-4xl shadow-pop max-w-sm w-full p-6 animate-pop-in">
@@ -1406,14 +1498,11 @@ export function ParentDashboard({ onNavigate }: ParentDashboardProps) {
         </div>
       )}
 
-      {/* ======================================================== */}
-      {/* MODAL: RECOMMEND ACTIVITY */}
-      {/* ======================================================== */}
       {showRecModal && selectedChild && (
         <div className="fixed inset-0 z-50 bg-slate-900/70 backdrop-blur-sm flex items-center justify-center p-4">
           <div className="bg-white rounded-4xl shadow-pop max-w-sm w-full p-6 animate-pop-in">
             <h3 className="text-xl font-black font-display text-slate-800 mb-1">
-              Recommend to {selectedChild.name}
+              Send Challenge to {selectedChild.name}
             </h3>
             <form onSubmit={handleSendRecommendationSubmit} className="space-y-4">
               <div>
@@ -1454,9 +1543,9 @@ export function ParentDashboard({ onNavigate }: ParentDashboardProps) {
                 </button>
                 <button
                   type="submit"
-                  className="btn-press flex-1 py-3 rounded-xl bg-rose-500 text-white font-bold text-xs"
+                  className="btn-press flex-1 py-3 rounded-xl bg-indigo-600 text-white font-bold text-xs"
                 >
-                  Send ❤️
+                  Send Challenge 🚀
                 </button>
               </div>
             </form>
@@ -1464,9 +1553,47 @@ export function ParentDashboard({ onNavigate }: ParentDashboardProps) {
         </div>
       )}
 
-      {/* ======================================================== */}
-      {/* MODAL: ADD EVENT */}
-      {/* ======================================================== */}
+      {showChallengeModal && (
+        <div className="fixed inset-0 z-50 bg-slate-900/70 backdrop-blur-sm flex items-center justify-center p-4">
+          <div className="bg-white rounded-4xl shadow-pop max-w-sm w-full p-6 animate-pop-in">
+            <h3 className="text-xl font-black font-display text-slate-800 mb-1">Create Family Mission</h3>
+            <form onSubmit={handleAddChallengeSubmit} className="space-y-4">
+              <input
+                type="text"
+                required
+                value={chalTitle}
+                onChange={(e) => setChalTitle(e.target.value)}
+                placeholder="Mission Title (e.g. Find 5 red objects)"
+                className="w-full text-xs font-bold p-3 rounded-xl border border-slate-300"
+              />
+              <textarea
+                rows={2}
+                required
+                value={chalDesc}
+                onChange={(e) => setChalDesc(e.target.value)}
+                placeholder="Instructions..."
+                className="w-full text-xs font-medium p-3 rounded-xl border border-slate-300"
+              />
+              <div className="flex gap-2 pt-2">
+                <button
+                  type="button"
+                  onClick={() => setShowChallengeModal(false)}
+                  className="btn-press flex-1 py-3 rounded-xl bg-slate-100 text-slate-600 font-bold text-xs"
+                >
+                  Cancel
+                </button>
+                <button
+                  type="submit"
+                  className="btn-press flex-1 py-3 rounded-xl bg-amber-500 text-white font-bold text-xs"
+                >
+                  Create Mission 🚀
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
+
       {showEventModal && (
         <div className="fixed inset-0 z-50 bg-slate-900/70 backdrop-blur-sm flex items-center justify-center p-4">
           <div className="bg-white rounded-4xl shadow-pop max-w-sm w-full p-6 animate-pop-in">
@@ -1477,7 +1604,7 @@ export function ParentDashboard({ onNavigate }: ParentDashboardProps) {
                 required
                 value={eventTitle}
                 onChange={(e) => setEventTitle(e.target.value)}
-                placeholder="e.g. Park Walk or Doctor Visit"
+                placeholder="Event Title (e.g. Doctor Visit)"
                 className="w-full text-xs font-bold p-3 rounded-xl border border-slate-300"
               />
               <div className="flex gap-2">
@@ -1485,7 +1612,7 @@ export function ParentDashboard({ onNavigate }: ParentDashboardProps) {
                   type="text"
                   value={eventDate}
                   onChange={(e) => setEventDate(e.target.value)}
-                  placeholder="Day/Date"
+                  placeholder="Date / Day"
                   className="w-1/2 text-xs font-medium p-3 rounded-xl border border-slate-300"
                 />
                 <input
@@ -1508,7 +1635,7 @@ export function ParentDashboard({ onNavigate }: ParentDashboardProps) {
                   type="submit"
                   className="btn-press flex-1 py-3 rounded-xl bg-emerald-600 text-white font-bold text-xs"
                 >
-                  Add Event ✓
+                  Save Event ✓
                 </button>
               </div>
             </form>
