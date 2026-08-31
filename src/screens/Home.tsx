@@ -8,6 +8,7 @@ import { DailyMysteryModal } from '@/components/DailyMysteryModal';
 import { RealWorldMissionModal } from '@/components/RealWorldMissionModal';
 import { BackpackModal } from '@/components/BackpackModal';
 import { PassportModal } from '@/components/PassportModal';
+import { MysteryChestModal } from '@/components/MysteryChestModal';
 import { AdSenseSafeZone } from '@/components/AdSenseSafeZone';
 import { kidoraCharacters } from '@/lib/characters';
 import { getTodayMystery } from '@/lib/mystery';
@@ -32,6 +33,10 @@ export function Home({ onNavigate }: HomeProps) {
     completeDailyMystery,
     completedRealWorldMissions,
     completeRealWorldMission,
+    todaySurprise,
+    revealTodaySurprise,
+    completeTodaySurprise,
+    unopenedChests,
   } = useApp();
 
   const [selectedCharacter, setSelectedCharacter] = useState(kidoraCharacters[0]);
@@ -39,6 +44,7 @@ export function Home({ onNavigate }: HomeProps) {
   const [showRealWorldModal, setShowRealWorldModal] = useState(false);
   const [showBackpackModal, setShowBackpackModal] = useState(false);
   const [showPassportModal, setShowPassportModal] = useState(false);
+  const [showChestModal, setShowChestModal] = useState(false);
 
   if (!profile) return null;
 
@@ -280,6 +286,61 @@ export function Home({ onNavigate }: HomeProps) {
               <span>Enter Arena 🚀</span>
             </button>
           </div>
+
+          {/* 🎲 2C. TODAY'S SURPRISE CHALLENGE CARD */}
+          <div className="bg-gradient-to-r from-teal-500 via-emerald-500 to-amber-500 rounded-3xl p-5 text-white shadow-pop flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 border border-emerald-300/40">
+            <div className="flex items-center gap-3.5">
+              <div className="w-12 h-12 rounded-2xl bg-white/25 backdrop-blur-md flex items-center justify-center text-3xl shrink-0">
+                {todaySurprise.revealed ? todaySurprise.emoji : '🎲'}
+              </div>
+              <div>
+                <div className="flex items-center gap-2">
+                  <span className="text-[10px] font-black uppercase tracking-wider bg-white/20 px-2.5 py-0.5 rounded-full">
+                    Today's Mystery Surprise
+                  </span>
+                  <span className="text-xs font-black text-amber-200">
+                    +{todaySurprise.points} Pts + 🎁 Chest
+                  </span>
+                </div>
+                <h3 className="text-base font-black font-display mt-0.5">
+                  {todaySurprise.revealed ? todaySurprise.title : "🤫 You won't know until you start!"}
+                </h3>
+                <p className="text-xs text-emerald-100 line-clamp-1">
+                  {todaySurprise.revealed
+                    ? todaySurprise.description
+                    : 'Tap START to reveal today’s secret adventure challenge!'}
+                </p>
+              </div>
+            </div>
+
+            <div className="flex items-center gap-2 shrink-0">
+              {!todaySurprise.revealed ? (
+                <button
+                  type="button"
+                  onClick={() => revealTodaySurprise()}
+                  className="btn-press px-5 py-2.5 rounded-2xl bg-white text-emerald-900 font-black font-display text-xs shadow-soft whitespace-nowrap cursor-pointer hover:bg-amber-100 transition-transform"
+                >
+                  <span>START → Reveal 🎲</span>
+                </button>
+              ) : todaySurprise.completed ? (
+                <button
+                  type="button"
+                  onClick={() => setShowChestModal(true)}
+                  className="btn-press px-5 py-2.5 rounded-2xl bg-amber-400 text-slate-950 font-black font-display text-xs shadow-soft whitespace-nowrap cursor-pointer transition-transform"
+                >
+                  <span>Open Mystery Chest 🎁</span>
+                </button>
+              ) : (
+                <button
+                  type="button"
+                  onClick={() => completeTodaySurprise()}
+                  className="btn-press px-5 py-2.5 rounded-2xl bg-amber-400 text-slate-950 font-black font-display text-xs shadow-soft whitespace-nowrap cursor-pointer transition-transform"
+                >
+                  <span>Complete Secret Challenge ✓</span>
+                </button>
+              )}
+            </div>
+          </div>
         </section>
 
         {/* PARENT RECOMMENDATION BANNER (If parent sent a quest) */}
@@ -516,6 +577,13 @@ export function Home({ onNavigate }: HomeProps) {
           onClose={() => setShowPassportModal(false)}
           childName={profile.name}
           passportStamps={passportStamps}
+        />
+      )}
+
+      {/* Mystery Chest Modal */}
+      {showChestModal && (
+        <MysteryChestModal
+          onClose={() => setShowChestModal(false)}
         />
       )}
     </div>

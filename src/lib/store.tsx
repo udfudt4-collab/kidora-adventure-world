@@ -16,8 +16,14 @@ import {
 import {
   INITIAL_KID_CHALLENGES,
   INITIAL_CATEGORY_POINTS,
+  INITIAL_THEMED_QUESTS,
+  INITIAL_TEAM_CHALLENGES,
+  INITIAL_PERSONAL_RECORDS,
+  INITIAL_BADGES_COLLECTION,
   getDefaultTasksForCategory,
   CHALLENGE_CATEGORIES,
+  generateRandomMysteryChestReward,
+  generateTodaySurpriseChallenge,
 } from './challenges';
 import type {
   ChildProfile,
@@ -48,6 +54,12 @@ import type {
   KidChallengeCategory,
   KidChallengeOpponent,
   CategoryPointsBreakdown,
+  ThemedQuest,
+  TeamChallenge,
+  PersonalRecord,
+  BadgeCollectible,
+  MysteryChestReward,
+  DailySurpriseChallenge,
 } from './types';
 
 export const defaultControls: ChildProfileControls = {
@@ -324,6 +336,20 @@ interface AppState {
   acceptKidChallenge: (challengeId: string) => void;
   completeKidChallengeTask: (challengeId: string, taskId: string) => void;
   completeKidChallengeDay: (challengeId: string, reactionEmoji?: string) => void;
+  // 🌋 Themed Quests, Teams, Personal Bests, Badges & Chests
+  themedQuests: ThemedQuest[];
+  teamChallenges: TeamChallenge[];
+  personalRecords: Record<string, PersonalRecord>;
+  collectedBadges: BadgeCollectible[];
+  unopenedChests: number;
+  todaySurprise: DailySurpriseChallenge;
+  completeThemedQuestTask: (questId: string, taskId: string) => void;
+  completeThemedQuest: (questId: string) => void;
+  contributeToTeamChallenge: (teamId: string, points: number) => void;
+  updatePersonalRecord: (category: string, newScore: number) => void;
+  openMysteryChest: () => MysteryChestReward;
+  revealTodaySurprise: () => void;
+  completeTodaySurprise: () => void;
   loading: boolean;
   // Actions
   switchChild: (childId: string) => void;
@@ -441,6 +467,14 @@ export function AppProvider({ children: reactChildren }: { children: ReactNode }
   // 🎮 Kid Challenges & Friend Quests
   const [kidChallenges, setKidChallenges] = useState<KidChallenge[]>(INITIAL_KID_CHALLENGES);
   const [categoryPoints, setCategoryPoints] = useState<CategoryPointsBreakdown>(INITIAL_CATEGORY_POINTS);
+
+  // 🌋 Themed Quests, Teams, Personal Bests, Badges & Chests
+  const [themedQuests, setThemedQuests] = useState<ThemedQuest[]>(INITIAL_THEMED_QUESTS);
+  const [teamChallenges, setTeamChallenges] = useState<TeamChallenge[]>(INITIAL_TEAM_CHALLENGES);
+  const [personalRecords, setPersonalRecords] = useState<Record<string, PersonalRecord>>(INITIAL_PERSONAL_RECORDS);
+  const [collectedBadges, setCollectedBadges] = useState<BadgeCollectible[]>(INITIAL_BADGES_COLLECTION);
+  const [unopenedChests, setUnopenedChests] = useState<number>(2);
+  const [todaySurprise, setTodaySurprise] = useState<DailySurpriseChallenge>(() => generateTodaySurpriseChallenge());
 
   // 🎁 Earn Premium & Referral System state
   const [premiumState, setPremiumState] = useState<PremiumState>(() => createDefaultPremiumState());
@@ -607,6 +641,38 @@ export function AppProvider({ children: reactChildren }: { children: ReactNode }
     }
     if (localCatPoints) {
       try { setCategoryPoints(JSON.parse(localCatPoints)); } catch (e) {}
+    }
+
+    const localThemedQuests = localStorage.getItem('kidora_themed_quests');
+    const localTeams = localStorage.getItem('kidora_team_challenges');
+    const localPRs = localStorage.getItem('kidora_personal_records');
+    const localBadges = localStorage.getItem('kidora_collected_badges');
+    const localChests = localStorage.getItem('kidora_unopened_chests');
+    const localSurprise = localStorage.getItem('kidora_today_surprise');
+
+    if (localThemedQuests) {
+      try { setThemedQuests(JSON.parse(localThemedQuests)); } catch (e) {}
+    }
+    if (localTeams) {
+      try { setTeamChallenges(JSON.parse(localTeams)); } catch (e) {}
+    }
+    if (localPRs) {
+      try { setPersonalRecords(JSON.parse(localPRs)); } catch (e) {}
+    }
+    if (localBadges) {
+      try { setCollectedBadges(JSON.parse(localBadges)); } catch (e) {}
+    }
+    if (localChests) {
+      try { setUnopenedChests(parseInt(localChests, 10)); } catch (e) {}
+    }
+    if (localSurprise) {
+      try {
+        const parsed = JSON.parse(localSurprise);
+        const todayStr = new Date().toISOString().split('T')[0];
+        if (parsed.date === todayStr) {
+          setTodaySurprise(parsed);
+        }
+      } catch (e) {}
     }
 
     if (localPin) setParentPinState(localPin);
@@ -1384,6 +1450,164 @@ export function AppProvider({ children: reactChildren }: { children: ReactNode }
     []
   );
 
+  // 🌋 Themed Quests Actions
+  const completeThemedQuestTask = useCallback((questId: string, taskId: string) => {
+    setThemedQuests((prev) => {
+      const updated = prev.map((q) => {
+        if (q.id !== questId) return q;
+        const updatedTasks = q.tasks.map((t) => (t.id === taskId ? { ...t, done: !t.done } : t));
+        const allDone = updatedTasks.every((t) => t.done);
+        return {
+          ...q,
+          tasks: updatedTasks,
+          completed: allDone,
+          unlockedChest: allDone ? true : q.unlockedChest,
+        };
+      });
+      try {
+        localStorage.setItem('kidora_themed_quests', JSON.stringify(updated));
+      } catch (e) {}
+      return updated;
+    });
+  }, []);
+
+  const completeThemedQuest = useCallback((questId: string) => {
+    setThemedQuests((prev) => {
+      const target = prev.find((q) => q.id === questId);
+      if (!target) return prev;
+      const updated = prev.map((q) => {
+        if (q.id !== questId) return q;
+        return {
+          ...q,
+          completed: true,
+          unlockedChest: true,
+          tasks: q.tasks.map((t) => ({ ...t, done: true })),
+        };
+      });
+      try {
+        localStorage.setItem('kidora_themed_quests', JSON.stringify(updated));
+      } catch (e) {}
+
+      // Add stars, category points, chests
+      setUnopenedChests((c) => {
+        const newCount = c + 1;
+        try { localStorage.setItem('kidora_unopened_chests', newCount.toString()); } catch {}
+        return newCount;
+      });
+
+      setCategoryPoints((cp) => {
+        const updatedCp = {
+          ...cp,
+          adventureMaster: cp.adventureMaster + target.totalPoints,
+        };
+        try { localStorage.setItem('kidora_category_points', JSON.stringify(updatedCp)); } catch {}
+        return updatedCp;
+      });
+
+      return updated;
+    });
+  }, []);
+
+  // 🦁 Team Co-op Actions
+  const contributeToTeamChallenge = useCallback((teamId: string, points: number) => {
+    setTeamChallenges((prev) => {
+      const updated = prev.map((t) => {
+        if (t.id !== teamId) return t;
+        const newTotal = Math.min(t.targetPoints, t.currentPoints + points);
+        const isDone = newTotal >= t.targetPoints;
+        const updatedMembers = t.members.map((m) =>
+          m.id === 'm-you' ? { ...m, pointsContributed: m.pointsContributed + points } : m
+        );
+        return {
+          ...t,
+          currentPoints: newTotal,
+          completed: isDone,
+          members: updatedMembers,
+        };
+      });
+      try {
+        localStorage.setItem('kidora_team_challenges', JSON.stringify(updated));
+      } catch (e) {}
+      return updated;
+    });
+  }, []);
+
+  // 🔥 Personal Record (Beat Your Own Score) Action
+  const updatePersonalRecord = useCallback((category: string, newScore: number) => {
+    setPersonalRecords((prev) => {
+      const current = prev[category];
+      const best = current ? Math.max(current.bestScore, newScore) : newScore;
+      const updatedRecord: PersonalRecord = {
+        category,
+        categoryTitle: current?.categoryTitle || `${category.toUpperCase()} Battle`,
+        emoji: current?.emoji || '🔥',
+        bestScore: best,
+        todayScore: newScore,
+        lastPlayed: 'Today',
+      };
+      const updated = { ...prev, [category]: updatedRecord };
+      try {
+        localStorage.setItem('kidora_personal_records', JSON.stringify(updated));
+      } catch (e) {}
+      return updated;
+    });
+  }, []);
+
+  // 🎁 Mystery Treasure Chest Opening Action
+  const openMysteryChest = useCallback((): MysteryChestReward => {
+    const reward = generateRandomMysteryChestReward();
+    setUnopenedChests((c) => {
+      const next = Math.max(0, c - 1);
+      try { localStorage.setItem('kidora_unopened_chests', next.toString()); } catch {}
+      return next;
+    });
+
+    if (reward.type === 'points' && typeof reward.value === 'number') {
+      setCategoryPoints((cp) => {
+        const updated = { ...cp, adventureMaster: cp.adventureMaster + (reward.value as number) };
+        try { localStorage.setItem('kidora_category_points', JSON.stringify(updated)); } catch {}
+        return updated;
+      });
+    }
+
+    return reward;
+  }, []);
+
+  // 🎲 Daily Surprise Actions
+  const revealTodaySurprise = useCallback(() => {
+    setTodaySurprise((prev) => {
+      const updated = { ...prev, revealed: true };
+      try {
+        localStorage.setItem('kidora_today_surprise', JSON.stringify(updated));
+      } catch (e) {}
+      return updated;
+    });
+  }, []);
+
+  const completeTodaySurprise = useCallback(() => {
+    setTodaySurprise((prev) => {
+      const updated = { ...prev, completed: true, revealed: true };
+      try {
+        localStorage.setItem('kidora_today_surprise', JSON.stringify(updated));
+      } catch (e) {}
+
+      // Award Points & Chest
+      setUnopenedChests((c) => {
+        const next = c + 1;
+        try { localStorage.setItem('kidora_unopened_chests', next.toString()); } catch {}
+        return next;
+      });
+
+      setCategoryPoints((cp) => {
+        const updatedCp = { ...cp, adventureMaster: cp.adventureMaster + prev.points };
+        try { localStorage.setItem('kidora_category_points', JSON.stringify(updatedCp)); } catch {}
+        return updatedCp;
+      });
+
+      return updated;
+    });
+  }, []);
+
   const addPeriodCycle = useCallback(
     (cycle: Omit<CycleEntry, 'id'>) => {
       const newCycle: CycleEntry = {
@@ -2012,6 +2236,20 @@ export function AppProvider({ children: reactChildren }: { children: ReactNode }
         acceptKidChallenge,
         completeKidChallengeTask,
         completeKidChallengeDay,
+        // 🌋 Themed Quests, Teams, Personal Records, Badges & Chests
+        themedQuests,
+        teamChallenges,
+        personalRecords,
+        collectedBadges,
+        unopenedChests,
+        todaySurprise,
+        completeThemedQuestTask,
+        completeThemedQuest,
+        contributeToTeamChallenge,
+        updatePersonalRecord,
+        openMysteryChest,
+        revealTodaySurprise,
+        completeTodaySurprise,
         loading,
         switchChild,
         addChild,

@@ -447,6 +447,99 @@ export interface CategoryPointsBreakdown {
   adventureMaster: number;   // 🌟 overall points
 }
 
+// 🌋 Themed Multi-Discipline Quests
+export interface ThemedQuestTask {
+  id: string;
+  categoryName: string;
+  text: string;
+  emoji: string;
+  points: number;
+  done: boolean;
+}
+
+export interface ThemedQuest {
+  id: string;
+  theme: 'volcano' | 'space' | 'jungle' | 'ocean' | 'castle';
+  title: string;
+  subtitle: string;
+  emoji: string;
+  bannerGradient: string;
+  companionName: string;
+  companionEmoji: string;
+  deadlineHours: number;
+  totalPoints: number;
+  tasks: ThemedQuestTask[];
+  completed: boolean;
+  unlockedChest: boolean;
+  badgeReward: string;
+}
+
+// 🦁 Team Co-op Challenges
+export interface TeamMember {
+  id: string;
+  name: string;
+  avatarEmoji: string;
+  pointsContributed: number;
+}
+
+export interface TeamChallenge {
+  id: string;
+  title: string;
+  emoji: string;
+  teamName: string;
+  opponentTeamName: string;
+  members: TeamMember[];
+  targetPoints: number;
+  currentPoints: number;
+  daysRemaining: number;
+  completed: boolean;
+  rewardBadge: string;
+}
+
+// 🔥 Personal Best / Beat Your Own Score
+export interface PersonalRecord {
+  category: string;
+  categoryTitle: string;
+  emoji: string;
+  bestScore: number;
+  todayScore: number;
+  lastPlayed: string;
+}
+
+// 🏅 Collectable Badges Showcase
+export interface BadgeCollectible {
+  id: string;
+  title: string;
+  emoji: string;
+  category: string;
+  description: string;
+  unlocked: boolean;
+  unlockedAt?: string;
+  rarity: 'common' | 'rare' | 'epic' | 'legendary';
+}
+
+// 🎁 Mystery Treasure Chest Rewards
+export interface MysteryChestReward {
+  type: 'points' | 'accessory' | 'badge' | 'title';
+  value: string | number;
+  emoji: string;
+  label: string;
+  description: string;
+}
+
+// 🎲 Daily Surprise Challenge
+export interface DailySurpriseChallenge {
+  id: string;
+  date: string;
+  title: string;
+  emoji: string;
+  description: string;
+  points: number;
+  revealed: boolean;
+  completed: boolean;
+}
+
+
 
 
 
