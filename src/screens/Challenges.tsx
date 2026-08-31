@@ -57,7 +57,7 @@ export function Challenges({ onNavigate }: ChallengesProps) {
   const invitationsList = kidChallenges.filter((c) => c.status === 'invitation');
 
   return (
-    <div className="min-h-screen w-full max-w-full overflow-x-hidden bg-gradient-to-b from-amber-50 via-sky-50 to-emerald-50 pb-24 font-body select-none">
+    <div className="min-h-screen w-full max-w-full overflow-x-hidden bg-gradient-to-b from-amber-50 via-sky-50 to-emerald-50 pb-24 font-body">
       {/* 1. TOP HEADER HERO BANNER */}
       <div className="bg-gradient-to-r from-amber-500 via-orange-500 to-rose-500 text-white pt-8 pb-14 px-4 sm:px-6 relative overflow-hidden shadow-soft">
         <div className="max-w-6xl mx-auto flex flex-col md:flex-row items-start md:items-center justify-between gap-6 relative z-10">

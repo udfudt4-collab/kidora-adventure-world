@@ -113,7 +113,7 @@ export function Home({ onNavigate }: HomeProps) {
   ];
 
   return (
-    <div className="min-h-screen w-full max-w-full overflow-x-hidden bg-slate-50 flex flex-col justify-between select-none">
+    <div className="min-h-screen w-full max-w-full overflow-x-hidden bg-slate-50 flex flex-col justify-between">
       {/* Universal Sticky Top Navigation */}
       <Navbar currentScreen="home" onNavigate={onNavigate} />
 
