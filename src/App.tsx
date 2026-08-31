@@ -11,6 +11,7 @@ import { ParentDashboard } from '@/screens/ParentDashboard';
 import { MyKidora } from '@/screens/MyKidora';
 import { PlayHub } from '@/screens/PlayHub';
 import { LearnHub } from '@/screens/LearnHub';
+import { Challenges } from '@/screens/Challenges';
 import { ParentsSection } from '@/screens/ParentsSection';
 import type { Screen } from '@/lib/types';
 
@@ -45,6 +46,7 @@ function AppContent() {
     case 'play': return <PlayHub onNavigate={navigate} />;
     case 'learn': return <LearnHub onNavigate={navigate} />;
     case 'adventure': return <Adventure onNavigate={navigate} />;
+    case 'challenges': return <Challenges onNavigate={navigate} />;
     case 'world': return <WorldMap onNavigate={navigate} />;
     case 'collections': return <MyKidora onNavigate={navigate} />;
     case 'my-kidora': return <MyKidora onNavigate={navigate} />;

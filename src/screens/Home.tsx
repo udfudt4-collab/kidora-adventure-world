@@ -245,6 +245,41 @@ export function Home({ onNavigate }: HomeProps) {
               </button>
             </div>
           </div>
+
+          {/* ⚔️ 2B. KID CHALLENGES & FRIEND QUESTS BANNER */}
+          <div
+            onClick={() => onNavigate('challenges')}
+            className="btn-press bg-gradient-to-r from-indigo-900 via-indigo-800 to-purple-900 rounded-3xl p-5 text-white shadow-pop flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 border border-indigo-400/40 cursor-pointer hover:border-amber-400 transition-all"
+          >
+            <div className="flex items-center gap-3.5">
+              <div className="w-12 h-12 rounded-2xl bg-amber-400 text-slate-900 flex items-center justify-center text-3xl shrink-0 shadow-soft">
+                ⚔️
+              </div>
+              <div>
+                <div className="flex items-center gap-2">
+                  <span className="text-[10px] font-black uppercase tracking-wider bg-white/20 px-2.5 py-0.5 rounded-full">
+                    Friends Arena & Streaks
+                  </span>
+                  <span className="text-xs font-bold text-amber-300">
+                    6 Fun Challenge Types!
+                  </span>
+                </div>
+                <h3 className="text-base sm:text-lg font-black font-display text-white mt-0.5">
+                  Kid Challenges & Friend Quests 🏆
+                </h3>
+                <p className="text-xs text-indigo-200">
+                  Challenge Maya 🦊, Arun 🐒, or classmates to movement sprints, brain battles, and kindness ripples!
+                </p>
+              </div>
+            </div>
+
+            <button
+              type="button"
+              className="btn-press px-5 py-2.5 rounded-2xl bg-amber-400 hover:bg-amber-300 text-slate-950 font-black font-display text-xs shadow-soft whitespace-nowrap cursor-pointer transition-transform shrink-0"
+            >
+              <span>Enter Arena 🚀</span>
+            </button>
+          </div>
         </section>
 
         {/* PARENT RECOMMENDATION BANNER (If parent sent a quest) */}

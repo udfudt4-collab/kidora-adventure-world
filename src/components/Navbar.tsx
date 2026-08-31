@@ -35,6 +35,7 @@ export function Navbar({ currentScreen, onNavigate }: NavbarProps) {
     { id: 'play', label: 'Play', emoji: '🎮', icon: Gamepad2 },
     { id: 'learn', label: 'Learn', emoji: '📚', icon: BookOpen },
     { id: 'adventure', label: 'Adventure', emoji: '🗺️', icon: Compass },
+    { id: 'challenges', label: 'Challenges', emoji: '⚔️', icon: Sparkles },
     { id: 'parents', label: 'Parents', emoji: '👨‍👩‍👧', icon: Heart },
   ];
 

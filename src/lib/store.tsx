@@ -13,6 +13,12 @@ import {
   applySuccessfulReferral,
   extendPremiumDays,
 } from './premium';
+import {
+  INITIAL_KID_CHALLENGES,
+  INITIAL_CATEGORY_POINTS,
+  getDefaultTasksForCategory,
+  CHALLENGE_CATEGORIES,
+} from './challenges';
 import type {
   ChildProfile,
   AvatarConfig,
@@ -38,6 +44,10 @@ import type {
   SleepQuality,
   HydrationData,
   HydrationLogEntry,
+  KidChallenge,
+  KidChallengeCategory,
+  KidChallengeOpponent,
+  CategoryPointsBreakdown,
 } from './types';
 
 export const defaultControls: ChildProfileControls = {
@@ -307,6 +317,13 @@ interface AppState {
   addWaterIntake: (childId: string, glasses: number, notes?: string) => void;
   resetTodayWaterIntake: (childId: string) => void;
   setHydrationTarget: (targetGlasses: number) => void;
+  // 🎮 Kid Challenges & Friend Quests
+  kidChallenges: KidChallenge[];
+  categoryPoints: CategoryPointsBreakdown;
+  createKidChallenge: (category: KidChallengeCategory, title: string, opponent: KidChallengeOpponent, streakDays?: number) => void;
+  acceptKidChallenge: (challengeId: string) => void;
+  completeKidChallengeTask: (challengeId: string, taskId: string) => void;
+  completeKidChallengeDay: (challengeId: string, reactionEmoji?: string) => void;
   loading: boolean;
   // Actions
   switchChild: (childId: string) => void;
@@ -420,6 +437,10 @@ export function AppProvider({ children: reactChildren }: { children: ReactNode }
   const [sleepLogs, setSleepLogs] = useState<SleepLogEntry[]>(initialSampleSleepLogs);
   // 💧 Child Daily Hydration Tracking
   const [hydrationData, setHydrationData] = useState<HydrationData>(initialDefaultHydration);
+
+  // 🎮 Kid Challenges & Friend Quests
+  const [kidChallenges, setKidChallenges] = useState<KidChallenge[]>(INITIAL_KID_CHALLENGES);
+  const [categoryPoints, setCategoryPoints] = useState<CategoryPointsBreakdown>(INITIAL_CATEGORY_POINTS);
 
   // 🎁 Earn Premium & Referral System state
   const [premiumState, setPremiumState] = useState<PremiumState>(() => createDefaultPremiumState());
@@ -569,6 +590,8 @@ export function AppProvider({ children: reactChildren }: { children: ReactNode }
     const localReviews = localStorage.getItem('kidora_parent_reviews');
     const localSleep = localStorage.getItem('kidora_sleep_logs');
     const localHydration = localStorage.getItem('kidora_hydration');
+    const localKidChallenges = localStorage.getItem('kidora_kid_challenges');
+    const localCatPoints = localStorage.getItem('kidora_category_points');
 
     if (localReviews) {
       try { setParentReviews(JSON.parse(localReviews)); } catch (e) {}
@@ -578,6 +601,12 @@ export function AppProvider({ children: reactChildren }: { children: ReactNode }
     }
     if (localHydration) {
       try { setHydrationData(JSON.parse(localHydration)); } catch (e) {}
+    }
+    if (localKidChallenges) {
+      try { setKidChallenges(JSON.parse(localKidChallenges)); } catch (e) {}
+    }
+    if (localCatPoints) {
+      try { setCategoryPoints(JSON.parse(localCatPoints)); } catch (e) {}
     }
 
     if (localPin) setParentPinState(localPin);
@@ -1230,6 +1259,131 @@ export function AppProvider({ children: reactChildren }: { children: ReactNode }
     []
   );
 
+  // 🎮 Kid Challenges & Friend Quests Actions
+  const createKidChallenge = useCallback(
+    (
+      category: KidChallengeCategory,
+      title: string,
+      opponent: KidChallengeOpponent,
+      streakDays: number = 3
+    ) => {
+      const catObj = CHALLENGE_CATEGORIES.find((c) => c.id === category);
+      const points = category === 'quest' ? 100 : category === 'sprint' ? 75 : 50;
+      const newChallenge: KidChallenge = {
+        id: `kc-${Date.now()}`,
+        category,
+        title: title || `${catObj?.title || 'Kid'} Challenge`,
+        description: catObj?.description || 'Complete fun activities with your buddy!',
+        emoji: catObj?.emoji || '⭐',
+        opponent,
+        status: 'active',
+        pointsReward: points,
+        badgeReward: catObj?.badgeTitle || '🌟 Adventure Master',
+        streakDays,
+        currentDay: 1,
+        dayCompleted: Array(streakDays).fill(false),
+        tasks: getDefaultTasksForCategory(category),
+        createdAt: new Date().toISOString(),
+      };
+
+      setKidChallenges((prev) => {
+        const updated = [newChallenge, ...prev];
+        try {
+          localStorage.setItem('kidora_kid_challenges', JSON.stringify(updated));
+        } catch (e) {}
+        return updated;
+      });
+    },
+    []
+  );
+
+  const acceptKidChallenge = useCallback(
+    (challengeId: string) => {
+      setKidChallenges((prev) => {
+        const updated = prev.map((c) =>
+          c.id === challengeId ? { ...c, status: 'active' as const } : c
+        );
+        try {
+          localStorage.setItem('kidora_kid_challenges', JSON.stringify(updated));
+        } catch (e) {}
+        return updated;
+      });
+    },
+    []
+  );
+
+  const completeKidChallengeTask = useCallback(
+    (challengeId: string, taskId: string) => {
+      setKidChallenges((prev) => {
+        const updated = prev.map((c) => {
+          if (c.id !== challengeId) return c;
+          const updatedTasks = c.tasks.map((t) =>
+            t.id === taskId ? { ...t, done: !t.done } : t
+          );
+          return { ...c, tasks: updatedTasks };
+        });
+        try {
+          localStorage.setItem('kidora_kid_challenges', JSON.stringify(updated));
+        } catch (e) {}
+        return updated;
+      });
+    },
+    []
+  );
+
+  const completeKidChallengeDay = useCallback(
+    (challengeId: string, reactionEmoji: string = '👏') => {
+      setKidChallenges((prev) => {
+        const target = prev.find((c) => c.id === challengeId);
+        if (!target) return prev;
+
+        const dayIdx = target.currentDay - 1;
+        const newDayCompleted = [...target.dayCompleted];
+        newDayCompleted[dayIdx] = true;
+
+        const isAllDaysDone = target.currentDay >= target.streakDays;
+        const isFullyCompleted = isAllDaysDone;
+
+        const updated = prev.map((c) => {
+          if (c.id !== challengeId) return c;
+          return {
+            ...c,
+            dayCompleted: newDayCompleted,
+            currentDay: isFullyCompleted ? c.streakDays : c.currentDay + 1,
+            status: isFullyCompleted ? ('completed' as const) : c.status,
+            completedAt: isFullyCompleted ? new Date().toISOString() : c.completedAt,
+            reactionEmoji,
+            tasks: c.tasks.map((t) => ({ ...t, done: true })),
+          };
+        });
+
+        try {
+          localStorage.setItem('kidora_kid_challenges', JSON.stringify(updated));
+        } catch (e) {}
+
+        // Award Category points & stars
+        const catObj = CHALLENGE_CATEGORIES.find((cat) => cat.id === target.category);
+        if (catObj) {
+          setCategoryPoints((cp) => {
+            const currentCatPoints = cp[catObj.pointsKey] || 0;
+            const updatedCp = {
+              ...cp,
+              [catObj.pointsKey]: currentCatPoints + target.pointsReward,
+              adventureMaster: cp.adventureMaster + target.pointsReward,
+            };
+            try {
+              localStorage.setItem('kidora_category_points', JSON.stringify(updatedCp));
+            } catch (e) {}
+            return updatedCp;
+          });
+        }
+
+        return updated;
+      });
+    },
+    []
+  );
+
   const addPeriodCycle = useCallback(
     (cycle: Omit<CycleEntry, 'id'>) => {
       const newCycle: CycleEntry = {
@@ -1851,6 +2005,13 @@ export function AppProvider({ children: reactChildren }: { children: ReactNode }
         addWaterIntake,
         resetTodayWaterIntake,
         setHydrationTarget,
+        // 🎮 Kid Challenges & Friend Quests
+        kidChallenges,
+        categoryPoints,
+        createKidChallenge,
+        acceptKidChallenge,
+        completeKidChallengeTask,
+        completeKidChallengeDay,
         loading,
         switchChild,
         addChild,

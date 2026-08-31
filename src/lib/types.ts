@@ -4,6 +4,7 @@ export type Screen =
   | 'play'
   | 'learn'
   | 'adventure'
+  | 'challenges'
   | 'activity'
   | 'world'
   | 'collections'
@@ -393,6 +394,59 @@ export interface HydrationData {
   dailyIntakeByChild: Record<string, number>; // childId -> today's glasses count
   historyLogs: HydrationLogEntry[];
 }
+
+// 🎮 Kid Challenges & Friend Quests System
+export type KidChallengeCategory =
+  | 'sprint'     // 🏃 Adventure Sprint (movement, active)
+  | 'brain'      // 🧠 Brain Battle (learning, memory, math)
+  | 'creative'   // 🎨 Creative Challenge (drawing, blocks, story)
+  | 'kindness'   // 💚 Kindness Challenge (positive acts, helping)
+  | 'habit'      // 💧 Healthy Hero (hydration, sleep, nutrition)
+  | 'quest';     // 🗺️ Adventure Quest (multi-step virtual quest)
+
+export interface KidChallengeOpponent {
+  id: string;
+  name: string;
+  avatarEmoji: string;
+  type: 'friend' | 'group' | 'buddy';
+}
+
+export interface KidChallengeTask {
+  id: string;
+  text: string;
+  emoji?: string;
+  done: boolean;
+  type?: string;
+}
+
+export interface KidChallenge {
+  id: string;
+  category: KidChallengeCategory;
+  title: string;
+  description: string;
+  emoji: string;
+  opponent: KidChallengeOpponent;
+  status: 'active' | 'invitation' | 'completed';
+  pointsReward: number;
+  badgeReward: string;
+  streakDays: number; // e.g. 1, 3, 7
+  currentDay: number;
+  dayCompleted: boolean[]; // e.g. [true, false, false]
+  tasks: KidChallengeTask[];
+  createdAt: string;
+  completedAt?: string;
+  reactionEmoji?: string; // e.g. 👏, 💖, ⭐, 🔥
+}
+
+export interface CategoryPointsBreakdown {
+  activeHero: number;        // 🏃 movement points
+  brainMaster: number;       // 🧠 learning points
+  creativeStar: number;      // 🎨 creativity points
+  kindnessChampion: number;  // 💚 kindness points
+  healthyHero: number;       // 💧 healthy habit points
+  adventureMaster: number;   // 🌟 overall points
+}
+
 
 
 
