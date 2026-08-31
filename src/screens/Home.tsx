@@ -113,11 +113,11 @@ export function Home({ onNavigate }: HomeProps) {
   ];
 
   return (
-    <div className="min-h-screen bg-slate-50 flex flex-col justify-between select-none">
+    <div className="min-h-screen w-full max-w-full overflow-x-hidden bg-slate-50 flex flex-col justify-between select-none">
       {/* Universal Sticky Top Navigation */}
       <Navbar currentScreen="home" onNavigate={onNavigate} />
 
-      <main className="flex-1">
+      <main className="flex-1 w-full max-w-full overflow-x-hidden">
         {/* 1. HERO SECTION */}
         <section className="relative overflow-hidden bg-gradient-to-b from-sky-400 via-amber-200 to-emerald-100 py-10 sm:py-14 px-4 sm:px-6">
           {/* Animated Sky Elements */}

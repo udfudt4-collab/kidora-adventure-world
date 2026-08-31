@@ -335,7 +335,7 @@ export function ParentDashboard({ onNavigate }: ParentDashboardProps) {
   const pendingApprovalsCount = approvalRequests.filter((r) => r.status === 'pending').length;
 
   return (
-    <div className="min-h-screen bg-slate-100 flex flex-col justify-between select-none">
+    <div className="min-h-screen w-full max-w-full overflow-x-hidden bg-slate-100 flex flex-col justify-between select-none">
       {/* Top Header */}
       <header className="bg-slate-900 text-white shadow-soft sticky top-0 z-30">
         <div className="max-w-6xl mx-auto px-4 sm:px-6 h-16 flex items-center justify-between">
