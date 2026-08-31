@@ -137,6 +137,7 @@ export function ParentDashboard({ onNavigate }: ParentDashboardProps) {
   // Baby Names state
   const [nameSearch, setNameSearch] = useState('');
   const [nameGenderFilter, setNameGenderFilter] = useState<'all' | 'boy' | 'girl' | 'unisex' | 'fav'>('all');
+  const [nameOriginFilter, setNameOriginFilter] = useState<'all' | 'tamil' | 'indian' | 'global'>('all');
   const [nameLetterFilter, setNameLetterFilter] = useState<string>('ALL');
 
   // Modals
@@ -178,10 +179,10 @@ export function ParentDashboard({ onNavigate }: ParentDashboardProps) {
   const currentWeekInfo = getWeekData(pregnancyCurrentWeek);
 
   // Name of the Day
-  const nameOfTheDay = babyNamesDatabase[2]; // e.g. Leo
+  const nameOfTheDay = babyNamesDatabase[0]; // Iniyan
 
-  // Filtered baby names
-  const alphabet = ['ALL', 'A', 'B', 'C', 'D', 'E', 'I', 'K', 'L', 'M', 'N', 'O', 'R', 'S', 'T', 'V', 'Z'];
+  // Filtered baby names with complete A-Z
+  const alphabet = ['ALL', 'A', 'B', 'C', 'D', 'E', 'F', 'G', 'H', 'I', 'J', 'K', 'L', 'M', 'N', 'O', 'P', 'R', 'S', 'T', 'U', 'V', 'W', 'Y', 'Z'];
   const filteredBabyNames = babyNamesDatabase.filter((n) => {
     const matchesSearch =
       n.name.toLowerCase().includes(nameSearch.toLowerCase()) ||
@@ -192,6 +193,10 @@ export function ParentDashboard({ onNavigate }: ParentDashboardProps) {
     if (nameLetterFilter !== 'ALL' && !n.name.toUpperCase().startsWith(nameLetterFilter)) {
       return false;
     }
+
+    if (nameOriginFilter === 'tamil' && !n.origin.toLowerCase().includes('tamil')) return false;
+    if (nameOriginFilter === 'indian' && !n.origin.toLowerCase().includes('sanskrit') && !n.origin.toLowerCase().includes('tamil')) return false;
+    if (nameOriginFilter === 'global' && n.origin.toLowerCase().includes('tamil')) return false;
 
     if (nameGenderFilter === 'fav') return favoriteBabyNames.includes(n.id);
     if (nameGenderFilter === 'all') return true;
@@ -1346,6 +1351,32 @@ export function ParentDashboard({ onNavigate }: ParentDashboardProps) {
                         </button>
                       ))}
                     </div>
+                  </div>
+
+                  {/* Cultural Origin Filter Pills */}
+                  <div className="flex items-center gap-1.5 overflow-x-auto no-scrollbar pt-1">
+                    <span className="text-[10px] font-black uppercase text-slate-400 mr-1 tracking-wider shrink-0">
+                      Origin:
+                    </span>
+                    {[
+                      { id: 'all' as const, label: '🌟 All Origins' },
+                      { id: 'tamil' as const, label: '🌺 Tamil Heritage (75+)' },
+                      { id: 'indian' as const, label: '🇮🇳 Indian / Sanskrit' },
+                      { id: 'global' as const, label: '🌍 Global & Nature' },
+                    ].map((origin) => (
+                      <button
+                        key={origin.id}
+                        type="button"
+                        onClick={() => setNameOriginFilter(origin.id)}
+                        className={`btn-press text-xs font-bold px-3 py-1.5 rounded-xl cursor-pointer whitespace-nowrap transition-colors ${
+                          nameOriginFilter === origin.id
+                            ? 'bg-gradient-to-r from-amber-500 to-orange-500 text-white shadow-xs'
+                            : 'bg-amber-50/70 border border-amber-200/80 text-amber-900 hover:bg-amber-100'
+                        }`}
+                      >
+                        {origin.label}
+                      </button>
+                    ))}
                   </div>
 
                   {/* A-Z Letter Filter Bar */}

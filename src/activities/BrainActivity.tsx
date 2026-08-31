@@ -1,5 +1,7 @@
 import { useState } from 'react';
 import { generateBrainPuzzles, getDifficultyLevel, type BrainPuzzle } from '@/lib/content';
+import { useVoice } from '@/lib/useVoice';
+import { Volume2, Sparkles, Brain } from 'lucide-react';
 
 interface Props {
   age: number;
@@ -7,16 +9,20 @@ interface Props {
 }
 
 export function BrainActivity({ age, onComplete }: Props) {
+  const { speak } = useVoice();
   const [puzzles] = useState<BrainPuzzle[]>(() => {
     const level = getDifficultyLevel(age, 0.5);
     return generateBrainPuzzles(level);
   });
-  const [idx] = useState(0);
   const [selected, setSelected] = useState<string | null>(null);
   const [showFeedback, setShowFeedback] = useState(false);
 
-  const puzzle = puzzles[idx];
+  const puzzle = puzzles[0];
   if (!puzzle) return null;
+
+  const handleSpeak = () => {
+    speak(`${puzzle.question}. ${puzzle.hint || ''}`, true);
+  };
 
   const handleAnswer = (choice: string) => {
     if (showFeedback) return;
@@ -24,47 +30,86 @@ export function BrainActivity({ age, onComplete }: Props) {
     setShowFeedback(true);
     const correct = choice === puzzle.answer;
 
+    if (correct) {
+      speak(`Brilliant! You solved it! The answer is ${puzzle.answer}`, true);
+    } else {
+      speak(`Good thinking! The correct answer was ${puzzle.answer}`, true);
+    }
+
     setTimeout(() => {
       onComplete(correct ? 3 : 1);
-    }, 1500);
+    }, 1800);
   };
 
   return (
-    <div className="bg-white rounded-3xl p-6 shadow-pop">
-      <div className="text-center mb-4">
-        <div className="text-xs font-bold text-slate-400 uppercase">Logic Puzzle</div>
+    <div className="bg-white rounded-4xl p-6 sm:p-7 shadow-pop border border-slate-100 space-y-6">
+      {/* Top Header */}
+      <div className="flex items-center justify-between">
+        <span className="text-[10px] font-black uppercase tracking-wider bg-purple-100 text-purple-800 px-3 py-1 rounded-full flex items-center gap-1">
+          <Brain className="w-3 h-3" />
+          <span>{puzzle.category} Puzzle</span>
+        </span>
+        <button
+          type="button"
+          onClick={handleSpeak}
+          className="btn-press p-2 rounded-xl bg-purple-50 text-purple-600 hover:bg-purple-100 transition-colors cursor-pointer"
+          title="Listen to riddle question"
+        >
+          <Volume2 className="w-4 h-4" />
+        </button>
       </div>
-      <div className="text-center mb-6">
-        <div className="text-5xl mb-3">{puzzle.emoji}</div>
-        <p className="text-lg font-display font-bold text-slate-700">{puzzle.question}</p>
+
+      {/* Hero Emoji & Question */}
+      <div className="text-center space-y-3">
+        <div className="text-5xl sm:text-6xl animate-bounce-soft">{puzzle.emoji}</div>
+        <h3 className="text-lg sm:text-xl font-display font-black text-slate-800 leading-snug">
+          {puzzle.question}
+        </h3>
+        {puzzle.hint && !showFeedback && (
+          <p className="text-xs text-slate-400 font-bold">
+            💡 Hint: {puzzle.hint}
+          </p>
+        )}
       </div>
-      <div className="grid grid-cols-2 gap-3">
-        {puzzle.options.map((c) => {
-          const isCorrect = c === puzzle.answer;
-          const isSelected = c === selected;
-          let cls = 'bg-grape-50 text-slate-600';
+
+      {/* Answer Choices Grid */}
+      <div className="grid grid-cols-2 gap-3 max-w-sm mx-auto">
+        {puzzle.options.map((opt) => {
+          const isCorrect = opt === puzzle.answer;
+          const isSelected = opt === selected;
+          let btnStyle = 'bg-slate-50 hover:bg-purple-50 text-slate-700 border border-slate-200';
+
           if (showFeedback) {
-            if (isCorrect) cls = 'bg-mint-400 text-white scale-105';
-            else if (isSelected) cls = 'bg-rose-200 text-rose-600';
-            else cls = 'bg-slate-50 text-slate-300';
+            if (isCorrect) btnStyle = 'bg-emerald-500 text-white border-emerald-400 scale-102 shadow-soft';
+            else if (isSelected) btnStyle = 'bg-rose-200 text-rose-700 border-rose-300';
+            else btnStyle = 'bg-slate-50 text-slate-300 border-slate-100';
           }
+
           return (
             <button
-              key={c}
-              onClick={() => handleAnswer(c)}
-              className={`btn-press ${cls} rounded-2xl py-5 text-xl font-display font-bold shadow-soft transition-all`}
+              key={opt}
+              type="button"
+              onClick={() => handleAnswer(opt)}
+              disabled={showFeedback}
+              className={`btn-press min-h-[56px] p-3 rounded-2xl font-black font-display text-sm sm:text-base shadow-xs transition-all flex items-center justify-center text-center cursor-pointer ${btnStyle}`}
             >
-              {c}
+              {opt}
             </button>
           );
         })}
       </div>
+
+      {/* Feedback Alert */}
       {showFeedback && (
-        <div className="text-center mt-4 animate-pop-in">
+        <div className="text-center animate-pop-in">
           {selected === puzzle.answer ? (
-            <p className="text-mint-600 font-display font-bold text-lg">Brilliant! You solved it! ⭐</p>
+            <p className="text-emerald-600 font-display font-black text-base">
+              🎉 Brilliant deduction! You cracked the logic riddle! ⭐⭐⭐
+            </p>
           ) : (
-            <p className="text-tangerine-600 font-display font-bold text-lg">Good try! The answer was {puzzle.answer} 💪</p>
+            <p className="text-amber-600 font-display font-black text-sm">
+              Good try! The answer was {puzzle.answer} 💪
+            </p>
           )}
         </div>
       )}

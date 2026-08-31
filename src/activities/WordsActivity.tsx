@@ -1,5 +1,7 @@
 import { useState } from 'react';
 import { generateWordProblems, getDifficultyLevel, type WordProblem } from '@/lib/content';
+import { useVoice } from '@/lib/useVoice';
+import { Sparkles, Volume2, Award, Star, CheckCircle2 } from 'lucide-react';
 
 interface Props {
   age: number;
@@ -7,6 +9,7 @@ interface Props {
 }
 
 export function WordsActivity({ age, onComplete }: Props) {
+  const { speak } = useVoice();
   const [problems] = useState<WordProblem[]>(() => {
     const level = getDifficultyLevel(age, 0.5);
     return generateWordProblems(level);
@@ -19,16 +22,21 @@ export function WordsActivity({ age, onComplete }: Props) {
   const problem = problems[idx];
   if (!problem) return null;
 
-  const wordDisplay = problem.word.split('').map((letter) =>
-    letter === problem.missingLetter ? '_' : letter
-  ).join(' ');
+  const handleSpeak = () => {
+    speak(`${problem.word}. ${problem.hint}`, true);
+  };
 
   const handleAnswer = (choice: string) => {
     if (showFeedback) return;
     setSelected(choice);
     setShowFeedback(true);
     const correct = choice === problem.missingLetter;
-    if (correct) setCorrectCount(c => c + 1);
+    if (correct) {
+      setCorrectCount((c) => c + 1);
+      speak(`Correct! ${problem.word}!`, true);
+    } else {
+      speak(`Good try! The missing letter was ${problem.missingLetter}.`, true);
+    }
 
     setTimeout(() => {
       if (idx < problems.length - 1) {
@@ -36,52 +44,121 @@ export function WordsActivity({ age, onComplete }: Props) {
         setSelected(null);
         setShowFeedback(false);
       } else {
-        const stars = correctCount + (correct ? 1 : 0);
-        onComplete(Math.max(1, Math.round((stars / problems.length) * 3)));
+        const totalScore = correctCount + (correct ? 1 : 0);
+        onComplete(Math.max(1, Math.round((totalScore / problems.length) * 3)));
       }
-    }, 1200);
+    }, 1500);
   };
 
+  const tierBadge = {
+    beginner: { label: '🌱 3-Letter Phonics', color: 'bg-emerald-100 text-emerald-800' },
+    explorer: { label: `⭐ ${problem.word.length}-Letter Word`, color: 'bg-sky-100 text-sky-800' },
+    master: { label: `🚀 ${problem.word.length}-Letter Vocabulary`, color: 'bg-purple-100 text-purple-800' },
+    genius: { label: `🧠 ${problem.word.length}-Letter Science Word`, color: 'bg-amber-100 text-amber-900' },
+  }[problem.difficultyTier];
+
   return (
-    <div className="bg-white rounded-3xl p-6 shadow-pop">
-      <div className="text-center mb-4">
-        <div className="text-xs font-bold text-slate-400 uppercase">Word {idx + 1} of {problems.length}</div>
-      </div>
-      <div className="text-center mb-6">
-        <div className="text-6xl mb-3">{problem.emoji}</div>
-        <p className="text-sm text-slate-500 mb-2">{problem.hint}</p>
-        <div className="text-3xl font-display font-extrabold text-slate-700 tracking-widest">
-          {wordDisplay}
+    <div className="bg-white rounded-4xl p-6 sm:p-7 shadow-pop border border-slate-100 space-y-6">
+      {/* Top Header */}
+      <div className="flex items-center justify-between">
+        <span className={`text-[10px] font-black uppercase tracking-wider px-3 py-1 rounded-full ${tierBadge.color}`}>
+          {tierBadge.label} • {problem.category}
+        </span>
+        <div className="text-xs font-black text-slate-400">
+          Word {idx + 1} of {problems.length}
         </div>
       </div>
-      <p className="text-center text-sm font-bold text-slate-400 mb-3">Which letter is missing?</p>
-      <div className="grid grid-cols-4 gap-2">
-        {problem.options.map((c) => {
-          const isCorrect = c === problem.missingLetter;
-          const isSelected = c === selected;
-          let cls = 'bg-grape-50 text-slate-600';
-          if (showFeedback) {
-            if (isCorrect) cls = 'bg-mint-400 text-white scale-105';
-            else if (isSelected) cls = 'bg-rose-200 text-rose-600';
-            else cls = 'bg-slate-50 text-slate-300';
-          }
-          return (
-            <button
-              key={c}
-              onClick={() => handleAnswer(c)}
-              className={`btn-press ${cls} rounded-2xl py-5 text-2xl font-display font-bold shadow-soft transition-all`}
-            >
-              {c}
-            </button>
-          );
-        })}
+
+      {/* Hero Emoji & Spoken Clue */}
+      <div className="text-center space-y-3">
+        <div className="text-6xl sm:text-7xl animate-bounce-soft">{problem.emoji}</div>
+        <div className="flex items-center justify-center gap-2">
+          <p className="text-sm sm:text-base font-bold text-slate-600 max-w-sm">
+            {problem.hint}
+          </p>
+          <button
+            type="button"
+            onClick={handleSpeak}
+            className="btn-press p-2 rounded-xl bg-sky-50 text-sky-600 hover:bg-sky-100 transition-colors cursor-pointer shrink-0"
+            title="Listen to word hint"
+          >
+            <Volume2 className="w-4 h-4" />
+          </button>
+        </div>
+
+        {/* Word Tiles with Missing Slot */}
+        <div className="flex items-center justify-center gap-1.5 sm:gap-2 pt-2 flex-wrap">
+          {problem.word.split('').map((letter, letterIdx) => {
+            const isMissingSlot = letterIdx === problem.missingIndex;
+            return (
+              <div
+                key={letterIdx}
+                className={`w-10 h-12 sm:w-12 sm:h-14 rounded-2xl flex items-center justify-center font-display font-black text-2xl sm:text-3xl transition-all shadow-xs ${
+                  isMissingSlot
+                    ? showFeedback
+                      ? selected === problem.missingLetter
+                        ? 'bg-emerald-500 text-white border-2 border-emerald-400 scale-105'
+                        : 'bg-rose-100 text-rose-600 border-2 border-rose-300'
+                      : 'bg-amber-100 border-3 border-dashed border-amber-400 text-amber-600 animate-pulse'
+                    : 'bg-slate-100 border border-slate-200 text-slate-800'
+                }`}
+              >
+                {isMissingSlot
+                  ? showFeedback
+                    ? problem.missingLetter
+                    : '?'
+                  : letter}
+              </div>
+            );
+          })}
+        </div>
       </div>
+
+      {/* Options Grid */}
+      <div className="space-y-2">
+        <p className="text-center text-xs font-black uppercase tracking-wider text-slate-400">
+          Choose the missing letter:
+        </p>
+
+        <div className="grid grid-cols-4 gap-2.5 max-w-xs mx-auto">
+          {problem.options.map((opt) => {
+            const isCorrect = opt === problem.missingLetter;
+            const isSelected = opt === selected;
+            let btnStyle = 'bg-slate-50 hover:bg-sky-50 text-slate-700 border border-slate-200';
+
+            if (showFeedback) {
+              if (isCorrect) btnStyle = 'bg-emerald-500 text-white border-emerald-400 scale-105 shadow-soft';
+              else if (isSelected) btnStyle = 'bg-rose-200 text-rose-700 border-rose-300';
+              else btnStyle = 'bg-slate-50 text-slate-300 border-slate-100';
+            }
+
+            return (
+              <button
+                key={opt}
+                type="button"
+                onClick={() => handleAnswer(opt)}
+                disabled={showFeedback}
+                className={`btn-press h-14 rounded-2xl font-black font-display text-2xl shadow-xs transition-all flex items-center justify-center cursor-pointer ${btnStyle}`}
+              >
+                {opt}
+              </button>
+            );
+          })}
+        </div>
+      </div>
+
+      {/* Feedback Banner */}
       {showFeedback && (
-        <div className="text-center mt-4 animate-pop-in">
+        <div className="text-center animate-pop-in">
           {selected === problem.missingLetter ? (
-            <p className="text-mint-600 font-display font-bold text-lg">Yes! That's right! ⭐</p>
+            <p className="text-emerald-600 font-display font-black text-lg flex items-center justify-center gap-1.5">
+              <span>🌟 Excellent!</span>
+              <span className="font-bold text-slate-700 text-base">"{problem.word}"</span>
+            </p>
           ) : (
-            <p className="text-tangerine-600 font-display font-bold text-lg">Almost! It was "{problem.missingLetter}" 💪</p>
+            <p className="text-amber-600 font-display font-black text-sm">
+              Almost! The word is "{problem.word}" 💪
+            </p>
           )}
         </div>
       )}
