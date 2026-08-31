@@ -57,7 +57,9 @@ export function HydrationTracker() {
 
   const handleSaveTarget = (e: React.FormEvent) => {
     e.preventDefault();
-    setHydrationTarget(targetInput);
+    const clamped = Math.min(15, Math.max(2, targetInput || 7));
+    setHydrationTarget(clamped);
+    setTargetInput(clamped);
     setIsEditingTarget(false);
   };
 

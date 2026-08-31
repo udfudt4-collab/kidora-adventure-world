@@ -68,6 +68,7 @@ export function ParentDashboard({ onNavigate }: ParentDashboardProps) {
     deleteChild,
     parentPin,
     setParentPin,
+    verifyParentPin,
     recommendations,
     sendRecommendation,
     familyChallenges,
@@ -1581,6 +1582,36 @@ export function ParentDashboard({ onNavigate }: ParentDashboardProps) {
                 </div>
               </div>
             </div>
+
+            {/* 3. DANGER ZONE: DELETE CHILD PROFILE (COPPA) */}
+            {familyChildren.length > 1 && (
+              <div className="bg-rose-50 border border-rose-200 rounded-3xl p-6 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
+                <div>
+                  <h4 className="text-sm font-black font-display text-rose-900 flex items-center gap-1.5">
+                    <Trash2 className="w-4 h-4 text-rose-600" />
+                    <span>Delete {selectedChild.name}'s Profile</span>
+                  </h4>
+                  <p className="text-xs text-rose-700 font-medium mt-0.5">
+                    Permanently removes this child's progress, stars, and living world records.
+                  </p>
+                </div>
+
+                <button
+                  type="button"
+                  onClick={() => {
+                    const entered = window.prompt(`Enter your 4-digit Parent PIN to permanently delete ${selectedChild.name}:`);
+                    if (entered && verifyParentPin(entered)) {
+                      deleteChild(selectedChild.id);
+                    } else if (entered) {
+                      alert('Incorrect Parent PIN. Deletion cancelled.');
+                    }
+                  }}
+                  className="btn-press px-4 py-2.5 rounded-xl bg-rose-600 hover:bg-rose-700 text-white font-black text-xs shadow-xs cursor-pointer transition-colors shrink-0"
+                >
+                  Delete Profile
+                </button>
+              </div>
+            )}
           </div>
         )}
 

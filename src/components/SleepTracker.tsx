@@ -47,8 +47,10 @@ export function SleepTracker() {
         wDate = new Date(2000, 0, 2, wHour, wMin);
       }
 
-      const diffMs = wDate.getTime() - bDate.getTime();
-      const totalHours = diffMs / (1000 * 60 * 60);
+      let diffMs = wDate.getTime() - bDate.getTime();
+      let totalHours = diffMs / (1000 * 60 * 60);
+      if (isNaN(totalHours) || totalHours <= 0) totalHours = 10;
+      totalHours = Math.min(18, Math.max(1, totalHours));
       const hours = Math.floor(totalHours);
       const mins = Math.round((totalHours - hours) * 60);
 

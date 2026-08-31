@@ -92,7 +92,7 @@ export function ParentSecurityGate({ onSuccess, onCancel }: ParentSecurityGatePr
 
             {error && (
               <p className="text-xs text-rose-500 font-bold mb-3 animate-shake">
-                Incorrect PIN. Default is 1234.
+                Incorrect PIN. Please try again or tap ? for Adult Math Challenge.
               </p>
             )}
 
