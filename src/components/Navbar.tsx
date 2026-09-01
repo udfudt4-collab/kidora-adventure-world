@@ -36,6 +36,7 @@ export function Navbar({ currentScreen, onNavigate }: NavbarProps) {
     { id: 'learn', label: 'Learn', emoji: '📚', icon: BookOpen },
     { id: 'adventure', label: 'Adventure', emoji: '🗺️', icon: Compass },
     { id: 'challenges', label: 'Challenges', emoji: '⚔️', icon: Sparkles },
+    { id: 'ideas', label: 'Ideas (Beta)', emoji: '💡', icon: Sparkles },
     { id: 'parents', label: 'Parents', emoji: '👨‍👩‍👧', icon: Heart },
   ];
 
@@ -66,11 +67,11 @@ export function Navbar({ currentScreen, onNavigate }: NavbarProps) {
               🦊
             </div>
             <div className="text-left">
-              <span className="text-lg sm:text-xl font-black font-display tracking-tight text-slate-800 flex items-center gap-1">
-                KIDORA <span className="text-amber-500 text-[10px] sm:text-xs font-bold uppercase tracking-wider bg-amber-50 px-1.5 py-0.5 rounded-md border border-amber-200">World</span>
+              <span className="text-lg sm:text-xl font-black font-display tracking-tight text-slate-800 flex items-center gap-1.5">
+                KIDORA <span className="text-amber-600 text-[10px] sm:text-xs font-black uppercase tracking-wider bg-amber-100/90 px-1.5 py-0.5 rounded-md border border-amber-300">BETA</span>
               </span>
               <p className="text-[10px] font-bold text-slate-400 leading-none hidden sm:block">
-                Learn • Play • Explore
+                Learn • Play • Co-Create
               </p>
             </div>
           </button>

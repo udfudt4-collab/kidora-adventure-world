@@ -1,3 +1,5 @@
+import { useEffect } from 'react';
+import { registerModalBackHandler } from '@/lib/navigation';
 import { Sparkles, Moon, Sun } from 'lucide-react';
 
 interface GentleTimeLimitModalProps {
@@ -11,6 +13,9 @@ export function GentleTimeLimitModal({
   minutesPlayed,
   onClose,
 }: GentleTimeLimitModalProps) {
+  useEffect(() => {
+    return registerModalBackHandler(onClose);
+  }, [onClose]);
   return (
     <div className="fixed inset-0 z-50 bg-slate-900/80 backdrop-blur-md flex items-center justify-center p-4 select-none">
       <div className="bg-gradient-to-b from-indigo-900 to-slate-900 text-white rounded-4xl shadow-pop max-w-sm w-full p-6 text-center animate-pop-in border border-indigo-700/50">

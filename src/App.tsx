@@ -1,10 +1,10 @@
-import { useState } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { AppProvider, useApp } from '@/lib/store';
+import { setupNavigationHandlers, initBackButtonSupport } from '@/lib/navigation';
 import { Onboarding } from '@/screens/Onboarding';
 import { Home } from '@/screens/Home';
 import { Adventure } from '@/screens/Adventure';
 import { WorldMap } from '@/screens/WorldMap';
-import { Collections } from '@/screens/Collections';
 import { Pets } from '@/screens/Pets';
 import { Create } from '@/screens/Create';
 import { ParentDashboard } from '@/screens/ParentDashboard';
@@ -13,11 +13,54 @@ import { PlayHub } from '@/screens/PlayHub';
 import { LearnHub } from '@/screens/LearnHub';
 import { Challenges } from '@/screens/Challenges';
 import { ParentsSection } from '@/screens/ParentsSection';
+import { IdeaHub } from '@/screens/IdeaHub';
 import type { Screen } from '@/lib/types';
 
 function AppContent() {
   const { profile, loading } = useApp();
-  const [screen, setScreen] = useState<Screen>('home');
+
+  // Read initial screen from URL hash if available
+  const [screen, setScreen] = useState<Screen>(() => {
+    if (typeof window !== 'undefined' && window.location.hash) {
+      const parsed = window.location.hash.replace('#', '') as Screen;
+      const validScreens: Screen[] = [
+        'home', 'play', 'learn', 'adventure', 'challenges', 'world',
+        'collections', 'my-kidora', 'pets', 'create', 'parent', 'parents',
+        'parent-guide', 'about', 'safety', 'privacy', 'terms', 'contact', 'ideas'
+      ];
+      if (validScreens.includes(parsed)) return parsed;
+    }
+    return 'home';
+  });
+
+  const screenRef = useRef<Screen>(screen);
+  screenRef.current = screen;
+
+  const navigate = (s: Screen, pushHistory = true) => {
+    if (screenRef.current === s) return;
+    setScreen(s);
+    if (pushHistory && typeof window !== 'undefined' && window.history) {
+      try {
+        window.history.pushState({ screen: s }, '', `#${s}`);
+      } catch (e) {
+        // ignore
+      }
+    }
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+  };
+
+  useEffect(() => {
+    // Setup centralized navigation for back button
+    setupNavigationHandlers(
+      (newScreen) => navigate(newScreen, false),
+      () => screenRef.current
+    );
+
+    const cleanup = initBackButtonSupport();
+    return () => {
+      if (cleanup) cleanup();
+    };
+  }, []);
 
   if (loading) {
     return (
@@ -39,8 +82,6 @@ function AppContent() {
     return <Onboarding />;
   }
 
-  const navigate = (s: Screen) => setScreen(s);
-
   switch (screen) {
     case 'home': return <Home onNavigate={navigate} />;
     case 'play': return <PlayHub onNavigate={navigate} />;
@@ -60,6 +101,7 @@ function AppContent() {
     case 'privacy': return <ParentsSection initialTab="privacy" onNavigate={navigate} />;
     case 'terms': return <ParentsSection initialTab="terms" onNavigate={navigate} />;
     case 'contact': return <ParentsSection initialTab="contact" onNavigate={navigate} />;
+    case 'ideas': return <IdeaHub onNavigate={navigate} />;
     default: return <Home onNavigate={navigate} />;
   }
 }

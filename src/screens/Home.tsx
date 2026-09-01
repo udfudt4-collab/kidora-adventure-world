@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { Navbar } from '@/components/Navbar';
 import { Footer } from '@/components/Footer';
 import { LivingWorld } from '@/components/LivingWorld';
@@ -10,6 +10,7 @@ import { BackpackModal } from '@/components/BackpackModal';
 import { PassportModal } from '@/components/PassportModal';
 import { MysteryChestModal } from '@/components/MysteryChestModal';
 import { AdSenseSafeZone } from '@/components/AdSenseSafeZone';
+import { registerModalBackHandler } from '@/lib/navigation';
 import { kidoraCharacters } from '@/lib/characters';
 import { getTodayMystery } from '@/lib/mystery';
 import { getTodayRealWorldMission } from '@/lib/realWorld';
@@ -45,6 +46,25 @@ export function Home({ onNavigate }: HomeProps) {
   const [showBackpackModal, setShowBackpackModal] = useState(false);
   const [showPassportModal, setShowPassportModal] = useState(false);
   const [showChestModal, setShowChestModal] = useState(false);
+
+  // Close modals on Back button press
+  useEffect(() => {
+    if (showMysteryModal) {
+      return registerModalBackHandler(() => setShowMysteryModal(false));
+    }
+    if (showRealWorldModal) {
+      return registerModalBackHandler(() => setShowRealWorldModal(false));
+    }
+    if (showBackpackModal) {
+      return registerModalBackHandler(() => setShowBackpackModal(false));
+    }
+    if (showPassportModal) {
+      return registerModalBackHandler(() => setShowPassportModal(false));
+    }
+    if (showChestModal) {
+      return registerModalBackHandler(() => setShowChestModal(false));
+    }
+  }, [showMysteryModal, showRealWorldModal, showBackpackModal, showPassportModal, showChestModal]);
 
   if (!profile) return null;
 

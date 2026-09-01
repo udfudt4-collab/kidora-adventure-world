@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react';
 import { useApp } from '@/lib/store';
+import { registerModalBackHandler } from '@/lib/navigation';
 import { Lock, ShieldCheck, HelpCircle } from 'lucide-react';
 
 interface ParentSecurityGateProps {
@@ -14,6 +15,10 @@ export function ParentSecurityGate({ onSuccess, onCancel }: ParentSecurityGatePr
   const [useMathFallback, setUseMathFallback] = useState(false);
   const [mathProblem, setMathProblem] = useState({ q: '24 + 17 = ?', a: 41 });
   const [mathAnswer, setMathAnswer] = useState('');
+
+  useEffect(() => {
+    return registerModalBackHandler(onCancel);
+  }, [onCancel]);
 
   useEffect(() => {
     // Generate random adult arithmetic problem

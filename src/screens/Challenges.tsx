@@ -1,5 +1,6 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useApp } from '@/lib/store';
+import { registerModalBackHandler } from '@/lib/navigation';
 import type { Screen, KidChallenge, KidChallengeCategory, ThemedQuest } from '@/lib/types';
 import { CHALLENGE_CATEGORIES } from '@/lib/challenges';
 import { ChallengePlayModal } from '@/components/ChallengePlayModal';
@@ -52,6 +53,25 @@ export function Challenges({ onNavigate }: ChallengesProps) {
   const [isCreateModalOpen, setIsCreateModalOpen] = useState<boolean>(false);
   const [isChestModalOpen, setIsChestModalOpen] = useState<boolean>(false);
   const [isBadgeModalOpen, setIsBadgeModalOpen] = useState<boolean>(false);
+
+  // Close modals on Back button press
+  useEffect(() => {
+    if (playingChallenge) {
+      return registerModalBackHandler(() => setPlayingChallenge(null));
+    }
+    if (playingQuest) {
+      return registerModalBackHandler(() => setPlayingQuest(null));
+    }
+    if (isCreateModalOpen) {
+      return registerModalBackHandler(() => setIsCreateModalOpen(false));
+    }
+    if (isChestModalOpen) {
+      return registerModalBackHandler(() => setIsChestModalOpen(false));
+    }
+    if (isBadgeModalOpen) {
+      return registerModalBackHandler(() => setIsBadgeModalOpen(false));
+    }
+  }, [playingChallenge, playingQuest, isCreateModalOpen, isChestModalOpen, isBadgeModalOpen]);
 
   const activeBattles = kidChallenges.filter((c) => c.status === 'active');
   const invitationsList = kidChallenges.filter((c) => c.status === 'invitation');

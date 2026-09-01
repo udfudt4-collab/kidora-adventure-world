@@ -19,7 +19,8 @@ export type Screen =
   | 'terms'
   | 'contact'
   | 'parent-guide'
-  | 'settings';
+  | 'settings'
+  | 'ideas';
 
 export type ActivityType =
   | 'math'
@@ -382,15 +383,19 @@ export interface HydrationLogEntry {
   id: string;
   childId: string;
   date: string; // YYYY-MM-DD
+  mlDrank?: number; // total ml drank
   glassesDrank: number;
+  targetMl?: number; // target in ml
   targetGlasses: number;
-  mlPerGlass: number; // default 250ml
+  mlPerGlass: number; // custom glass size in ml (e.g. 100ml, 250ml)
   notes?: string;
 }
 
 export interface HydrationData {
-  targetGlasses: number;
-  mlPerGlass: number;
+  targetMl?: number; // daily target in ML (e.g. 1750 ml)
+  targetGlasses: number; // glass equivalent target
+  mlPerGlass: number; // customizable glass capacity (e.g. 100ml, 250ml)
+  dailyIntakeMlByChild?: Record<string, number>; // childId -> today's ml count
   dailyIntakeByChild: Record<string, number>; // childId -> today's glasses count
   historyLogs: HydrationLogEntry[];
 }
@@ -537,6 +542,39 @@ export interface DailySurpriseChallenge {
   points: number;
   revealed: boolean;
   completed: boolean;
+}
+
+// 💡 Community Ideas & Feature Voting Board (Beta)
+export type IdeaCategory = 'games' | 'learning' | 'parent' | 'languages' | 'creative' | 'general';
+export type IdeaStatus = 'under_review' | 'in_development' | 'planned' | 'completed';
+
+export interface IdeaComment {
+  id: string;
+  authorName: string;
+  authorRole?: 'parent' | 'kid' | 'team';
+  comment: string;
+  createdAt: string;
+}
+
+export interface CommunityIdea {
+  id: string;
+  title: string;
+  description: string;
+  category: IdeaCategory;
+  authorName: string;
+  authorAvatar?: string;
+  votesCount: number;
+  votedByMe?: boolean;
+  status: IdeaStatus;
+  officialResponse?: {
+    responderName: string;
+    responderTitle: string; // e.g. 'Kidora Product Team'
+    message: string;
+    respondedAt: string;
+  };
+  comments: IdeaComment[];
+  createdAt: string;
+  tags?: string[];
 }
 
 

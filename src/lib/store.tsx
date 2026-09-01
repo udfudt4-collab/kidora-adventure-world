@@ -25,6 +25,7 @@ import {
   generateRandomMysteryChestReward,
   generateTodaySurpriseChallenge,
 } from './challenges';
+import { defaultCommunityIdeas } from './ideas';
 import type {
   ChildProfile,
   AvatarConfig,
@@ -60,6 +61,9 @@ import type {
   BadgeCollectible,
   MysteryChestReward,
   DailySurpriseChallenge,
+  CommunityIdea,
+  IdeaCategory,
+  IdeaComment,
 } from './types';
 
 export const defaultControls: ChildProfileControls = {
@@ -265,17 +269,19 @@ const initialSampleSleepLogs: SleepLogEntry[] = [
 ];
 
 const initialDefaultHydration: HydrationData = {
+  targetMl: 1750,
   targetGlasses: 7,
   mlPerGlass: 250,
+  dailyIntakeMlByChild: { 'child-1': 1250 },
   dailyIntakeByChild: { 'child-1': 5 },
   historyLogs: [
-    { id: 'hl-1', childId: 'child-1', date: new Date().toISOString().split('T')[0], glassesDrank: 5, targetGlasses: 7, mlPerGlass: 250, notes: 'Drank well throughout afternoon study.' },
-    { id: 'hl-2', childId: 'child-1', date: new Date(Date.now() - 86400000).toISOString().split('T')[0], glassesDrank: 7, targetGlasses: 7, mlPerGlass: 250, notes: 'Reached full daily goal!' },
-    { id: 'hl-3', childId: 'child-1', date: new Date(Date.now() - 2 * 86400000).toISOString().split('T')[0], glassesDrank: 6, targetGlasses: 7, mlPerGlass: 250, notes: 'Good hydration day.' },
-    { id: 'hl-4', childId: 'child-1', date: new Date(Date.now() - 3 * 86400000).toISOString().split('T')[0], glassesDrank: 8, targetGlasses: 7, mlPerGlass: 250, notes: 'Hot outdoor day, drank extra.' },
-    { id: 'hl-5', childId: 'child-1', date: new Date(Date.now() - 4 * 86400000).toISOString().split('T')[0], glassesDrank: 6, targetGlasses: 7, mlPerGlass: 250, notes: 'Met baseline.' },
-    { id: 'hl-6', childId: 'child-1', date: new Date(Date.now() - 5 * 86400000).toISOString().split('T')[0], glassesDrank: 7, targetGlasses: 7, mlPerGlass: 250, notes: 'Goal achieved.' },
-    { id: 'hl-7', childId: 'child-1', date: new Date(Date.now() - 6 * 86400000).toISOString().split('T')[0], glassesDrank: 6, targetGlasses: 7, mlPerGlass: 250, notes: 'Great hydration habit.' },
+    { id: 'hl-1', childId: 'child-1', date: new Date().toISOString().split('T')[0], mlDrank: 1250, glassesDrank: 5, targetMl: 1750, targetGlasses: 7, mlPerGlass: 250, notes: 'Drank well throughout afternoon study.' },
+    { id: 'hl-2', childId: 'child-1', date: new Date(Date.now() - 86400000).toISOString().split('T')[0], mlDrank: 1750, glassesDrank: 7, targetMl: 1750, targetGlasses: 7, mlPerGlass: 250, notes: 'Reached full daily goal!' },
+    { id: 'hl-3', childId: 'child-1', date: new Date(Date.now() - 2 * 86400000).toISOString().split('T')[0], mlDrank: 1500, glassesDrank: 6, targetMl: 1750, targetGlasses: 7, mlPerGlass: 250, notes: 'Good hydration day.' },
+    { id: 'hl-4', childId: 'child-1', date: new Date(Date.now() - 3 * 86400000).toISOString().split('T')[0], mlDrank: 2000, glassesDrank: 8, targetMl: 1750, targetGlasses: 7, mlPerGlass: 250, notes: 'Hot outdoor day, drank extra.' },
+    { id: 'hl-5', childId: 'child-1', date: new Date(Date.now() - 4 * 86400000).toISOString().split('T')[0], mlDrank: 1500, glassesDrank: 6, targetMl: 1750, targetGlasses: 7, mlPerGlass: 250, notes: 'Met baseline.' },
+    { id: 'hl-6', childId: 'child-1', date: new Date(Date.now() - 5 * 86400000).toISOString().split('T')[0], mlDrank: 1750, glassesDrank: 7, targetMl: 1750, targetGlasses: 7, mlPerGlass: 250, notes: 'Goal achieved.' },
+    { id: 'hl-7', childId: 'child-1', date: new Date(Date.now() - 6 * 86400000).toISOString().split('T')[0], mlDrank: 1500, glassesDrank: 6, targetMl: 1750, targetGlasses: 7, mlPerGlass: 250, notes: 'Great hydration habit.' },
   ],
 };
 
@@ -327,8 +333,11 @@ interface AppState {
   // 💧 Child Daily Hydration Tracking
   hydrationData: HydrationData;
   addWaterIntake: (childId: string, glasses: number, notes?: string) => void;
+  addWaterIntakeMl: (childId: string, ml: number, notes?: string) => void;
   resetTodayWaterIntake: (childId: string) => void;
-  setHydrationTarget: (targetGlasses: number) => void;
+  setHydrationTarget: (targetMlOrGlasses: number) => void;
+  setGlassSize: (mlPerGlass: number) => void;
+  setHydrationSettings: (targetMl: number, mlPerGlass: number) => void;
   // 🎮 Kid Challenges & Friend Quests
   kidChallenges: KidChallenge[];
   categoryPoints: CategoryPointsBreakdown;
@@ -350,6 +359,11 @@ interface AppState {
   openMysteryChest: () => MysteryChestReward;
   revealTodaySurprise: () => void;
   completeTodaySurprise: () => void;
+  // 💡 Community Ideas & Feature Voting Board (Beta)
+  communityIdeas: CommunityIdea[];
+  submitCommunityIdea: (idea: { title: string; description: string; category: IdeaCategory; authorName: string; tags?: string[] }) => void;
+  toggleVoteIdea: (ideaId: string) => void;
+  addIdeaComment: (ideaId: string, comment: string, authorName: string) => void;
   loading: boolean;
   // Actions
   switchChild: (childId: string) => void;
@@ -475,6 +489,15 @@ export function AppProvider({ children: reactChildren }: { children: ReactNode }
   const [collectedBadges, setCollectedBadges] = useState<BadgeCollectible[]>(INITIAL_BADGES_COLLECTION);
   const [unopenedChests, setUnopenedChests] = useState<number>(2);
   const [todaySurprise, setTodaySurprise] = useState<DailySurpriseChallenge>(() => generateTodaySurpriseChallenge());
+
+  // 💡 Community Ideas & Feature Voting Board (Beta)
+  const [communityIdeas, setCommunityIdeas] = useState<CommunityIdea[]>(() => {
+    try {
+      const saved = localStorage.getItem('kidora_community_ideas');
+      if (saved) return JSON.parse(saved);
+    } catch (e) {}
+    return defaultCommunityIdeas;
+  });
 
   // 🎁 Earn Premium & Referral System state
   const [premiumState, setPremiumState] = useState<PremiumState>(() => createDefaultPremiumState());
@@ -634,7 +657,34 @@ export function AppProvider({ children: reactChildren }: { children: ReactNode }
       try { setSleepLogs(JSON.parse(localSleep)); } catch (e) {}
     }
     if (localHydration) {
-      try { setHydrationData(JSON.parse(localHydration)); } catch (e) {}
+      try {
+        const parsed = JSON.parse(localHydration);
+        const mlPerGlass = parsed.mlPerGlass || 250;
+        const targetMl = parsed.targetMl || (parsed.targetGlasses ? parsed.targetGlasses * mlPerGlass : 1750);
+        const targetGlasses = Math.max(1, Math.round(targetMl / mlPerGlass));
+        const dailyIntakeMlByChild: Record<string, number> = { ...(parsed.dailyIntakeMlByChild || {}) };
+        const dailyIntakeByChild: Record<string, number> = { ...(parsed.dailyIntakeByChild || {}) };
+
+        Object.keys(dailyIntakeByChild).forEach((cId) => {
+          if (dailyIntakeMlByChild[cId] === undefined) {
+            dailyIntakeMlByChild[cId] = Math.round(dailyIntakeByChild[cId] * mlPerGlass);
+          }
+        });
+        Object.keys(dailyIntakeMlByChild).forEach((cId) => {
+          if (dailyIntakeByChild[cId] === undefined) {
+            dailyIntakeByChild[cId] = Math.round((dailyIntakeMlByChild[cId] / mlPerGlass) * 10) / 10;
+          }
+        });
+
+        setHydrationData({
+          ...parsed,
+          targetMl,
+          targetGlasses,
+          mlPerGlass,
+          dailyIntakeMlByChild,
+          dailyIntakeByChild,
+        });
+      } catch (e) {}
     }
     if (localKidChallenges) {
       try { setKidChallenges(JSON.parse(localKidChallenges)); } catch (e) {}
@@ -1239,13 +1289,20 @@ export function AppProvider({ children: reactChildren }: { children: ReactNode }
   );
 
   // 💧 Hydration Measure Actions
-  const addWaterIntake = useCallback(
-    (childId: string, glasses: number, notes?: string) => {
+  const addWaterIntakeMl = useCallback(
+    (childId: string, ml: number, notes?: string) => {
       setHydrationData((prev) => {
         const todayStr = new Date().toISOString().split('T')[0];
-        const currentCount = prev.dailyIntakeByChild[childId] || 0;
-        const newCount = Math.max(0, currentCount + glasses);
-        const updatedDaily = { ...prev.dailyIntakeByChild, [childId]: newCount };
+        const mlPerGlass = prev.mlPerGlass || 250;
+        const currentMl =
+          prev.dailyIntakeMlByChild && prev.dailyIntakeMlByChild[childId] !== undefined
+            ? prev.dailyIntakeMlByChild[childId]
+            : (prev.dailyIntakeByChild[childId] || 0) * mlPerGlass;
+
+        const newMl = Math.max(0, currentMl + ml);
+        const newGlasses = Math.round((newMl / mlPerGlass) * 10) / 10;
+        const updatedDailyMl = { ...(prev.dailyIntakeMlByChild || {}), [childId]: newMl };
+        const updatedDaily = { ...prev.dailyIntakeByChild, [childId]: newGlasses };
 
         const existingLogIndex = prev.historyLogs.findIndex(
           (l) => l.childId === childId && l.date === todayStr
@@ -1254,7 +1311,8 @@ export function AppProvider({ children: reactChildren }: { children: ReactNode }
         if (existingLogIndex >= 0) {
           updatedHistory[existingLogIndex] = {
             ...updatedHistory[existingLogIndex],
-            glassesDrank: newCount,
+            mlDrank: newMl,
+            glassesDrank: newGlasses,
             notes: notes || updatedHistory[existingLogIndex].notes,
           };
         } else {
@@ -1263,9 +1321,11 @@ export function AppProvider({ children: reactChildren }: { children: ReactNode }
               id: `hl-${Date.now()}`,
               childId,
               date: todayStr,
-              glassesDrank: newCount,
+              mlDrank: newMl,
+              glassesDrank: newGlasses,
+              targetMl: prev.targetMl || prev.targetGlasses * mlPerGlass,
               targetGlasses: prev.targetGlasses,
-              mlPerGlass: prev.mlPerGlass,
+              mlPerGlass: mlPerGlass,
               notes,
             },
             ...updatedHistory,
@@ -1274,6 +1334,67 @@ export function AppProvider({ children: reactChildren }: { children: ReactNode }
 
         const updated: HydrationData = {
           ...prev,
+          dailyIntakeMlByChild: updatedDailyMl,
+          dailyIntakeByChild: updatedDaily,
+          historyLogs: updatedHistory,
+        };
+
+        try {
+          localStorage.setItem('kidora_hydration', JSON.stringify(updated));
+        } catch (e) {}
+        return updated;
+      });
+    },
+    []
+  );
+
+  const addWaterIntake = useCallback(
+    (childId: string, glasses: number, notes?: string) => {
+      setHydrationData((prev) => {
+        const mlPerGlass = prev.mlPerGlass || 250;
+        const mlToAdd = Math.round(glasses * mlPerGlass);
+        const todayStr = new Date().toISOString().split('T')[0];
+        const currentMl =
+          prev.dailyIntakeMlByChild && prev.dailyIntakeMlByChild[childId] !== undefined
+            ? prev.dailyIntakeMlByChild[childId]
+            : (prev.dailyIntakeByChild[childId] || 0) * mlPerGlass;
+
+        const newMl = Math.max(0, currentMl + mlToAdd);
+        const newGlasses = Math.round((newMl / mlPerGlass) * 10) / 10;
+        const updatedDailyMl = { ...(prev.dailyIntakeMlByChild || {}), [childId]: newMl };
+        const updatedDaily = { ...prev.dailyIntakeByChild, [childId]: newGlasses };
+
+        const existingLogIndex = prev.historyLogs.findIndex(
+          (l) => l.childId === childId && l.date === todayStr
+        );
+        let updatedHistory = [...prev.historyLogs];
+        if (existingLogIndex >= 0) {
+          updatedHistory[existingLogIndex] = {
+            ...updatedHistory[existingLogIndex],
+            mlDrank: newMl,
+            glassesDrank: newGlasses,
+            notes: notes || updatedHistory[existingLogIndex].notes,
+          };
+        } else {
+          updatedHistory = [
+            {
+              id: `hl-${Date.now()}`,
+              childId,
+              date: todayStr,
+              mlDrank: newMl,
+              glassesDrank: newGlasses,
+              targetMl: prev.targetMl || prev.targetGlasses * mlPerGlass,
+              targetGlasses: prev.targetGlasses,
+              mlPerGlass: mlPerGlass,
+              notes,
+            },
+            ...updatedHistory,
+          ];
+        }
+
+        const updated: HydrationData = {
+          ...prev,
+          dailyIntakeMlByChild: updatedDailyMl,
           dailyIntakeByChild: updatedDaily,
           historyLogs: updatedHistory,
         };
@@ -1292,11 +1413,13 @@ export function AppProvider({ children: reactChildren }: { children: ReactNode }
       setHydrationData((prev) => {
         const todayStr = new Date().toISOString().split('T')[0];
         const updatedDaily = { ...prev.dailyIntakeByChild, [childId]: 0 };
+        const updatedDailyMl = { ...(prev.dailyIntakeMlByChild || {}), [childId]: 0 };
         const updatedHistory = prev.historyLogs.map((l) =>
-          l.childId === childId && l.date === todayStr ? { ...l, glassesDrank: 0 } : l
+          l.childId === childId && l.date === todayStr ? { ...l, mlDrank: 0, glassesDrank: 0 } : l
         );
         const updated: HydrationData = {
           ...prev,
+          dailyIntakeMlByChild: updatedDailyMl,
           dailyIntakeByChild: updatedDaily,
           historyLogs: updatedHistory,
         };
@@ -1310,11 +1433,56 @@ export function AppProvider({ children: reactChildren }: { children: ReactNode }
   );
 
   const setHydrationTarget = useCallback(
-    (targetGlasses: number) => {
+    (targetMlOrGlasses: number) => {
       setHydrationData((prev) => {
+        const mlPerGlass = prev.mlPerGlass || 250;
+        const targetMl = targetMlOrGlasses < 50 ? Math.round(targetMlOrGlasses * mlPerGlass) : Math.max(100, targetMlOrGlasses);
+        const targetGlasses = Math.max(1, Math.round(targetMl / mlPerGlass));
         const updated: HydrationData = {
           ...prev,
-          targetGlasses: Math.max(1, targetGlasses),
+          targetMl,
+          targetGlasses,
+        };
+        try {
+          localStorage.setItem('kidora_hydration', JSON.stringify(updated));
+        } catch (e) {}
+        return updated;
+      });
+    },
+    []
+  );
+
+  const setGlassSize = useCallback(
+    (mlPerGlass: number) => {
+      setHydrationData((prev) => {
+        const validGlassSize = Math.max(50, mlPerGlass);
+        const targetMl = prev.targetMl || prev.targetGlasses * 250;
+        const targetGlasses = Math.max(1, Math.round(targetMl / validGlassSize));
+        const updated: HydrationData = {
+          ...prev,
+          mlPerGlass: validGlassSize,
+          targetGlasses,
+        };
+        try {
+          localStorage.setItem('kidora_hydration', JSON.stringify(updated));
+        } catch (e) {}
+        return updated;
+      });
+    },
+    []
+  );
+
+  const setHydrationSettings = useCallback(
+    (targetMl: number, mlPerGlass: number) => {
+      setHydrationData((prev) => {
+        const validGlassSize = Math.max(50, mlPerGlass);
+        const validTargetMl = Math.max(100, targetMl);
+        const targetGlasses = Math.max(1, Math.round(validTargetMl / validGlassSize));
+        const updated: HydrationData = {
+          ...prev,
+          targetMl: validTargetMl,
+          mlPerGlass: validGlassSize,
+          targetGlasses,
         };
         try {
           localStorage.setItem('kidora_hydration', JSON.stringify(updated));
@@ -2184,6 +2352,71 @@ export function AppProvider({ children: reactChildren }: { children: ReactNode }
     );
   }, [childrenList, pregnancyWeek, pregnancyWeightLogs, favoriteBabyNames, babyMoments, familyChallenges, parentNotes]);
 
+  // 💡 Community Ideas & Feature Voting Callbacks
+  const submitCommunityIdea = useCallback((idea: { title: string; description: string; category: IdeaCategory; authorName: string; tags?: string[] }) => {
+    const newEntry: CommunityIdea = {
+      id: `idea-${Date.now()}`,
+      title: idea.title.trim(),
+      description: idea.description.trim(),
+      category: idea.category,
+      authorName: idea.authorName.trim() || 'Parent Explorer',
+      authorAvatar: '💡',
+      votesCount: 1,
+      votedByMe: true,
+      status: 'under_review',
+      tags: idea.tags || [],
+      comments: [],
+      createdAt: new Date().toISOString().split('T')[0],
+    };
+    setCommunityIdeas((prev) => {
+      const updated = [newEntry, ...prev];
+      try { localStorage.setItem('kidora_community_ideas', JSON.stringify(updated)); } catch (e) {}
+      return updated;
+    });
+  }, []);
+
+  const toggleVoteIdea = useCallback((ideaId: string) => {
+    setCommunityIdeas((prev) => {
+      const updated = prev.map((item) => {
+        if (item.id === ideaId) {
+          const isVoted = item.votedByMe;
+          return {
+            ...item,
+            votedByMe: !isVoted,
+            votesCount: isVoted ? Math.max(0, item.votesCount - 1) : item.votesCount + 1,
+          };
+        }
+        return item;
+      });
+      try { localStorage.setItem('kidora_community_ideas', JSON.stringify(updated)); } catch (e) {}
+      return updated;
+    });
+  }, []);
+
+  const addIdeaComment = useCallback((ideaId: string, commentText: string, authorName: string) => {
+    if (!commentText.trim()) return;
+    const newComment: IdeaComment = {
+      id: `c-${Date.now()}`,
+      authorName: authorName.trim() || 'Community Member',
+      authorRole: 'parent',
+      comment: commentText.trim(),
+      createdAt: new Date().toISOString().split('T')[0],
+    };
+    setCommunityIdeas((prev) => {
+      const updated = prev.map((item) => {
+        if (item.id === ideaId) {
+          return {
+            ...item,
+            comments: [...item.comments, newComment],
+          };
+        }
+        return item;
+      });
+      try { localStorage.setItem('kidora_community_ideas', JSON.stringify(updated)); } catch (e) {}
+      return updated;
+    });
+  }, []);
+
   return (
     <AppContext.Provider
       value={{
@@ -2227,8 +2460,11 @@ export function AppProvider({ children: reactChildren }: { children: ReactNode }
         // 💧 Child Daily Hydration Tracking
         hydrationData,
         addWaterIntake,
+        addWaterIntakeMl,
         resetTodayWaterIntake,
         setHydrationTarget,
+        setGlassSize,
+        setHydrationSettings,
         // 🎮 Kid Challenges & Friend Quests
         kidChallenges,
         categoryPoints,
@@ -2250,6 +2486,11 @@ export function AppProvider({ children: reactChildren }: { children: ReactNode }
         openMysteryChest,
         revealTodaySurprise,
         completeTodaySurprise,
+        // 💡 Community Ideas & Feature Voting Board (Beta)
+        communityIdeas,
+        submitCommunityIdea,
+        toggleVoteIdea,
+        addIdeaComment,
         loading,
         switchChild,
         addChild,

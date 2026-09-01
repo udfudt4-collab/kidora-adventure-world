@@ -1,5 +1,6 @@
-import { useState, useMemo } from 'react';
+import { useState, useMemo, useEffect } from 'react';
 import { useApp } from '@/lib/store';
+import { registerModalBackHandler } from '@/lib/navigation';
 import { PeriodTracker } from '@/components/PeriodTracker';
 import { EarnPremiumModal } from '@/components/EarnPremiumModal';
 import { ParentFeedbackReviews } from '@/components/ParentFeedbackReviews';
@@ -173,6 +174,16 @@ export function ParentDashboard({ onNavigate }: ParentDashboardProps) {
 
   const [newPin, setNewPin] = useState('');
   const [pinSaved, setPinSaved] = useState(false);
+
+  // Close modals on Back button press
+  useEffect(() => {
+    if (showAddChildModal) return registerModalBackHandler(() => setShowAddChildModal(false));
+    if (showWeightModal) return registerModalBackHandler(() => setShowWeightModal(false));
+    if (showRecModal) return registerModalBackHandler(() => setShowRecModal(false));
+    if (showChallengeModal) return registerModalBackHandler(() => setShowChallengeModal(false));
+    if (showEventModal) return registerModalBackHandler(() => setShowEventModal(false));
+    if (showMomentModal) return registerModalBackHandler(() => setShowMomentModal(false));
+  }, [showAddChildModal, showWeightModal, showRecModal, showChallengeModal, showEventModal, showMomentModal]);
 
   const selectedChild = familyChildren.find((c) => c.id === selectedChildId) ?? familyChildren[0];
   const activeChild = familyChildren.find((c) => c.id === activeChildId) ?? familyChildren[0];
@@ -621,14 +632,26 @@ export function ParentDashboard({ onNavigate }: ParentDashboardProps) {
                     Hydration
                   </span>
                 </div>
-                <div>
-                  <div className="text-xl font-black font-display text-slate-900">
-                    {hydrationData.dailyIntakeByChild[activeChildId] || 5} / {hydrationData.targetGlasses} Glasses
-                  </div>
-                  <p className="text-xs text-slate-600 font-medium mt-0.5">
-                    {Math.round(((hydrationData.dailyIntakeByChild[activeChildId] || 5) / hydrationData.targetGlasses) * 100)}% of daily target reached
-                  </p>
-                </div>
+                {(() => {
+                  const mlPerGlass = hydrationData.mlPerGlass || 250;
+                  const targetMl = hydrationData.targetMl || (hydrationData.targetGlasses || 7) * mlPerGlass;
+                  const currentMl =
+                    hydrationData.dailyIntakeMlByChild && hydrationData.dailyIntakeMlByChild[activeChildId] !== undefined
+                      ? hydrationData.dailyIntakeMlByChild[activeChildId]
+                      : (hydrationData.dailyIntakeByChild[activeChildId] || 0) * mlPerGlass;
+                  const pct = Math.min(100, Math.round((currentMl / (targetMl || 1)) * 100));
+                  const glasses = Math.round((currentMl / mlPerGlass) * 10) / 10;
+                  return (
+                    <div>
+                      <div className="text-xl font-black font-display text-slate-900">
+                        {currentMl.toLocaleString()} / {targetMl.toLocaleString()} ml
+                      </div>
+                      <p className="text-xs text-slate-600 font-medium mt-0.5">
+                        {pct}% of daily goal (~{glasses} glasses @ {mlPerGlass}ml)
+                      </p>
+                    </div>
+                  );
+                })()}
                 <div className="text-[11px] font-bold text-sky-600 flex items-center gap-1 pt-1 border-t border-sky-100">
                   <span>+ Quick Add Water</span>
                   <span>→</span>
@@ -850,22 +873,26 @@ export function ParentDashboard({ onNavigate }: ParentDashboardProps) {
             {/* 3. FAMILY JOURNEY & TOOLS HUB DIRECTORY TILES */}
             <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
               {[
-                { title: 'Pregnancy Journey', desc: 'Week-by-week guide', emoji: '🤰', hub: 'pregnancy' as MainHub, sub: 'journey' },
+                { title: 'Community Ideas', desc: 'Suggest & Vote features', emoji: '💡', action: () => onNavigate('ideas') },
                 { title: 'Baby Development', desc: '0–3y 5-Domain stages', emoji: '👶', hub: 'baby' as MainHub, sub: 'development' },
                 { title: 'Baby Moments', desc: 'Private milestone timeline', emoji: '📸', hub: 'baby' as MainHub, sub: 'moments' },
                 { title: 'Baby Names Directory', desc: `${favoriteBabyNames.length} saved favorites ❤️`, emoji: '👶', hub: 'baby' as MainHub, sub: 'names' },
+                { title: 'Pregnancy Journey', desc: 'Week-by-week guide', emoji: '🤰', hub: 'pregnancy' as MainHub, sub: 'journey' },
                 { title: 'Weight Tracker', desc: 'Supportive health curve', emoji: '⚖️', hub: 'pregnancy' as MainHub, sub: 'weight' },
                 { title: 'Pregnancy Foods', desc: 'Superfoods & safety', emoji: '🥗', hub: 'pregnancy' as MainHub, sub: 'foods' },
-                { title: 'Exercise Guide', desc: 'Trimester safe stretches', emoji: '🧘‍♀️', hub: 'pregnancy' as MainHub, sub: 'exercises' },
                 { title: 'Family Planner', desc: 'Weekly schedule & dates', emoji: '📅', hub: 'calendar' as MainHub, sub: '' },
               ].map((tile, idx) => (
                 <button
                   key={idx}
                   type="button"
                   onClick={() => {
-                    setActiveHub(tile.hub);
-                    if (tile.hub === 'pregnancy') setPregnancySubTab(tile.sub as any);
-                    if (tile.hub === 'baby') setBabySubTab(tile.sub as any);
+                    if (tile.action) {
+                      tile.action();
+                    } else if (tile.hub) {
+                      setActiveHub(tile.hub);
+                      if (tile.hub === 'pregnancy' && tile.sub) setPregnancySubTab(tile.sub as any);
+                      if (tile.hub === 'baby' && tile.sub) setBabySubTab(tile.sub as any);
+                    }
                   }}
                   className="btn-press bg-white p-4 rounded-3xl border border-slate-200 shadow-soft text-left hover:border-slate-300 transition-all cursor-pointer space-y-2 flex flex-col justify-between"
                 >

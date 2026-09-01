@@ -1,4 +1,4 @@
-import { useState, useMemo } from 'react';
+import { useState, useMemo, useEffect } from 'react';
 import { useApp } from '@/lib/store';
 import {
   Droplets,
@@ -11,33 +11,59 @@ import {
   Info,
   Calendar,
   Settings,
+  CupSoda,
+  Sliders,
+  Check,
+  Zap,
 } from 'lucide-react';
+
+const PRESET_TARGET_MLS = [1000, 1250, 1500, 1750, 2000, 2500];
+const PRESET_GLASS_SIZES = [
+  { ml: 100, label: '100 ml (Small Cup / Toddler)' },
+  { ml: 150, label: '150 ml (Kid Cup / Sippy)' },
+  { ml: 200, label: '200 ml (Medium Mug)' },
+  { ml: 250, label: '250 ml (Standard Glass)' },
+  { ml: 300, label: '300 ml (Large Tumbler)' },
+];
 
 export function HydrationTracker() {
   const {
     profile,
     children: familyChildren,
     hydrationData,
-    addWaterIntake,
+    addWaterIntakeMl,
     resetTodayWaterIntake,
-    setHydrationTarget,
+    setHydrationSettings,
   } = useApp();
 
   const [selectedChildId, setSelectedChildId] = useState<string>(profile?.id || 'child-1');
   const [customNote, setCustomNote] = useState<string>('');
   const [isEditingTarget, setIsEditingTarget] = useState<boolean>(false);
-  const [targetInput, setTargetInput] = useState<number>(hydrationData.targetGlasses || 7);
+  const [targetMlInput, setTargetMlInput] = useState<number>(hydrationData.targetMl || 1750);
+  const [glassSizeInput, setGlassSizeInput] = useState<number>(hydrationData.mlPerGlass || 250);
+  const [customMlInput, setCustomMlInput] = useState<string>('');
   const [showCelebration, setShowCelebration] = useState<boolean>(false);
+  const [savedToast, setSavedToast] = useState<boolean>(false);
 
   const activeChild = familyChildren.find((c) => c.id === selectedChildId) || familyChildren[0];
 
-  const todayGlasses = hydrationData.dailyIntakeByChild[selectedChildId] || 0;
-  const targetGlasses = hydrationData.targetGlasses || 7;
   const mlPerGlass = hydrationData.mlPerGlass || 250;
+  const targetMl = hydrationData.targetMl || (hydrationData.targetGlasses ? hydrationData.targetGlasses * mlPerGlass : 1750);
+  const targetGlasses = Math.max(1, Math.round(targetMl / mlPerGlass));
 
-  const currentMl = todayGlasses * mlPerGlass;
-  const targetMl = targetGlasses * mlPerGlass;
-  const percentComplete = Math.min(100, Math.round((todayGlasses / targetGlasses) * 100));
+  const currentMl =
+    hydrationData.dailyIntakeMlByChild && hydrationData.dailyIntakeMlByChild[selectedChildId] !== undefined
+      ? hydrationData.dailyIntakeMlByChild[selectedChildId]
+      : (hydrationData.dailyIntakeByChild[selectedChildId] || 0) * mlPerGlass;
+
+  const currentGlasses = Math.round((currentMl / mlPerGlass) * 10) / 10;
+  const percentComplete = Math.min(100, Math.round((currentMl / (targetMl || 1)) * 100));
+
+  // Sync inputs when hydrationData updates
+  useEffect(() => {
+    setTargetMlInput(targetMl);
+    setGlassSizeInput(mlPerGlass);
+  }, [targetMl, mlPerGlass]);
 
   // Past 7 days history for active child
   const past7DaysLogs = useMemo(() => {
@@ -46,22 +72,35 @@ export function HydrationTracker() {
       .slice(0, 7);
   }, [hydrationData.historyLogs, selectedChildId]);
 
-  const handleAddGlasses = (count: number) => {
-    addWaterIntake(selectedChildId, count, customNote.trim() || undefined);
+  const handleAddMl = (mlToAdd: number) => {
+    if (mlToAdd <= 0) return;
+    addWaterIntakeMl(selectedChildId, mlToAdd, customNote.trim() || undefined);
     setCustomNote('');
-    if (todayGlasses + count >= targetGlasses) {
+    setCustomMlInput('');
+    if (currentMl + mlToAdd >= targetMl) {
       setShowCelebration(true);
       setTimeout(() => setShowCelebration(false), 5000);
     }
   };
 
-  const handleSaveTarget = (e: React.FormEvent) => {
-    e.preventDefault();
-    const clamped = Math.min(15, Math.max(2, targetInput || 7));
-    setHydrationTarget(clamped);
-    setTargetInput(clamped);
-    setIsEditingTarget(false);
+  const handleAddGlasses = (glassesCount: number) => {
+    const mlToAdd = Math.round(glassesCount * mlPerGlass);
+    handleAddMl(mlToAdd);
   };
+
+  const handleSaveSettings = (e: React.FormEvent) => {
+    e.preventDefault();
+    const clampedTargetMl = Math.max(100, Math.min(5000, targetMlInput || 1750));
+    const clampedGlassSize = Math.max(50, Math.min(1000, glassSizeInput || 250));
+    setHydrationSettings(clampedTargetMl, clampedGlassSize);
+    setSavedToast(true);
+    setTimeout(() => {
+      setSavedToast(false);
+      setIsEditingTarget(false);
+    }, 1200);
+  };
+
+  const calculatedGlassCount = Math.max(1, Math.round(((targetMlInput || 1750) / (glassSizeInput || 250)) * 10) / 10);
 
   return (
     <div className="space-y-6 animate-pop-in">
@@ -76,7 +115,7 @@ export function HydrationTracker() {
             <span className="text-2xl">💧</span>
           </h2>
           <p className="text-xs sm:text-sm text-sky-100 font-medium leading-relaxed">
-            Record daily water intake and foster healthy drinking habits. Adequate hydration improves energy, focus, and digestion in growing children.
+            Track daily water intake in <strong>ML</strong> with customizable glass sizes (e.g. 100ml, 250ml). Adequate hydration boosts focus, energy, and gut health.
           </p>
         </div>
 
@@ -110,12 +149,12 @@ export function HydrationTracker() {
                 Daily Hydration Goal Completed! 🌟
               </div>
               <div className="text-xs text-emerald-100 font-medium">
-                {activeChild.name} drank {todayGlasses} glasses ({currentMl}ml) today. Great job!
+                {activeChild.name} drank {currentMl.toLocaleString()} ml (~{currentGlasses} glasses) today. Awesome!
               </div>
             </div>
           </div>
           <span className="bg-white/20 text-white font-black text-xs px-3 py-1.5 rounded-xl shrink-0">
-            Target Reached ✓
+            Goal Met ✓
           </span>
         </div>
       )}
@@ -133,8 +172,8 @@ export function HydrationTracker() {
                 <h3 className="text-base font-black font-display text-slate-900">
                   Today's Hydration ({activeChild.name})
                 </h3>
-                <p className="text-xs text-slate-500">
-                  Target: {targetGlasses} glasses ({targetMl}ml)
+                <p className="text-xs text-slate-500 font-medium">
+                  Target: <strong className="text-sky-700">{targetMl.toLocaleString()} ml</strong> (~{targetGlasses} glasses @ {mlPerGlass}ml)
                 </p>
               </div>
             </div>
@@ -142,57 +181,179 @@ export function HydrationTracker() {
             <button
               type="button"
               onClick={() => setIsEditingTarget(!isEditingTarget)}
-              className="text-xs text-slate-400 hover:text-sky-600 p-2 rounded-xl transition-colors cursor-pointer bg-slate-50 hover:bg-slate-100 border border-slate-200 flex items-center gap-1 font-bold"
-              title="Change target glasses"
+              className={`text-xs p-2 rounded-xl transition-all cursor-pointer border flex items-center gap-1.5 font-bold ${
+                isEditingTarget
+                  ? 'bg-sky-600 text-white border-sky-600 shadow-xs'
+                  : 'text-slate-600 bg-slate-50 hover:bg-sky-50 hover:text-sky-700 border-slate-200'
+              }`}
+              title="Customize Daily Target & Glass Size"
             >
               <Settings className="h-3.5 w-3.5" />
-              <span>Target</span>
+              <span>Target & Glass Size</span>
             </button>
           </div>
 
-          {/* Edit Target Inline Drawer */}
+          {/* EDIT TARGET & GLASS SIZE DRAWER */}
           {isEditingTarget && (
             <form
-              onSubmit={handleSaveTarget}
-              className="bg-sky-50 border border-sky-200 rounded-2xl p-4 flex items-center justify-between gap-3 animate-pop-in"
+              onSubmit={handleSaveSettings}
+              className="bg-gradient-to-br from-sky-50 via-teal-50 to-blue-50 border border-sky-200 rounded-3xl p-5 space-y-5 animate-pop-in shadow-xs"
             >
-              <div className="text-xs font-bold text-sky-900">Daily Target (Glasses):</div>
-              <div className="flex items-center gap-2">
-                <input
-                  type="number"
-                  min={2}
-                  max={15}
-                  value={targetInput}
-                  onChange={(e) => setTargetInput(parseInt(e.target.value, 10) || 7)}
-                  className="w-16 px-2.5 py-1.5 rounded-xl border border-sky-300 text-center font-black text-xs bg-white text-slate-800"
-                />
+              <div className="flex items-center justify-between pb-2 border-b border-sky-200/70">
+                <div className="flex items-center gap-2">
+                  <Sliders className="h-4 w-4 text-sky-600" />
+                  <span className="text-sm font-black font-display text-sky-950">
+                    Customize Hydration Target & Glass (ML)
+                  </span>
+                </div>
+                {savedToast && (
+                  <span className="text-[11px] font-bold text-emerald-700 bg-emerald-100 px-2.5 py-1 rounded-lg flex items-center gap-1 animate-pop-in">
+                    <Check className="h-3 w-3" /> Saved!
+                  </span>
+                )}
+              </div>
+
+              {/* 1. Daily Target in ML */}
+              <div className="space-y-2">
+                <div className="flex items-center justify-between">
+                  <label className="text-xs font-black text-slate-800 flex items-center gap-1.5">
+                    <span>🎯 Daily Target (ML):</span>
+                  </label>
+                  <span className="text-xs font-bold text-sky-700 bg-white px-2 py-0.5 rounded-lg border border-sky-200">
+                    {targetMlInput} ml
+                  </span>
+                </div>
+
+                {/* Preset Target Chips */}
+                <div className="flex flex-wrap gap-1.5">
+                  {PRESET_TARGET_MLS.map((preset) => (
+                    <button
+                      key={preset}
+                      type="button"
+                      onClick={() => setTargetMlInput(preset)}
+                      className={`btn-press px-2.5 py-1 rounded-xl text-[11px] font-bold transition-colors cursor-pointer border ${
+                        targetMlInput === preset
+                          ? 'bg-sky-600 text-white border-sky-600 shadow-xs'
+                          : 'bg-white text-slate-700 border-slate-200 hover:border-sky-300'
+                      }`}
+                    >
+                      {preset} ml
+                    </button>
+                  ))}
+                </div>
+
+                {/* Custom Target ML Input */}
+                <div className="flex items-center gap-2 pt-1">
+                  <span className="text-[11px] text-slate-500 font-medium">Or enter custom ML:</span>
+                  <input
+                    type="number"
+                    min={100}
+                    max={5000}
+                    step={50}
+                    value={targetMlInput}
+                    onChange={(e) => setTargetMlInput(parseInt(e.target.value, 10) || 0)}
+                    className="w-24 px-2.5 py-1 rounded-xl border border-sky-300 text-center font-black text-xs bg-white text-slate-800 focus:outline-none focus:ring-2 focus:ring-sky-500"
+                    placeholder="e.g. 1750"
+                  />
+                  <span className="text-xs font-bold text-slate-600">ml / day</span>
+                </div>
+              </div>
+
+              {/* 2. Glass Capacity in ML */}
+              <div className="space-y-2 pt-2 border-t border-sky-200/50">
+                <div className="flex items-center justify-between">
+                  <label className="text-xs font-black text-slate-800 flex items-center gap-1.5">
+                    <span>🥤 Your Glass / Cup Size (ML per glass):</span>
+                  </label>
+                  <span className="text-xs font-bold text-teal-700 bg-white px-2 py-0.5 rounded-lg border border-teal-200">
+                    {glassSizeInput} ml / glass
+                  </span>
+                </div>
+
+                <p className="text-[11px] text-slate-600 font-medium">
+                  Set how many ML is in 1 glass at your home (e.g. 100ml for toddler cup, 250ml for standard glass):
+                </p>
+
+                {/* Preset Glass Size Chips */}
+                <div className="flex flex-wrap gap-1.5">
+                  {PRESET_GLASS_SIZES.map((g) => (
+                    <button
+                      key={g.ml}
+                      type="button"
+                      onClick={() => setGlassSizeInput(g.ml)}
+                      className={`btn-press px-2.5 py-1 rounded-xl text-[11px] font-bold transition-colors cursor-pointer border ${
+                        glassSizeInput === g.ml
+                          ? 'bg-teal-600 text-white border-teal-600 shadow-xs'
+                          : 'bg-white text-slate-700 border-slate-200 hover:border-teal-300'
+                      }`}
+                    >
+                      {g.label}
+                    </button>
+                  ))}
+                </div>
+
+                {/* Custom Glass Size Input */}
+                <div className="flex items-center gap-2 pt-1">
+                  <span className="text-[11px] text-slate-500 font-medium">Or custom glass size:</span>
+                  <input
+                    type="number"
+                    min={50}
+                    max={1000}
+                    step={10}
+                    value={glassSizeInput}
+                    onChange={(e) => setGlassSizeInput(parseInt(e.target.value, 10) || 0)}
+                    className="w-24 px-2.5 py-1 rounded-xl border border-teal-300 text-center font-black text-xs bg-white text-slate-800 focus:outline-none focus:ring-2 focus:ring-teal-500"
+                    placeholder="e.g. 120"
+                  />
+                  <span className="text-xs font-bold text-slate-600">ml / glass</span>
+                </div>
+              </div>
+
+              {/* Summary Calculation */}
+              <div className="bg-white/80 backdrop-blur-xs rounded-2xl p-3 border border-sky-200 flex items-center justify-between text-xs text-slate-700 font-medium">
+                <div>
+                  Daily Goal Equivalent:{' '}
+                  <strong className="text-sky-900 font-black">
+                    ~{calculatedGlassCount} glasses
+                  </strong>{' '}
+                  ({targetMlInput} ml total)
+                </div>
                 <button
                   type="submit"
-                  className="btn-press px-3 py-1.5 rounded-xl bg-sky-600 text-white font-bold text-xs cursor-pointer shadow-xs"
+                  className="btn-press px-4 py-2 rounded-xl bg-gradient-to-r from-sky-600 to-teal-600 text-white font-black text-xs cursor-pointer shadow-soft hover:opacity-95"
                 >
-                  Save
+                  Save Settings
                 </button>
               </div>
             </form>
           )}
 
-          {/* Big Circular & Number Display */}
+          {/* Big Number & Visual Progress Display */}
           <div className="bg-gradient-to-br from-sky-50 via-teal-50 to-emerald-50 rounded-3xl p-6 border border-sky-200/80 flex flex-col sm:flex-row items-center justify-between gap-6">
             <div className="text-center sm:text-left space-y-1">
               <div className="text-[10px] font-black uppercase tracking-wider text-sky-800">
-                Water Drank Today
+                Water Drank Today (in ML)
               </div>
               <div className="flex items-baseline gap-2 justify-center sm:justify-start">
-                <span className="text-5xl font-black font-display text-slate-900">{todayGlasses}</span>
-                <span className="text-xl font-bold text-slate-400 font-display">/ {targetGlasses} glasses</span>
+                <span className="text-5xl font-black font-display text-slate-900">
+                  {currentMl.toLocaleString()}
+                </span>
+                <span className="text-xl font-bold text-slate-400 font-display">
+                  / {targetMl.toLocaleString()} ml
+                </span>
               </div>
-              <div className="text-sm font-bold text-sky-700">
-                {currentMl} ml <span className="text-slate-400 font-medium">({percentComplete}% of daily goal)</span>
+              <div className="text-sm font-bold text-sky-700 flex items-center gap-2 justify-center sm:justify-start flex-wrap">
+                <span>~{currentGlasses} glasses</span>
+                <span className="text-slate-400 font-normal">•</span>
+                <span className="text-slate-600 font-medium">{percentComplete}% of daily goal</span>
+                <span className="text-[11px] text-teal-700 bg-teal-100/70 px-2 py-0.5 rounded-full font-bold">
+                  {mlPerGlass} ml / glass
+                </span>
               </div>
             </div>
 
-            {/* Visual Circular Glass Visualizer */}
-            <div className="relative w-28 h-28 rounded-full border-4 border-white shadow-soft bg-white flex items-center justify-center">
+            {/* Visual Circular Water Visualizer */}
+            <div className="relative w-28 h-28 rounded-full border-4 border-white shadow-soft bg-white flex items-center justify-center shrink-0">
               <div
                 style={{
                   background: `conic-gradient(#0284c7 ${percentComplete * 3.6}deg, #e2e8f0 0deg)`,
@@ -209,50 +370,103 @@ export function HydrationTracker() {
             </div>
           </div>
 
-          {/* Quick Add Intake Buttons */}
-          <div className="space-y-3">
-            <label className="block text-xs font-black font-display text-slate-700">
-              Quick Log Intake
-            </label>
-            <div className="grid grid-cols-3 gap-2">
+          {/* Quick Log Intake Section */}
+          <div className="space-y-4">
+            <div>
+              <label className="block text-xs font-black font-display text-slate-800">
+                Quick Log Water Intake
+              </label>
+              <p className="text-[11px] text-slate-500 font-medium">
+                Tap a glass or quick ML button, or enter any custom ML drank.
+              </p>
+            </div>
+
+            {/* Quick Glass Log (Dynamic to user's glass size) */}
+            <div className="grid grid-cols-3 gap-2.5">
               <button
                 type="button"
                 onClick={() => handleAddGlasses(1)}
-                className="btn-press py-3 rounded-2xl bg-sky-500 hover:bg-sky-600 text-white font-black text-xs flex flex-col items-center justify-center gap-1 shadow-soft cursor-pointer transition-transform"
+                className="btn-press py-3 px-2 rounded-2xl bg-sky-500 hover:bg-sky-600 text-white font-black text-xs flex flex-col items-center justify-center gap-1 shadow-soft cursor-pointer transition-transform"
               >
                 <span className="text-lg">💧</span>
                 <span>+1 Glass</span>
-                <span className="text-[9px] text-sky-100 font-medium">(250ml)</span>
+                <span className="text-[10px] text-sky-100 font-bold">({mlPerGlass} ml)</span>
               </button>
 
               <button
                 type="button"
                 onClick={() => handleAddGlasses(2)}
-                className="btn-press py-3 rounded-2xl bg-teal-500 hover:bg-teal-600 text-white font-black text-xs flex flex-col items-center justify-center gap-1 shadow-soft cursor-pointer transition-transform"
+                className="btn-press py-3 px-2 rounded-2xl bg-teal-500 hover:bg-teal-600 text-white font-black text-xs flex flex-col items-center justify-center gap-1 shadow-soft cursor-pointer transition-transform"
               >
                 <span className="text-lg">🥤</span>
                 <span>+2 Glasses</span>
-                <span className="text-[9px] text-teal-100 font-medium">(500ml)</span>
+                <span className="text-[10px] text-teal-100 font-bold">({mlPerGlass * 2} ml)</span>
               </button>
 
               <button
                 type="button"
-                onClick={() => handleAddGlasses(3)}
-                className="btn-press py-3 rounded-2xl bg-indigo-500 hover:bg-indigo-600 text-white font-black text-xs flex flex-col items-center justify-center gap-1 shadow-soft cursor-pointer transition-transform"
+                onClick={() => handleAddMl(500)}
+                className="btn-press py-3 px-2 rounded-2xl bg-indigo-500 hover:bg-indigo-600 text-white font-black text-xs flex flex-col items-center justify-center gap-1 shadow-soft cursor-pointer transition-transform"
               >
                 <span className="text-lg">🍶</span>
                 <span>+1 Bottle</span>
-                <span className="text-[9px] text-indigo-100 font-medium">(750ml)</span>
+                <span className="text-[10px] text-indigo-100 font-bold">(500 ml)</span>
               </button>
             </div>
 
-            {/* Note & Reset Controls */}
-            <div className="flex gap-2 pt-2">
+            {/* Direct Quick ML Chips */}
+            <div className="space-y-1.5 pt-1">
+              <div className="text-[11px] font-bold text-slate-600">Quick ML shortcuts:</div>
+              <div className="flex flex-wrap gap-1.5">
+                {[50, 100, 150, 200, 250, 300, 400, 500].map((mlVal) => (
+                  <button
+                    key={mlVal}
+                    type="button"
+                    onClick={() => handleAddMl(mlVal)}
+                    className="btn-press px-2.5 py-1 rounded-xl bg-slate-100 hover:bg-sky-100 hover:text-sky-700 text-slate-700 text-[11px] font-bold border border-slate-200 transition-colors cursor-pointer"
+                  >
+                    +{mlVal} ml
+                  </button>
+                ))}
+              </div>
+            </div>
+
+            {/* Custom ML Add Bar */}
+            <div className="bg-slate-50 border border-slate-200 rounded-2xl p-3 flex flex-col sm:flex-row items-stretch sm:items-center gap-2">
+              <div className="flex items-center gap-2 flex-1">
+                <span className="text-xs font-bold text-slate-700 shrink-0">Custom ML:</span>
+                <input
+                  type="number"
+                  min={10}
+                  max={2000}
+                  step={10}
+                  value={customMlInput}
+                  onChange={(e) => setCustomMlInput(e.target.value)}
+                  placeholder={`e.g. ${mlPerGlass}`}
+                  className="flex-1 px-3 py-2 rounded-xl border border-slate-300 text-xs font-bold text-slate-900 bg-white focus:outline-none focus:ring-2 focus:ring-sky-500"
+                />
+                <span className="text-xs font-bold text-slate-500 shrink-0">ml</span>
+              </div>
+              <button
+                type="button"
+                onClick={() => {
+                  const val = parseInt(customMlInput, 10);
+                  if (val > 0) handleAddMl(val);
+                }}
+                disabled={!customMlInput || parseInt(customMlInput, 10) <= 0}
+                className="btn-press px-4 py-2 rounded-xl bg-sky-600 disabled:bg-slate-300 text-white font-bold text-xs cursor-pointer shadow-xs disabled:cursor-not-allowed transition-all shrink-0"
+              >
+                + Add ML
+              </button>
+            </div>
+
+            {/* Optional Note & Reset Controls */}
+            <div className="flex gap-2 pt-1">
               <input
                 type="text"
                 value={customNote}
                 onChange={(e) => setCustomNote(e.target.value)}
-                placeholder="Add optional note (e.g. playground session)"
+                placeholder="Optional note (e.g. after karate class)"
                 className="flex-1 px-3.5 py-2.5 rounded-xl border border-slate-200 text-xs font-medium text-slate-800 focus:outline-none focus:ring-2 focus:ring-sky-500"
               />
               <button
@@ -268,18 +482,19 @@ export function HydrationTracker() {
           </div>
         </div>
 
-        {/* 7-DAY HYDRATION TRENDS & TIPS (RIGHT) */}
+        {/* 7-DAY HYDRATION TRENDS & PARENT GUIDE (RIGHT) */}
         <div className="lg:col-span-6 space-y-6">
+          {/* Weekly 7-Day Bar Chart */}
           <div className="bg-white rounded-3xl p-6 shadow-soft border border-slate-200/80 space-y-4">
             <div className="flex items-center justify-between">
               <div>
                 <h3 className="text-base font-black font-display text-slate-900">
                   Weekly Hydration (Past 7 Days)
                 </h3>
-                <p className="text-xs text-slate-500">Daily glasses consumed vs recommended target</p>
+                <p className="text-xs text-slate-500">Daily ML consumed vs target ({targetMl} ml)</p>
               </div>
               <span className="bg-sky-50 text-sky-700 text-xs font-black px-3 py-1 rounded-xl border border-sky-200">
-                Target: {targetGlasses} Glasses
+                Target: {targetMl} ml
               </span>
             </div>
 
@@ -287,23 +502,26 @@ export function HydrationTracker() {
             <div className="pt-6 pb-2">
               <div className="h-44 flex items-end justify-between gap-2 border-b border-slate-200 pb-2 px-2">
                 {past7DaysLogs.slice(0, 7).reverse().map((entry, idx) => {
-                  const maxChartGlasses = 10;
-                  const heightPercent = Math.min(100, Math.round((entry.glassesDrank / maxChartGlasses) * 100));
-                  const isMetTarget = entry.glassesDrank >= targetGlasses;
+                  const entryMl = entry.mlDrank !== undefined ? entry.mlDrank : entry.glassesDrank * (entry.mlPerGlass || mlPerGlass);
+                  const entryTargetMl = entry.targetMl || targetMl;
+                  const maxChartMl = Math.max(2500, targetMl * 1.2);
+                  const heightPercent = Math.min(100, Math.round((entryMl / maxChartMl) * 100));
+                  const isMetTarget = entryMl >= entryTargetMl;
+                  const entryGlasses = Math.round((entryMl / (entry.mlPerGlass || mlPerGlass)) * 10) / 10;
 
                   return (
                     <div key={entry.id || idx} className="flex-1 flex flex-col items-center gap-1 group relative">
-                      {/* Tooltip */}
+                      {/* Hover Tooltip */}
                       <div className="absolute -top-10 opacity-0 group-hover:opacity-100 transition-opacity bg-slate-900 text-white text-[10px] font-bold px-2 py-1 rounded-lg whitespace-nowrap z-20 pointer-events-none shadow-md">
-                        {entry.glassesDrank} glasses ({entry.glassesDrank * mlPerGlass}ml)
+                        {entryMl.toLocaleString()} ml (~{entryGlasses} glasses) {entry.notes ? `• ${entry.notes}` : ''}
                       </div>
 
                       <span className="text-[10px] font-black text-slate-600 mb-1">
-                        {entry.glassesDrank}
+                        {entryMl >= 1000 ? `${(entryMl / 1000).toFixed(1)}k` : `${entryMl}`}
                       </span>
 
                       <div
-                        style={{ height: `${heightPercent}%` }}
+                        style={{ height: `${Math.max(8, heightPercent)}%` }}
                         className={`w-full max-w-[36px] rounded-t-xl transition-all ${
                           isMetTarget
                             ? 'bg-gradient-to-t from-sky-500 to-teal-400 shadow-xs'
@@ -324,7 +542,7 @@ export function HydrationTracker() {
                 <div className="flex items-center gap-4">
                   <div className="flex items-center gap-1.5">
                     <span className="w-3 h-3 rounded-md bg-sky-500" />
-                    <span>Goal Met ({targetGlasses}+ glasses)</span>
+                    <span>Goal Met ({targetMl}+ ml)</span>
                   </div>
                   <div className="flex items-center gap-1.5">
                     <span className="w-3 h-3 rounded-md bg-amber-400" />
@@ -335,23 +553,37 @@ export function HydrationTracker() {
             </div>
           </div>
 
-          {/* HYDRATION TIPS & HABIT BUILDERS */}
-          <div className="bg-gradient-to-br from-sky-50 to-indigo-50 rounded-3xl p-6 border border-sky-200/80 space-y-3">
-            <h4 className="text-sm font-black font-display text-sky-900 flex items-center gap-2">
-              <span>💡</span> Parent Tips for Child Hydration
+          {/* PARENT GUIDE & FLUID GUIDELINES */}
+          <div className="bg-gradient-to-br from-sky-50 via-teal-50 to-indigo-50 rounded-3xl p-6 border border-sky-200/80 space-y-4">
+            <h4 className="text-sm font-black font-display text-sky-950 flex items-center gap-2">
+              <span>💡</span> Recommended Daily ML Guidelines for Children
             </h4>
-            <ul className="space-y-2 text-xs text-sky-950 font-medium">
+            <div className="grid grid-cols-1 sm:grid-cols-3 gap-2.5 text-xs">
+              <div className="bg-white/80 p-3 rounded-2xl border border-sky-100">
+                <div className="font-bold text-sky-900">Toddlers (1–3 yrs)</div>
+                <div className="text-slate-600 font-medium mt-0.5">1,000 – 1,300 ml</div>
+                <div className="text-[10px] text-slate-400">~10–13 cups of 100ml</div>
+              </div>
+              <div className="bg-white/80 p-3 rounded-2xl border border-sky-100">
+                <div className="font-bold text-sky-900">Kids (4–8 yrs)</div>
+                <div className="text-slate-600 font-medium mt-0.5">1,400 – 1,600 ml</div>
+                <div className="text-[10px] text-slate-400">~6–8 glasses of 200ml</div>
+              </div>
+              <div className="bg-white/80 p-3 rounded-2xl border border-sky-100">
+                <div className="font-bold text-sky-900">Pre-Teens (9–13 yrs)</div>
+                <div className="text-slate-600 font-medium mt-0.5">1,800 – 2,400 ml</div>
+                <div className="text-[10px] text-slate-400">~7–10 glasses of 250ml</div>
+              </div>
+            </div>
+
+            <ul className="space-y-2 text-xs text-sky-950 font-medium pt-1">
               <li className="flex items-start gap-2">
                 <span className="text-sky-600 font-bold">•</span>
-                <span><strong>Morning Glass:</strong> Offer a fresh glass of water right upon waking to energize the metabolism.</span>
+                <span><strong>Custom Glass Sizes:</strong> Measure your child's favorite cup (e.g. 100ml sippy cup vs 250ml cup) in the target settings so each "+1 Glass" tap is completely accurate!</span>
               </li>
               <li className="flex items-start gap-2">
                 <span className="text-sky-600 font-bold">•</span>
-                <span><strong>Fun Fruit Infusions:</strong> Add orange slices, strawberries, or mint to make plain water exciting.</span>
-              </li>
-              <li className="flex items-start gap-2">
-                <span className="text-sky-600 font-bold">•</span>
-                <span><strong>Play Breaks:</strong> Schedule water sips between Kidora learning quests and physical play.</span>
+                <span><strong>Play Breaks:</strong> Offer water before and after physical activities or hot summer afternoons.</span>
               </li>
             </ul>
           </div>

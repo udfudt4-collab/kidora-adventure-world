@@ -11,6 +11,7 @@ import { getTodayStoryAdventure, type StoryAdventure, type StoryMission } from '
 import { getShareableReward, getMissionPraise } from '@/lib/rewards';
 import { shareAchievementAsImage } from '@/lib/imageCardGenerator';
 import { useVoice } from '@/lib/useVoice';
+import { registerModalBackHandler } from '@/lib/navigation';
 import { MathActivity } from '@/activities/MathActivity';
 import { WordsActivity } from '@/activities/WordsActivity';
 import { BrainActivity } from '@/activities/BrainActivity';
@@ -47,6 +48,16 @@ export function Adventure({ onNavigate }: AdventureProps) {
   useEffect(() => {
     return () => stop();
   }, [stop]);
+
+  // Handle Back button safely during adventure gameplay
+  useEffect(() => {
+    if (phase !== 'intro') {
+      return registerModalBackHandler(() => {
+        stop();
+        onNavigate('home');
+      });
+    }
+  }, [phase, onNavigate, stop]);
 
   if (!profile) return null;
 

@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { Navbar } from '@/components/Navbar';
 import { Footer } from '@/components/Footer';
 import { AdSenseSafeZone } from '@/components/AdSenseSafeZone';
@@ -10,6 +10,7 @@ import { CreativityActivity } from '@/activities/CreativityActivity';
 import { StoryActivity } from '@/activities/StoryActivity';
 import { Confetti } from '@/components/Confetti';
 import { useApp } from '@/lib/store';
+import { registerModalBackHandler } from '@/lib/navigation';
 import { kidoraCharacters } from '@/lib/characters';
 import type { Screen } from '@/lib/types';
 
@@ -146,6 +147,15 @@ export function PlayHub({ onNavigate }: PlayHubProps) {
     setActiveGame(null);
     setShowCelebration(false);
   };
+
+  useEffect(() => {
+    if (activeGame) {
+      return registerModalBackHandler(() => {
+        setActiveGame(null);
+        setShowCelebration(false);
+      });
+    }
+  }, [activeGame]);
 
   return (
     <div className="min-h-screen bg-slate-50 flex flex-col justify-between">
