@@ -120,31 +120,113 @@ class SoundEngine {
       window.speechSynthesis.cancel();
 
       // Clean text for speech
-      const cleaned = text.replace(/[\p{Emoji_Presentation}\p{Extended_Pictographic}]/gu, '').trim();
+      let cleaned = text.replace(/[\p{Emoji_Presentation}\p{Extended_Pictographic}]/gu, '').trim();
       if (!cleaned) {
         options?.onEnd?.();
         return;
       }
 
+      // Check if text contains Tamil characters
+      const hasTamil = /[\u0B80-\u0BFF]/.test(cleaned);
+
+      // Search for a native Tamil voice
+      const tamilVoice = this.voices.find(
+        (v) =>
+          v.lang.toLowerCase().startsWith('ta') ||
+          v.lang.toLowerCase().includes('ta-in') ||
+          v.name.toLowerCase().includes('tamil')
+      );
+
+      // If Tamil text is present and NO native Tamil voice exists on device:
+      // Replace Tamil characters with clear, smooth English phonetic syllables so it sounds natural!
+      if (hasTamil && !tamilVoice) {
+        const TAMIL_MAP: Record<string, string> = {
+          'அம்மா': 'Amma',
+          'ஆடு': 'Aadu',
+          'இலை': 'Ilai',
+          'ஈட்டி': 'Eetti',
+          'உரல்': 'Ural',
+          'ஊஞ்சல்': 'Oonjal',
+          'எலி': 'Eli',
+          'ஏணி': 'Aeni',
+          'ஐந்து': 'Ainthu',
+          'ஒட்டகம்': 'Ottagam',
+          'ஓடம்': 'Odam',
+          'ஔவையார்': 'Avvaiyaar',
+          'எஃகு': 'Ehku',
+          'அ': 'Ah',
+          'ஆ': 'Aah',
+          'இ': 'Ee',
+          'ஈ': 'Eee',
+          'உ': 'Oo',
+          'ஊ': 'Ooo',
+          'எ': 'Eh',
+          'ஏ': 'Aay',
+          'ஐ': 'Eye',
+          'ஒ': 'Oh',
+          'ஓ': 'Oah',
+          'ஔ': 'Au',
+          'ஃ': 'Akh',
+          'சிங்கம்': 'Singam',
+          'யானை': 'Yaanai',
+          'புலி': 'Puli',
+          'ஒட்டகச்சிவிங்கி': 'Ottagachivingi',
+          'வரிக்குதிரை': 'Varikkuthirai',
+          'கங்காரு': 'Kangaroo',
+          'பசு மாடு': 'Pasu Maadu',
+          'குதிரை': 'Kuthirai',
+          'செம்மறி ஆடு': 'Semmari Aadu',
+          'வாத்து': 'Vaathu',
+          'டால்பின்': 'Dolphin',
+          'திமிங்கலம்': 'Timingalam',
+          'கடல் ஆமை': 'Kadal Aamai',
+          'எண்காலி': 'Enkaali',
+          'மயில்': 'Mayil',
+          'கிளி': 'Kili',
+          'ஆந்தை': 'Aanthai',
+          'நாய்': 'Naai',
+          'பூனை': 'Poonai',
+          'கோடைக்காலம்': 'Kodaikaalam',
+          'மழைக்காலம்': 'Mazaikaalam',
+          'இலையுதிர்காலம்': 'Ilaiyuthirkaalam',
+          'குளிர்காலம்': 'Kulirkaalam',
+          'வசந்தகாலம்': 'Vasanthakaalam',
+        };
+
+        for (const [k, v] of Object.entries(TAMIL_MAP)) {
+          cleaned = cleaned.split(k).join(v);
+        }
+      }
+
       const utterance = new SpeechSynthesisUtterance(cleaned);
-      utterance.rate = options?.rate ?? 0.88;
-      utterance.pitch = options?.pitch ?? 1.1;
+      utterance.rate = options?.rate ?? (hasTamil && tamilVoice ? 0.82 : 0.88);
+      utterance.pitch = options?.pitch ?? (hasTamil ? 1.05 : 1.1);
       utterance.volume = options?.volume ?? 1.0;
-      utterance.lang = options?.lang ?? 'en-US';
 
-      // Pick the best natural English or requested language voice
-      if (this.voices.length > 0) {
-        const matchingVoice =
-          this.voices.find(
-            (v) =>
-              (v.lang.startsWith('en') || v.lang.includes('US') || v.lang.includes('GB')) &&
-              (v.name.includes('Natural') || v.name.includes('Google') || v.name.includes('Samantha') || v.name.includes('Female'))
-          ) ||
-          this.voices.find((v) => v.lang.startsWith('en')) ||
-          this.voices[0];
+      if (hasTamil && tamilVoice) {
+        utterance.lang = 'ta-IN';
+        utterance.voice = tamilVoice;
+      } else {
+        utterance.lang = options?.lang ?? 'en-IN';
 
-        if (matchingVoice) {
-          utterance.voice = matchingVoice;
+        // Pick best natural voice (prefer Indian English or Natural female for crisp pronunciation)
+        if (this.voices.length > 0) {
+          const matchingVoice =
+            this.voices.find((v) => v.lang.includes('IN') || v.name.includes('India')) ||
+            this.voices.find(
+              (v) =>
+                (v.lang.startsWith('en') || v.lang.includes('US') || v.lang.includes('GB')) &&
+                (v.name.includes('Natural') ||
+                  v.name.includes('Google') ||
+                  v.name.includes('Samantha') ||
+                  v.name.includes('Female'))
+            ) ||
+            this.voices.find((v) => v.lang.startsWith('en')) ||
+            this.voices[0];
+
+          if (matchingVoice) {
+            utterance.voice = matchingVoice;
+          }
         }
       }
 

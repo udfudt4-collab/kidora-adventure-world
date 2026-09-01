@@ -396,7 +396,7 @@ export function AlphabetNumberHub() {
   const handleSelectTamil = (item: TamilLetterItem) => {
     setSelectedTamil(item);
     soundEngine.playPop();
-    speakText(`${item.letter}. ${item.word}.`);
+    speakText(`${item.phonetic}. ${item.word}. ${item.englishMeaning}.`);
     clearCanvas();
   };
 
@@ -560,7 +560,7 @@ export function AlphabetNumberHub() {
     } else if (activeTab === 'tamil') {
       soundEngine.playCelebration();
       setTimeout(() => {
-        speakText(`${selectedTamil.letter} for ${selectedTamil.word}! ${selectedTamil.englishMeaning}!`);
+        speakText(`${selectedTamil.phonetic} for ${selectedTamil.word}! ${selectedTamil.phonetic}, ${selectedTamil.phonetic}, ${selectedTamil.word}! ${selectedTamil.englishMeaning}!`);
       }, 300);
     } else {
       soundEngine.playCelebration();
@@ -698,10 +698,10 @@ export function AlphabetNumberHub() {
                   onClick={() =>
                     speakText(
                       activeTab === 'alphabets'
-                        ? `${selectedLetter.letter}. ${selectedLetter.word}`
+                        ? `${selectedLetter.letter}. ${selectedLetter.word}.`
                         : activeTab === 'tamil'
-                        ? `${selectedTamil.letter}. ${selectedTamil.word}`
-                        : `${selectedNumber.num}. ${selectedNumber.word}`
+                        ? `${selectedTamil.phonetic}. ${selectedTamil.word}. ${selectedTamil.englishMeaning}.`
+                        : `${selectedNumber.num}. ${selectedNumber.word}.`
                     )
                   }
                   className="p-1.5 rounded-xl bg-slate-100 hover:bg-sky-100 text-slate-600 hover:text-sky-600 transition-colors"
@@ -1498,7 +1498,7 @@ export function AlphabetNumberHub() {
                   </span>
                   <button
                     type="button"
-                    onClick={() => speakText(`${selectedTamil.letter}. ${selectedTamil.word}. ${selectedTamil.englishMeaning}`)}
+                    onClick={() => speakText(`${selectedTamil.phonetic}! ${selectedTamil.word}! ${selectedTamil.englishMeaning}.`)}
                     className="btn-press p-2 rounded-xl bg-white/20 hover:bg-white/30 text-white cursor-pointer transition-colors"
                     title="Speak out loud"
                   >
