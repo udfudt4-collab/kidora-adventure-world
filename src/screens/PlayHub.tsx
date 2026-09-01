@@ -162,6 +162,62 @@ const gamesList: GameItem[] = [
     gradient: 'from-emerald-500 to-teal-600',
     activityType: 'creativity',
   },
+  {
+    id: 'fruits-veggies',
+    title: 'Fruits & Vegetables Garden',
+    realm: 'Nutrition Forest',
+    category: 'science',
+    emoji: '🍎',
+    hostCharacter: 'Kido',
+    hostEmoji: '🦊',
+    ageRange: 'Ages 3–8',
+    description: 'Learn healthy fruits, crunchy veggies, vitamins, superpowers, and build a rainbow plate!',
+    skills: ['Nutrition', 'Healthy Eating', 'Tamil Vocabulary'],
+    gradient: 'from-emerald-500 to-amber-500',
+    activityType: 'science',
+  },
+  {
+    id: 'world-flags',
+    title: 'World Flags & Countries',
+    realm: 'Global Explorer',
+    category: 'words',
+    emoji: '🌍',
+    hostCharacter: 'Lumi',
+    hostEmoji: '🔬',
+    ageRange: 'Ages 5–10',
+    description: 'Travel across 20+ countries, discover world flags, capitals, landmarks, and greetings.',
+    skills: ['World Geography', 'Culture', 'Flag Recognition'],
+    gradient: 'from-blue-600 to-indigo-700',
+    activityType: 'words',
+  },
+  {
+    id: 'solar-system',
+    title: 'Cosmic Solar System Orbit',
+    realm: 'Science Space',
+    category: 'science',
+    emoji: '🪐',
+    hostCharacter: 'Lumi',
+    hostEmoji: '🔬',
+    ageRange: 'Ages 5–10',
+    description: 'Explore the Sun, Moon, all 8 planets, orbital distances, rover landings, and space trivia.',
+    skills: ['Astronomy', 'Planetary Science', 'Space Exploration'],
+    gradient: 'from-indigo-900 to-purple-900',
+    activityType: 'science',
+  },
+  {
+    id: 'windmill-lab',
+    title: 'Windmill Clean Energy Studio',
+    realm: 'Eco Discovery',
+    category: 'science',
+    emoji: '🌬️',
+    hostCharacter: 'Tiko',
+    hostEmoji: '🧮',
+    ageRange: 'Ages 4–10',
+    description: 'Spin the aerodynamic windmill turbine, generate clean watts, and power the Kidora eco village!',
+    skills: ['Renewable Energy', 'Physics', 'Eco Sustainability'],
+    gradient: 'from-teal-600 to-sky-600',
+    activityType: 'science',
+  },
 ];
 
 export function PlayHub({ onNavigate }: PlayHubProps) {
@@ -301,7 +357,16 @@ export function PlayHub({ onNavigate }: PlayHubProps) {
                 <button
                   type="button"
                   onClick={() => {
-                    if (game.id === 'abc-123-academy' || game.id === 'colors-lab' || game.id === 'worksheets-studio') {
+                    const learnGameIds = [
+                      'abc-123-academy',
+                      'colors-lab',
+                      'worksheets-studio',
+                      'fruits-veggies',
+                      'world-flags',
+                      'solar-system',
+                      'windmill-lab',
+                    ];
+                    if (learnGameIds.includes(game.id)) {
                       onNavigate('learn');
                     } else if (game.activityType === 'creativity') {
                       onNavigate('create');

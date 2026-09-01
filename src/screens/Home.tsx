@@ -272,80 +272,104 @@ export function Home({ onNavigate }: HomeProps) {
             </div>
           </div>
 
-          {/* 🌟 2A-NEW. EARLY LEARNING ACADEMY, COLORS & WORKSHEETS SUITE */}
-          <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-            {/* 🔤 ABC & 123 Academy Card */}
-            <div
-              onClick={() => onNavigate('learn')}
-              className="btn-press bg-gradient-to-br from-amber-500 via-orange-500 to-rose-600 rounded-3xl p-5 text-white shadow-pop flex flex-col justify-between space-y-3 cursor-pointer border border-amber-300/40 hover:scale-[1.02] transition-transform"
-            >
-              <div className="flex items-center justify-between">
-                <div className="w-11 h-11 rounded-2xl bg-white/20 backdrop-blur-md flex items-center justify-center text-2xl shadow-xs">
+          {/* 🌟 2A-NEW. EARLY LEARNING ACADEMY, SCIENCE & NATURE SUITE */}
+          <div className="space-y-2">
+            <div className="flex items-center justify-between px-1">
+              <h3 className="text-xs font-black font-display text-slate-800 uppercase tracking-wider flex items-center gap-1.5">
+                <span>🌟</span> Discover & Learn Realms
+              </h3>
+              <button
+                type="button"
+                onClick={() => onNavigate('learn')}
+                className="text-[11px] font-black text-sky-600 hover:text-sky-700 cursor-pointer"
+              >
+                View All Realms →
+              </button>
+            </div>
+
+            <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-3">
+              {/* 🔤 ABC & 123 Academy Card */}
+              <div
+                onClick={() => onNavigate('learn')}
+                className="btn-press bg-gradient-to-br from-amber-500 to-rose-600 rounded-3xl p-4 text-white shadow-pop flex flex-col justify-between space-y-2 cursor-pointer border border-amber-300/40 hover:scale-[1.02] transition-transform"
+              >
+                <div className="w-10 h-10 rounded-2xl bg-white/20 backdrop-blur-md flex items-center justify-center text-xl shadow-xs">
                   🔤
                 </div>
-                <span className="text-[10px] font-black uppercase tracking-wider bg-white/20 px-2 py-0.5 rounded-full">
-                  Phonics & Count
-                </span>
+                <div>
+                  <h4 className="text-xs font-black font-display text-white">ABC & 123</h4>
+                  <p className="text-[10px] text-amber-100 font-medium line-clamp-1">A-Z, 1-20 Phonics</p>
+                </div>
               </div>
-              <div>
-                <h3 className="text-base font-black font-display text-white">ABC & 123 Academy</h3>
-                <p className="text-xs text-amber-100 font-medium line-clamp-2 mt-0.5">
-                  Learn A-Z phonics, Tamil words, numbers 1-20 & letter tracing.
-                </p>
-              </div>
-              <div className="text-xs font-black text-amber-200 flex items-center gap-1 pt-1 border-t border-white/20">
-                <span>Start Learning</span>
-                <span>→</span>
-              </div>
-            </div>
 
-            {/* 🎨 Colors & Mixing Lab Card */}
-            <div
-              onClick={() => onNavigate('learn')}
-              className="btn-press bg-gradient-to-br from-violet-600 via-pink-600 to-amber-500 rounded-3xl p-5 text-white shadow-pop flex flex-col justify-between space-y-3 cursor-pointer border border-pink-300/40 hover:scale-[1.02] transition-transform"
-            >
-              <div className="flex items-center justify-between">
-                <div className="w-11 h-11 rounded-2xl bg-white/20 backdrop-blur-md flex items-center justify-center text-2xl shadow-xs">
+              {/* 🎨 Colors Lab Card */}
+              <div
+                onClick={() => onNavigate('learn')}
+                className="btn-press bg-gradient-to-br from-violet-600 to-pink-600 rounded-3xl p-4 text-white shadow-pop flex flex-col justify-between space-y-2 cursor-pointer border border-pink-300/40 hover:scale-[1.02] transition-transform"
+              >
+                <div className="w-10 h-10 rounded-2xl bg-white/20 backdrop-blur-md flex items-center justify-center text-xl shadow-xs">
                   🎨
                 </div>
-                <span className="text-[10px] font-black uppercase tracking-wider bg-white/20 px-2 py-0.5 rounded-full">
-                  Color Lab
-                </span>
-              </div>
-              <div>
-                <h3 className="text-base font-black font-display text-white">Colors & Mixing Lab</h3>
-                <p className="text-xs text-pink-100 font-medium line-clamp-2 mt-0.5">
-                  Discover 10+ colors, bilingual names & mix magic paint potions!
-                </p>
-              </div>
-              <div className="text-xs font-black text-pink-200 flex items-center gap-1 pt-1 border-t border-white/20">
-                <span>Mix Paints</span>
-                <span>→</span>
-              </div>
-            </div>
-
-            {/* 📝 Worksheets Studio Card */}
-            <div
-              onClick={() => onNavigate('learn')}
-              className="btn-press bg-gradient-to-br from-emerald-600 via-teal-600 to-sky-600 rounded-3xl p-5 text-white shadow-pop flex flex-col justify-between space-y-3 cursor-pointer border border-emerald-300/40 hover:scale-[1.02] transition-transform"
-            >
-              <div className="flex items-center justify-between">
-                <div className="w-11 h-11 rounded-2xl bg-white/20 backdrop-blur-md flex items-center justify-center text-2xl shadow-xs">
-                  📝
+                <div>
+                  <h4 className="text-xs font-black font-display text-white">Colors Lab</h4>
+                  <p className="text-[10px] text-pink-100 font-medium line-clamp-1">Magic Paint Mix</p>
                 </div>
-                <span className="text-[10px] font-black uppercase tracking-wider bg-white/20 px-2 py-0.5 rounded-full">
-                  Print & Draw
-                </span>
               </div>
-              <div>
-                <h3 className="text-base font-black font-display text-white">Worksheets Studio</h3>
-                <p className="text-xs text-emerald-100 font-medium line-clamp-2 mt-0.5">
-                  Trace & draw on screen or print A4 worksheets for offline practice.
-                </p>
+
+              {/* 🍎 Fruits & Veggies Card */}
+              <div
+                onClick={() => onNavigate('learn')}
+                className="btn-press bg-gradient-to-br from-emerald-500 to-amber-500 rounded-3xl p-4 text-white shadow-pop flex flex-col justify-between space-y-2 cursor-pointer border border-emerald-300/40 hover:scale-[1.02] transition-transform"
+              >
+                <div className="w-10 h-10 rounded-2xl bg-white/20 backdrop-blur-md flex items-center justify-center text-xl shadow-xs">
+                  🍎
+                </div>
+                <div>
+                  <h4 className="text-xs font-black font-display text-white">Fruits & Veggies</h4>
+                  <p className="text-[10px] text-emerald-100 font-medium line-clamp-1">Healthy Plate</p>
+                </div>
               </div>
-              <div className="text-xs font-black text-emerald-200 flex items-center gap-1 pt-1 border-t border-white/20">
-                <span>Open Worksheets</span>
-                <span>→</span>
+
+              {/* 🌍 World & Flags Card */}
+              <div
+                onClick={() => onNavigate('learn')}
+                className="btn-press bg-gradient-to-br from-blue-600 to-indigo-700 rounded-3xl p-4 text-white shadow-pop flex flex-col justify-between space-y-2 cursor-pointer border border-blue-300/40 hover:scale-[1.02] transition-transform"
+              >
+                <div className="w-10 h-10 rounded-2xl bg-white/20 backdrop-blur-md flex items-center justify-center text-xl shadow-xs">
+                  🌍
+                </div>
+                <div>
+                  <h4 className="text-xs font-black font-display text-white">World & Flags</h4>
+                  <p className="text-[10px] text-blue-100 font-medium line-clamp-1">Capitals & Wonders</p>
+                </div>
+              </div>
+
+              {/* 🪐 Solar System Card */}
+              <div
+                onClick={() => onNavigate('learn')}
+                className="btn-press bg-gradient-to-br from-indigo-900 to-purple-900 rounded-3xl p-4 text-white shadow-pop flex flex-col justify-between space-y-2 cursor-pointer border border-purple-400/40 hover:scale-[1.02] transition-transform"
+              >
+                <div className="w-10 h-10 rounded-2xl bg-white/20 backdrop-blur-md flex items-center justify-center text-xl shadow-xs">
+                  🪐
+                </div>
+                <div>
+                  <h4 className="text-xs font-black font-display text-white">Solar System</h4>
+                  <p className="text-[10px] text-purple-200 font-medium line-clamp-1">8 Planet Orbits</p>
+                </div>
+              </div>
+
+              {/* 🌬️ Windmill & Eco Lab Card */}
+              <div
+                onClick={() => onNavigate('learn')}
+                className="btn-press bg-gradient-to-br from-teal-600 to-sky-600 rounded-3xl p-4 text-white shadow-pop flex flex-col justify-between space-y-2 cursor-pointer border border-sky-300/40 hover:scale-[1.02] transition-transform"
+              >
+                <div className="w-10 h-10 rounded-2xl bg-white/20 backdrop-blur-md flex items-center justify-center text-xl shadow-xs">
+                  🌬️
+                </div>
+                <div>
+                  <h4 className="text-xs font-black font-display text-white">Windmill Lab</h4>
+                  <p className="text-[10px] text-sky-100 font-medium line-clamp-1">Clean Power Grid</p>
+                </div>
               </div>
             </div>
           </div>

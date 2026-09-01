@@ -5,13 +5,25 @@ import { AdSenseSafeZone } from '@/components/AdSenseSafeZone';
 import { AlphabetNumberHub } from '@/components/AlphabetNumberHub';
 import { ColorExplorer } from '@/components/ColorExplorer';
 import { WorksheetsStudio } from '@/components/WorksheetsStudio';
+import { FruitsVeggieExplorer } from '@/components/FruitsVeggieExplorer';
+import { WorldFlagsExplorer } from '@/components/WorldFlagsExplorer';
+import { SolarSystemExplorer } from '@/components/SolarSystemExplorer';
+import { WindmillLab } from '@/components/WindmillLab';
 import type { Screen } from '@/lib/types';
 
 interface LearnHubProps {
   onNavigate: (screen: Screen) => void;
 }
 
-type LearnMainSection = 'abc123' | 'colors' | 'worksheets' | 'curriculum';
+type LearnMainSection =
+  | 'abc123'
+  | 'colors'
+  | 'fruits_veggies'
+  | 'flags'
+  | 'solar_system'
+  | 'windmill'
+  | 'worksheets'
+  | 'curriculum';
 type TopicKey = 'math' | 'reading' | 'logic' | 'science' | 'creativity';
 
 interface LearningModule {
@@ -294,18 +306,22 @@ export function LearnHub({ onNavigate }: LearnHubProps) {
 
       <main className="flex-1 max-w-6xl w-full mx-auto px-4 sm:px-6 py-8 space-y-8">
         {/* Main Learning Hub Super Switcher */}
-        <div className="flex items-center justify-center gap-2 flex-wrap bg-white p-2 rounded-3xl border border-slate-200 shadow-soft max-w-2xl mx-auto">
+        <div className="flex items-center justify-center gap-2 flex-wrap bg-white p-2.5 rounded-3xl border border-slate-200 shadow-soft max-w-4xl mx-auto">
           {[
-            { id: 'abc123', label: '🔤 ABC & 123 Academy' },
-            { id: 'colors', label: '🎨 Colors & Mixing Lab' },
-            { id: 'worksheets', label: '📝 Worksheets Studio' },
-            { id: 'curriculum', label: '📚 Framework & Guides' },
+            { id: 'abc123', label: '🔤 ABC & 123' },
+            { id: 'colors', label: '🎨 Colors Lab' },
+            { id: 'fruits_veggies', label: '🍎 Fruits & Veggies' },
+            { id: 'flags', label: '🌍 World & Flags' },
+            { id: 'solar_system', label: '🪐 Solar System' },
+            { id: 'windmill', label: '🌬️ Windmill & Eco' },
+            { id: 'worksheets', label: '📝 Worksheets' },
+            { id: 'curriculum', label: '📚 Framework' },
           ].map((tab) => (
             <button
               key={tab.id}
               type="button"
               onClick={() => setMainSection(tab.id as LearnMainSection)}
-              className={`btn-press px-4 py-2.5 rounded-2xl text-xs font-black font-display transition-all cursor-pointer ${
+              className={`btn-press px-3.5 py-2 rounded-2xl text-xs font-black font-display transition-all cursor-pointer ${
                 mainSection === tab.id
                   ? 'bg-gradient-to-r from-sky-600 to-teal-600 text-white shadow-soft scale-105'
                   : 'text-slate-700 hover:bg-slate-100'
@@ -322,10 +338,22 @@ export function LearnHub({ onNavigate }: LearnHubProps) {
         {/* 2. Colors Explorer & Magic Mixing Lab */}
         {mainSection === 'colors' && <ColorExplorer />}
 
-        {/* 3. Printable & Digital Worksheets Studio */}
+        {/* 3. Fruits & Vegetables Explorer */}
+        {mainSection === 'fruits_veggies' && <FruitsVeggieExplorer />}
+
+        {/* 4. Countries & World Flags */}
+        {mainSection === 'flags' && <WorldFlagsExplorer />}
+
+        {/* 5. Cosmic Solar System Orbit */}
+        {mainSection === 'solar_system' && <SolarSystemExplorer />}
+
+        {/* 6. Windmill Clean Power Studio */}
+        {mainSection === 'windmill' && <WindmillLab />}
+
+        {/* 7. Printable & Digital Worksheets Studio */}
         {mainSection === 'worksheets' && <WorksheetsStudio />}
 
-        {/* 4. Curriculum & Parent Pedagogical Guides */}
+        {/* 8. Curriculum & Parent Pedagogical Guides */}
         {mainSection === 'curriculum' && (
           <div className="space-y-8 animate-pop-in">
             {/* Header */}
