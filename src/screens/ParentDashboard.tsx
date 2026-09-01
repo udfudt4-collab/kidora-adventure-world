@@ -362,10 +362,13 @@ export function ParentDashboard({ onNavigate }: ParentDashboardProps) {
               🛡️
             </div>
             <div>
-              <div className="flex items-center gap-2">
+              <div className="flex items-center gap-2 flex-wrap">
                 <h1 className="font-black font-display text-base tracking-tight text-white flex items-center gap-1.5">
                   <span>{greeting.title}</span>
                 </h1>
+                <span className="px-2 py-0.5 rounded-md bg-slate-800 text-amber-400 font-mono text-[10px] font-black border border-slate-700">
+                  v1.9.0
+                </span>
                 <button
                   type="button"
                   onClick={() => {

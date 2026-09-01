@@ -176,8 +176,11 @@ export function Footer({ onNavigate }: FooterProps) {
 
         {/* Bottom Bar */}
         <div className="border-t border-slate-800 pt-8 flex flex-col sm:flex-row items-center justify-between gap-4 text-xs text-slate-500">
-          <div>
-            © 2026 Kidora Adventure World. All rights reserved. Made for young explorers worldwide.
+          <div className="flex items-center gap-2 flex-wrap">
+            <span>© 2026 Kidora Adventure World. All rights reserved.</span>
+            <span className="px-2 py-0.5 rounded-md bg-slate-800 text-amber-400 font-mono text-[10px] font-bold border border-slate-700">
+              v1.9.0
+            </span>
           </div>
           <div className="flex items-center gap-4 text-[11px]">
             <button type="button" onClick={() => onNavigate('privacy')} className="hover:underline">
