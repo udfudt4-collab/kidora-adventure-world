@@ -109,9 +109,11 @@ export function ParentDashboard({ onNavigate }: ParentDashboardProps) {
 
   const [parentName, setParentName] = useState<string>(() => {
     try {
-      return localStorage.getItem('kidora_parent_name') || 'Anish';
+      const stored = localStorage.getItem('kidora_parent_name');
+      if (stored && stored !== 'Anish') return stored;
+      return 'Parent';
     } catch {
-      return 'Anish';
+      return 'Parent';
     }
   });
   const [isEditingName, setIsEditingName] = useState(false);
@@ -367,13 +369,15 @@ export function ParentDashboard({ onNavigate }: ParentDashboardProps) {
                 <button
                   type="button"
                   onClick={() => {
-                    setTempNameInput(parentName);
+                    setTempNameInput(parentName === 'Parent' ? '' : parentName);
                     setIsEditingName(true);
                   }}
-                  className="text-xs text-slate-400 hover:text-emerald-300 transition-colors p-0.5 cursor-pointer bg-white/10 hover:bg-white/20 rounded-lg px-1.5 py-0.5 flex items-center gap-1"
-                  title="Change your name"
+                  className="text-xs transition-colors p-0.5 cursor-pointer bg-emerald-500/20 hover:bg-emerald-500/30 text-emerald-300 rounded-lg px-2 py-0.5 flex items-center gap-1 border border-emerald-500/30"
+                  title="Personalize your name"
                 >
-                  <span className="text-[10px]">✏️ Edit</span>
+                  <span className="text-[10px] font-bold">
+                    {parentName === 'Parent' ? '👋 Set Your Name' : '✏️ Edit'}
+                  </span>
                 </button>
               </div>
               <p className="text-[10px] text-emerald-400 font-bold truncate max-w-xs sm:max-w-md">
@@ -2077,7 +2081,7 @@ export function ParentDashboard({ onNavigate }: ParentDashboardProps) {
               type="text"
               value={tempNameInput}
               onChange={(e) => setTempNameInput(e.target.value)}
-              placeholder="e.g. Anish, Sarah, Mom, Dad"
+              placeholder="e.g. Mom, Dad, Sarah, Michael, Priya"
               className="w-full px-4 py-3 rounded-2xl border border-slate-200 font-bold text-sm text-slate-800 focus:outline-none focus:ring-2 focus:ring-emerald-500 text-center"
               autoFocus
               maxLength={25}
