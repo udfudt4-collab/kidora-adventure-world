@@ -32,6 +32,8 @@ import {
   Trophy,
   Image as ImageIcon,
   HelpCircle,
+  Rocket,
+  ArrowRight,
 } from 'lucide-react';
 
 export interface LetterItem {
@@ -181,6 +183,31 @@ export function AlphabetNumberHub() {
   // Auto Completion & Accuracy Coverage
   const [tracingProgress, setTracingProgress] = useState(0);
   const hasAutoCelebratedRef = useRef(false);
+
+  // Auto-Advance & Rocket Transition State
+  const [autoAdvanceData, setAutoAdvanceData] = useState<{
+    isOpen: boolean;
+    currentId: string;
+    currentTitle: string;
+    currentEmoji: string;
+    nextId: string;
+    nextTitle: string;
+    nextEmoji: string;
+    type: 'alphabets' | 'tamil' | 'numbers';
+    nextItem: LetterItem | TamilLetterItem | NumberItem;
+    countdown: number;
+  }>({
+    isOpen: false,
+    currentId: 'A',
+    currentTitle: 'Apple',
+    currentEmoji: '🍎',
+    nextId: 'B',
+    nextTitle: 'Butterfly',
+    nextEmoji: '🦋',
+    type: 'alphabets',
+    nextItem: ALPHABET_DATA[1],
+    countdown: 3,
+  });
 
   // Gamification & Saved Gallery
   const [masteredLetters, setMasteredLetters] = useState<string[]>(() => {
@@ -514,22 +541,114 @@ export function AlphabetNumberHub() {
     }
   };
 
+  const applyAdvanceToNext = useCallback(() => {
+    setAutoAdvanceData((prev) => {
+      if (!prev.isOpen) return prev;
+      const { type, nextItem } = prev;
+
+      if (type === 'alphabets') {
+        const item = nextItem as LetterItem;
+        setSelectedLetter(item);
+        soundEngine.playCelebration();
+        speakText(`${item.letter}. ${item.word}.`);
+      } else if (type === 'tamil') {
+        const item = nextItem as TamilLetterItem;
+        setSelectedTamil(item);
+        soundEngine.playCelebration();
+        speakText(`${item.phonetic}. ${item.word}. ${item.englishMeaning}.`);
+      } else if (type === 'numbers') {
+        const item = nextItem as NumberItem;
+        setSelectedNumber(item);
+        soundEngine.playCelebration();
+        speakText(`${item.num}. ${item.word}.`);
+      }
+
+      return { ...prev, isOpen: false };
+    });
+    clearCanvas();
+  }, [speakText]);
+
+  // Countdown timer for automatic transition
+  useEffect(() => {
+    if (!autoAdvanceData.isOpen) return;
+    if (autoAdvanceData.countdown <= 0) {
+      applyAdvanceToNext();
+      return;
+    }
+    const timer = setTimeout(() => {
+      setAutoAdvanceData((prev) => {
+        if (!prev.isOpen) return prev;
+        if (prev.countdown <= 1) {
+          return { ...prev, countdown: 0 };
+        }
+        return { ...prev, countdown: prev.countdown - 1 };
+      });
+    }, 1000);
+
+    return () => clearTimeout(timer);
+  }, [autoAdvanceData.isOpen, autoAdvanceData.countdown, applyAdvanceToNext]);
+
   const handleCelebrate = (isAuto = false) => {
     const charId = getCurrentCharacterId();
-    const title =
-      activeTab === 'alphabets'
-        ? selectedLetter.word
-        : activeTab === 'tamil'
-        ? selectedTamil.word
-        : selectedNumber.word;
-
-    const msg = `🎉 ${isAuto ? 'Auto Mastered!' : 'Superstar!'} Tracing of ${charId}! +5 Gold Stars! ⭐`;
-    setCelebrationMessage(msg);
     addStars(5);
     soundEngine.playCelebration();
     soundEngine.triggerHaptic('success');
-    speakText(`Superstar! Fantastic tracing of ${title}! High five!`);
     recordMastery(charId);
+
+    let currentTitle = '';
+    let currentEmoji = '';
+    let nextId = '';
+    let nextTitle = '';
+    let nextEmoji = '';
+    let nextItem: LetterItem | TamilLetterItem | NumberItem;
+
+    if (activeTab === 'alphabets') {
+      currentTitle = selectedLetter.word;
+      currentEmoji = selectedLetter.emoji;
+      const nextIdx = (currentIndexLetter + 1) % ALPHABET_DATA.length;
+      const next = ALPHABET_DATA[nextIdx];
+      nextId = next.letter;
+      nextTitle = next.word;
+      nextEmoji = next.emoji;
+      nextItem = next;
+      speakText(`Superstar! Letter ${selectedLetter.letter} for ${selectedLetter.word} mastered! Zooming to letter ${next.letter} for ${next.word}!`);
+    } else if (activeTab === 'tamil') {
+      currentTitle = selectedTamil.word;
+      currentEmoji = selectedTamil.emoji;
+      const nextIdx = (currentIndexTamil + 1) % TAMIL_VOWEL_DATA.length;
+      const next = TAMIL_VOWEL_DATA[nextIdx];
+      nextId = next.letter;
+      nextTitle = next.word;
+      nextEmoji = next.emoji;
+      nextItem = next;
+      speakText(`அற்புதம்! ${selectedTamil.letter} ${selectedTamil.word} முடிந்தது! அடுத்து ${next.letter} ${next.word}!`);
+    } else {
+      currentTitle = selectedNumber.word;
+      currentEmoji = selectedNumber.emoji;
+      const nextIdx = (currentIndexNumber + 1) % NUMBER_DATA.length;
+      const next = NUMBER_DATA[nextIdx];
+      nextId = String(next.num);
+      nextTitle = next.word;
+      nextEmoji = next.emoji;
+      nextItem = next;
+      speakText(`Awesome! Number ${selectedNumber.num} mastered! Next is number ${next.num}!`);
+    }
+
+    const msg = `🎉 ${isAuto ? 'Auto Mastered!' : 'Superstar!'} ${charId} Traced! +5 Gold Stars! ⭐`;
+    setCelebrationMessage(msg);
+
+    setAutoAdvanceData({
+      isOpen: true,
+      currentId: charId,
+      currentTitle,
+      currentEmoji,
+      nextId,
+      nextTitle,
+      nextEmoji,
+      type: activeTab === 'tamil' ? 'tamil' : activeTab === 'numbers' ? 'numbers' : 'alphabets',
+      nextItem,
+      countdown: 3,
+    });
   };
 
   const handleSaveToGallery = () => {
@@ -1278,6 +1397,116 @@ export function AlphabetNumberHub() {
         <div className="fixed inset-0 z-50 bg-slate-950/80 backdrop-blur-md p-3 sm:p-6 flex flex-col justify-center items-center overflow-y-auto animate-pop-in">
           <div className="w-full max-w-6xl h-full flex flex-col max-h-[92vh]">
             {renderPracticeStudio(true)}
+          </div>
+        </div>
+      )}
+
+      {/* 🚀 Super Creative Rocket & Magic Journey Auto-Advance Celebration Modal */}
+      {autoAdvanceData.isOpen && (
+        <div className="fixed inset-0 z-50 bg-slate-950/80 backdrop-blur-md p-4 flex items-center justify-center animate-pop-in">
+          <div className="relative bg-gradient-to-b from-amber-50 via-white to-sky-50 rounded-3xl p-6 sm:p-8 max-w-lg w-full shadow-2xl border-4 border-amber-300 text-center space-y-6 overflow-hidden">
+            {/* Background Decorative Sparkle Blurs */}
+            <div className="absolute -top-10 -right-10 w-32 h-32 bg-amber-300/30 rounded-full blur-xl pointer-events-none" />
+            <div className="absolute -bottom-10 -left-10 w-32 h-32 bg-sky-300/30 rounded-full blur-xl pointer-events-none" />
+
+            {/* Top Confetti & Trophy Badge */}
+            <div className="flex flex-col items-center justify-center gap-2">
+              <div className="inline-flex items-center gap-1.5 px-4 py-1.5 rounded-full bg-gradient-to-r from-amber-400 to-orange-500 text-slate-950 font-black text-xs uppercase tracking-wider shadow-soft animate-bounce">
+                <PartyPopper className="h-4 w-4 text-slate-950" />
+                <span>Level Mastered! +5 Gold Stars ⭐</span>
+              </div>
+              <h2 className="text-2xl sm:text-3xl font-black font-display text-slate-900">
+                Superstar Handwriting! 🌟
+              </h2>
+              <p className="text-xs sm:text-sm text-slate-600 font-medium">
+                You successfully mastered{' '}
+                <strong className="text-rose-600 font-black">
+                  {autoAdvanceData.currentId} ({autoAdvanceData.currentTitle})
+                </strong>
+                !
+              </p>
+            </div>
+
+            {/* Rocket Journey Track: Current Item ➔ 🚀 ➔ Next Item */}
+            <div className="bg-white/90 backdrop-blur-sm p-4 rounded-3xl border-2 border-dashed border-amber-300 shadow-inner flex items-center justify-between gap-3 relative">
+              {/* Finished Card */}
+              <div className="flex flex-col items-center p-3 rounded-2xl bg-emerald-50 border border-emerald-300 flex-1">
+                <span className="text-2xl sm:text-3xl">{autoAdvanceData.currentEmoji}</span>
+                <span className="text-xl sm:text-2xl font-black font-display text-emerald-700">
+                  {autoAdvanceData.currentId}
+                </span>
+                <span className="text-[10px] font-bold text-emerald-600 bg-emerald-100 px-2 py-0.5 rounded-full mt-1 flex items-center gap-0.5">
+                  <Check className="h-3 w-3 stroke-[3]" /> Done
+                </span>
+              </div>
+
+              {/* Rocket Flight Corridor */}
+              <div className="flex flex-col items-center justify-center flex-1 space-y-1">
+                <div className="text-3xl animate-pulse transform rotate-45">
+                  🚀
+                </div>
+                <div className="w-full bg-slate-200 h-2.5 rounded-full overflow-hidden relative border border-slate-300">
+                  <div
+                    className="bg-gradient-to-r from-emerald-400 via-amber-400 to-sky-500 h-full rounded-full transition-all duration-1000 ease-linear"
+                    style={{
+                      width: `${((3 - autoAdvanceData.countdown) / 3) * 100}%`,
+                    }}
+                  />
+                </div>
+                <span className="text-[10px] font-black text-amber-700">
+                  Flying in {autoAdvanceData.countdown}s...
+                </span>
+              </div>
+
+              {/* Next Target Card */}
+              <div className="flex flex-col items-center p-3 rounded-2xl bg-sky-50 border-2 border-sky-400 flex-1 shadow-soft scale-105 animate-pulse">
+                <span className="text-2xl sm:text-3xl">{autoAdvanceData.nextEmoji}</span>
+                <span className="text-xl sm:text-2xl font-black font-display text-sky-700">
+                  {autoAdvanceData.nextId}
+                </span>
+                <span className="text-[10px] font-black text-sky-700 bg-sky-200 px-2 py-0.5 rounded-full mt-1">
+                  Next Up!
+                </span>
+              </div>
+            </div>
+
+            {/* Countdown Banner */}
+            <div className="flex items-center justify-center gap-2 bg-gradient-to-r from-sky-100 via-indigo-100 to-purple-100 p-3 rounded-2xl border border-sky-200 text-xs font-black text-indigo-900">
+              <Sparkles className="h-4 w-4 text-amber-500 animate-spin" />
+              <span>
+                Launching Next{' '}
+                <strong className="text-sky-600 font-display text-sm">
+                  "{autoAdvanceData.nextId}" ({autoAdvanceData.nextTitle})
+                </strong>{' '}
+                in <strong className="text-base text-rose-600 font-display">{autoAdvanceData.countdown}</strong> sec!
+              </span>
+            </div>
+
+            {/* Action Buttons */}
+            <div className="flex flex-col sm:flex-row items-center justify-center gap-3 pt-1">
+              {/* Practice Current Again */}
+              <button
+                type="button"
+                onClick={() => {
+                  setAutoAdvanceData((prev) => ({ ...prev, isOpen: false }));
+                  clearCanvas();
+                }}
+                className="btn-press w-full sm:w-1/2 py-3 px-4 rounded-2xl bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold text-xs flex items-center justify-center gap-2 border border-slate-300 cursor-pointer"
+              >
+                <RotateCcw className="h-4 w-4 text-slate-500" />
+                <span>Trace {autoAdvanceData.currentId} Again</span>
+              </button>
+
+              {/* Instant Next Rocket Launch */}
+              <button
+                type="button"
+                onClick={applyAdvanceToNext}
+                className="btn-press w-full sm:w-1/2 py-3 px-4 rounded-2xl bg-gradient-to-r from-sky-500 via-indigo-600 to-purple-600 hover:from-sky-600 hover:to-purple-700 text-white font-black font-display text-xs sm:text-sm shadow-pop flex items-center justify-center gap-2 cursor-pointer border border-sky-300/40"
+              >
+                <Rocket className="h-4 w-4 text-amber-300 animate-bounce" />
+                <span>Start {autoAdvanceData.nextId} Now ➔</span>
+              </button>
+            </div>
           </div>
         </div>
       )}
