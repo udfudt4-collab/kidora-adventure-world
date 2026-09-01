@@ -1,6 +1,7 @@
 import { useState, useEffect, useRef } from 'react';
 import { AppProvider, useApp } from '@/lib/store';
 import { setupNavigationHandlers, initBackButtonSupport } from '@/lib/navigation';
+import { soundEngine } from '@/lib/soundEngine';
 import { Onboarding } from '@/screens/Onboarding';
 import { Home } from '@/screens/Home';
 import { Adventure } from '@/screens/Adventure';
@@ -52,6 +53,9 @@ function AppContent() {
   };
 
   useEffect(() => {
+    // Prime and warm up sound & speech synthesis for mobile WebView and web
+    soundEngine.warmup();
+
     // Setup centralized navigation for back button
     setupNavigationHandlers(
       (newScreen) => navigate(newScreen, false),

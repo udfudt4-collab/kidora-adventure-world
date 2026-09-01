@@ -1,5 +1,6 @@
 import { useState } from 'react';
 import { useApp } from '@/lib/store';
+import { soundEngine } from '@/lib/soundEngine';
 import {
   Rocket,
   Volume2,
@@ -224,18 +225,12 @@ export function SolarSystemExplorer() {
   const [quizFeedback, setQuizFeedback] = useState<{ isCorrect: boolean; message: string } | null>(null);
 
   const speakText = (text: string) => {
-    if ('speechSynthesis' in window) {
-      window.speechSynthesis.cancel();
-      const utterance = new SpeechSynthesisUtterance(text);
-      utterance.rate = 0.85;
-      utterance.pitch = 1.0;
-      window.speechSynthesis.speak(utterance);
-    }
+    soundEngine.speak(text);
   };
 
   const handleSelectPlanet = (p: PlanetItem) => {
     setSelectedPlanet(p);
-    waterSound.playDroplet();
+    soundEngine.playPop();
     speakText(`${p.name}. ${p.tamilName}. Distance from sun: ${p.distanceFromSun}. ${p.funFact}`);
   };
 
@@ -259,11 +254,13 @@ export function SolarSystemExplorer() {
   const handleAnswerQuiz = (choice: string) => {
     const isCorrect = choice.startsWith(quizQuestion.correct.name);
     if (isCorrect) {
+      soundEngine.playCelebration();
       setQuizFeedback({ isCorrect: true, message: `🎉 Cosmic Genius! ${quizQuestion.correct.name} is correct! +5 Stars! ⭐` });
       addStars(5);
       speakText(`Cosmic genius! That is correct!`);
       setTimeout(() => generateQuiz(), 2200);
     } else {
+      soundEngine.playWrong();
       setQuizFeedback({ isCorrect: false, message: 'Try again! Think about planet distances and sizes! 🚀' });
       speakText('Oops! Try another planet!');
     }

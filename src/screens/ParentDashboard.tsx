@@ -690,6 +690,129 @@ export function ParentDashboard({ onNavigate }: ParentDashboardProps) {
               </div>
             </div>
 
+            {/* 🌟 2C. EARLY HANDWRITING & PHONICS MASTERY TRACKER */}
+            {(() => {
+              let mastery = {
+                lettersMastered: ['A', 'B', 'C'],
+                numbersMastered: ['1', '2', '3'],
+                tamilMastered: ['அ'],
+                totalCount: 7,
+              };
+              try {
+                const stored = localStorage.getItem('kidora_tracing_mastery');
+                if (stored) mastery = JSON.parse(stored);
+              } catch {}
+
+              const totalAlpha = 26;
+              const totalNum = 20;
+              const totalTamil = 13;
+              const alphaPct = Math.round(((mastery.lettersMastered?.length || 0) / totalAlpha) * 100);
+              const numPct = Math.round(((mastery.numbersMastered?.length || 0) / totalNum) * 100);
+              const tamilPct = Math.round(((mastery.tamilMastered?.length || 0) / totalTamil) * 100);
+
+              return (
+                <div className="bg-white rounded-3xl p-6 border border-slate-200 shadow-soft space-y-4">
+                  <div className="flex items-center justify-between flex-wrap gap-2">
+                    <div className="flex items-center gap-2.5">
+                      <div className="w-10 h-10 rounded-2xl bg-gradient-to-br from-amber-400 to-orange-500 text-white flex items-center justify-center text-xl shadow-xs">
+                        ✍️
+                      </div>
+                      <div>
+                        <span className="text-[10px] font-black uppercase text-amber-700 tracking-wider">
+                          Early Handwriting & Phonics
+                        </span>
+                        <h3 className="text-lg font-black font-display text-slate-800">
+                          Handwriting Tracing & Stroke Mastery
+                        </h3>
+                      </div>
+                    </div>
+
+                    <span className="bg-amber-50 border border-amber-200 text-amber-900 text-xs font-black px-3 py-1.5 rounded-2xl flex items-center gap-1">
+                      ⭐ {mastery.totalCount || 7} Characters Mastered
+                    </span>
+                  </div>
+
+                  <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+                    {/* Alphabet Mastery */}
+                    <div className="bg-slate-50 p-4 rounded-2xl border border-slate-200 space-y-2">
+                      <div className="flex items-center justify-between text-xs font-black text-slate-700">
+                        <span>🔤 English (A–Z)</span>
+                        <span className="text-sky-600">{mastery.lettersMastered?.length || 0}/26</span>
+                      </div>
+                      <div className="w-full bg-slate-200 h-2 rounded-full overflow-hidden">
+                        <div
+                          className="bg-sky-500 h-full rounded-full transition-all"
+                          style={{ width: `${alphaPct}%` }}
+                        />
+                      </div>
+                      <div className="flex flex-wrap gap-1 pt-1">
+                        {(mastery.lettersMastered || ['A', 'B', 'C']).slice(0, 8).map((l) => (
+                          <span
+                            key={l}
+                            className="bg-white border border-sky-200 text-sky-800 text-[10px] font-black px-2 py-0.5 rounded-lg"
+                          >
+                            {l}
+                          </span>
+                        ))}
+                      </div>
+                    </div>
+
+                    {/* Number Mastery */}
+                    <div className="bg-slate-50 p-4 rounded-2xl border border-slate-200 space-y-2">
+                      <div className="flex items-center justify-between text-xs font-black text-slate-700">
+                        <span>🔢 Numbers (1–20)</span>
+                        <span className="text-emerald-600">{mastery.numbersMastered?.length || 0}/20</span>
+                      </div>
+                      <div className="w-full bg-slate-200 h-2 rounded-full overflow-hidden">
+                        <div
+                          className="bg-emerald-500 h-full rounded-full transition-all"
+                          style={{ width: `${numPct}%` }}
+                        />
+                      </div>
+                      <div className="flex flex-wrap gap-1 pt-1">
+                        {(mastery.numbersMastered || ['1', '2', '3']).slice(0, 8).map((n) => (
+                          <span
+                            key={n}
+                            className="bg-white border border-emerald-200 text-emerald-800 text-[10px] font-black px-2 py-0.5 rounded-lg"
+                          >
+                            {n}
+                          </span>
+                        ))}
+                      </div>
+                    </div>
+
+                    {/* Tamil Mastery */}
+                    <div className="bg-slate-50 p-4 rounded-2xl border border-slate-200 space-y-2">
+                      <div className="flex items-center justify-between text-xs font-black text-slate-700">
+                        <span>🇮🇳 தமிழ் உயிர்</span>
+                        <span className="text-rose-600">{mastery.tamilMastered?.length || 0}/13</span>
+                      </div>
+                      <div className="w-full bg-slate-200 h-2 rounded-full overflow-hidden">
+                        <div
+                          className="bg-rose-500 h-full rounded-full transition-all"
+                          style={{ width: `${tamilPct}%` }}
+                        />
+                      </div>
+                      <div className="flex flex-wrap gap-1 pt-1">
+                        {(mastery.tamilMastered || ['அ']).slice(0, 8).map((t) => (
+                          <span
+                            key={t}
+                            className="bg-white border border-rose-200 text-rose-800 text-[10px] font-black px-2 py-0.5 rounded-lg"
+                          >
+                            {t}
+                          </span>
+                        ))}
+                      </div>
+                    </div>
+                  </div>
+
+                  <p className="text-xs text-slate-500 font-medium">
+                    💡 <strong>Teacher Note:</strong> Child is developing strong motor control with regular finger & stylus tracing. Encourage practicing with the 4-line notebook guide and printable A4 worksheets.
+                  </p>
+                </div>
+              );
+            })()}
+
             {/* 3. YOUR FAMILY QUICK BAR */}
             <div className="bg-white rounded-3xl p-6 border border-slate-200 shadow-soft space-y-4">
               <div className="flex items-center justify-between">

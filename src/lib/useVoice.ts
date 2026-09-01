@@ -1,20 +1,33 @@
+import { soundEngine } from './soundEngine';
+
 export function useVoice() {
-  const speak = (text: string, enabled = true) => {
+  const speak = (
+    text: string,
+    enabled = true,
+    options?: {
+      rate?: number;
+      pitch?: number;
+      volume?: number;
+      lang?: string;
+      onEnd?: () => void;
+    }
+  ) => {
     if (!enabled) return;
-    if (typeof window === 'undefined' || !window.speechSynthesis) return;
-    window.speechSynthesis.cancel();
-    const utterance = new SpeechSynthesisUtterance(text);
-    utterance.rate = 0.9;
-    utterance.pitch = 1.2;
-    utterance.volume = 0.8;
-    window.speechSynthesis.speak(utterance);
+    soundEngine.speak(text, options);
   };
 
   const stop = () => {
-    if (typeof window !== 'undefined' && window.speechSynthesis) {
-      window.speechSynthesis.cancel();
-    }
+    soundEngine.stop();
   };
 
-  return { speak, stop };
+  return {
+    speak,
+    stop,
+    playPop: () => soundEngine.playPop(),
+    playStarDing: () => soundEngine.playStarDing(),
+    playCelebration: () => soundEngine.playCelebration(),
+    playChime: () => soundEngine.playChime(),
+    playCorrect: () => soundEngine.playCorrect(),
+    playWrong: () => soundEngine.playWrong(),
+  };
 }

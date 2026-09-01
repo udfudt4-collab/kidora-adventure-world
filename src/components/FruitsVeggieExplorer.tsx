@@ -1,5 +1,6 @@
 import { useState } from 'react';
 import { useApp } from '@/lib/store';
+import { soundEngine } from '@/lib/soundEngine';
 import {
   Apple,
   Volume2,
@@ -294,35 +295,30 @@ export function FruitsVeggieExplorer() {
   const [quizFeedback, setQuizFeedback] = useState<{ isCorrect: boolean; message: string } | null>(null);
 
   const speakText = (text: string) => {
-    if ('speechSynthesis' in window) {
-      window.speechSynthesis.cancel();
-      const utterance = new SpeechSynthesisUtterance(text);
-      utterance.rate = 0.85;
-      utterance.pitch = 1.05;
-      window.speechSynthesis.speak(utterance);
-    }
+    soundEngine.speak(text);
   };
 
   const handleSelectFood = (item: FoodItem) => {
     setSelectedFood(item);
-    waterSound.playDroplet();
+    soundEngine.playPop();
     speakText(`${item.name}. ${item.tamilName}. ${item.superpower}`);
   };
 
   const handleAddToPlate = (item: FoodItem) => {
     if (plate.length >= 6) return;
     setPlate([...plate, item]);
-    waterSound.playGlug();
+    soundEngine.playChime();
     speakText(`Added ${item.name} to your healthy rainbow plate!`);
   };
 
   const handleRemoveFromPlate = (index: number) => {
     setPlate(plate.filter((_, i) => i !== index));
+    soundEngine.playPop();
   };
 
   const handleEatPlate = () => {
     if (plate.length === 0) return;
-    waterSound.playGoalCelebration();
+    soundEngine.playCelebration();
     speakText('Yummy! Super healthy meal eaten! Great nutrition for your body and brain!');
     addStars(10);
     setPlate([]);
@@ -348,11 +344,13 @@ export function FruitsVeggieExplorer() {
   const handleAnswerQuiz = (choice: string) => {
     const isCorrect = choice.startsWith(quizQuestion.target.name);
     if (isCorrect) {
+      soundEngine.playCelebration();
       setQuizFeedback({ isCorrect: true, message: `🎉 Correct! ${quizQuestion.target.name} is a nutritional champion! +5 Stars! 🌟` });
       addStars(5);
       speakText(`Correct! ${quizQuestion.target.name} is a healthy choice!`);
       setTimeout(() => generateQuiz(), 2200);
     } else {
+      soundEngine.playWrong();
       setQuizFeedback({ isCorrect: false, message: 'Try again! Think about its health superpower! 🍎' });
       speakText('Oops! Try another food!');
     }

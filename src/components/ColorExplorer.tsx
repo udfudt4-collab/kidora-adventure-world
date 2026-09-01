@@ -1,5 +1,6 @@
 import { useState } from 'react';
 import { useApp } from '@/lib/store';
+import { soundEngine } from '@/lib/soundEngine';
 import {
   Palette,
   Volume2,
@@ -233,23 +234,18 @@ export function ColorExplorer() {
   const [quizFeedback, setQuizFeedback] = useState<{ isCorrect: boolean; message: string } | null>(null);
 
   const speakText = (text: string) => {
-    if ('speechSynthesis' in window) {
-      window.speechSynthesis.cancel();
-      const utterance = new SpeechSynthesisUtterance(text);
-      utterance.rate = 0.85;
-      utterance.pitch = 1.1;
-      window.speechSynthesis.speak(utterance);
-    }
+    soundEngine.speak(text);
   };
 
   const handleSelectColor = (c: ColorItem) => {
     setSelectedColor(c);
+    soundEngine.playPop();
     speakText(`${c.name}. ${c.tamilName}. ${c.funFact}`);
   };
 
   const handleMixColors = () => {
     setIsMixing(true);
-    waterSound.playDroplet();
+    soundEngine.playPop();
 
     setTimeout(() => {
       // Find matching rule
@@ -269,7 +265,7 @@ export function ColorExplorer() {
 
       setMixedResult(found);
       setIsMixing(false);
-      waterSound.playGlug();
+      soundEngine.playCelebration();
       speakText(`${found.resultName}! Magical color mix!`);
       addStars(3);
     }, 600);
@@ -296,6 +292,7 @@ export function ColorExplorer() {
 
   const handleAnswerQuiz = (choice: string) => {
     if (choice === quizQuestion.correctName) {
+      soundEngine.playCelebration();
       setQuizFeedback({ isCorrect: true, message: '🎉 Super Match! You know your colors! +5 Stars!' });
       addStars(5);
       speakText('Super match! That is correct!');
@@ -303,6 +300,7 @@ export function ColorExplorer() {
         generateColorQuiz();
       }, 2000);
     } else {
+      soundEngine.playWrong();
       setQuizFeedback({ isCorrect: false, message: 'Not quite, try another color! 🎨' });
       speakText('Oops! Try again!');
     }

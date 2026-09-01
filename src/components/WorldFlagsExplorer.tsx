@@ -1,5 +1,6 @@
 import { useState } from 'react';
 import { useApp } from '@/lib/store';
+import { soundEngine } from '@/lib/soundEngine';
 import {
   Globe,
   Volume2,
@@ -231,18 +232,12 @@ export function WorldFlagsExplorer() {
   const [quizFeedback, setQuizFeedback] = useState<{ isCorrect: boolean; message: string } | null>(null);
 
   const speakText = (text: string) => {
-    if ('speechSynthesis' in window) {
-      window.speechSynthesis.cancel();
-      const utterance = new SpeechSynthesisUtterance(text);
-      utterance.rate = 0.85;
-      utterance.pitch = 1.05;
-      window.speechSynthesis.speak(utterance);
-    }
+    soundEngine.speak(text);
   };
 
   const handleSelectCountry = (item: CountryItem) => {
     setSelectedCountry(item);
-    waterSound.playDroplet();
+    soundEngine.playPop();
     speakText(`${item.name}. Capital: ${item.capital}. Greeting: ${item.greeting.word}. ${item.funFact}`);
   };
 
@@ -271,11 +266,13 @@ export function WorldFlagsExplorer() {
   const handleAnswerQuiz = (choice: string) => {
     const isCorrect = choice.startsWith(quizQuestion.correctCountry.name);
     if (isCorrect) {
+      soundEngine.playCelebration();
       setQuizFeedback({ isCorrect: true, message: `🎉 Super Navigator! ${quizQuestion.correctCountry.name} is correct! +5 Stars! 🌟` });
       addStars(5);
       speakText(`Super navigator! ${quizQuestion.correctCountry.name} is correct!`);
       setTimeout(() => generateQuiz(), 2200);
     } else {
+      soundEngine.playWrong();
       setQuizFeedback({ isCorrect: false, message: 'Try again! Check the flag symbols! 🌍' });
       speakText('Oops! Try another country!');
     }

@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react';
 import { useApp } from '@/lib/store';
+import { soundEngine } from '@/lib/soundEngine';
 import {
   Wind,
   Zap,
@@ -119,13 +120,7 @@ export function WindmillLab() {
   };
 
   const speakText = (text: string) => {
-    if ('speechSynthesis' in window) {
-      window.speechSynthesis.cancel();
-      const utterance = new SpeechSynthesisUtterance(text);
-      utterance.rate = 0.85;
-      utterance.pitch = 1.1;
-      window.speechSynthesis.speak(utterance);
-    }
+    soundEngine.speak(text);
   };
 
   return (
