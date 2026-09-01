@@ -248,6 +248,7 @@ export function AlphabetNumberHub() {
   const currentStrokeRef = useRef<StrokePath | null>(null);
   const [strokeCount, setStrokeCount] = useState(0);
   const pointCounterRef = useRef(0);
+  const autoFinishTimerRef = useRef<NodeJS.Timeout | null>(null);
 
   // Quiz State
   const [quizQuestion, setQuizQuestion] = useState<{
@@ -452,6 +453,7 @@ export function AlphabetNumberHub() {
   // Drawing Handlers with Musical Crayon & Smart Auto Coverage Detection
   const startDrawing = (e: React.MouseEvent<HTMLCanvasElement> | React.TouchEvent<HTMLCanvasElement>) => {
     e.preventDefault();
+    if (autoFinishTimerRef.current) clearTimeout(autoFinishTimerRef.current);
     const canvas = canvasRef.current;
     if (!canvas) return;
     const coords = getCanvasCoords(e);
@@ -512,12 +514,126 @@ export function AlphabetNumberHub() {
     setTracingProgress(estProgress);
   };
 
+  const handleCelebrate = useCallback((isAuto = false) => {
+    if (autoFinishTimerRef.current) clearTimeout(autoFinishTimerRef.current);
+    const charId = getCurrentCharacterId();
+    addStars(5);
+    soundEngine.playCelebration();
+    soundEngine.triggerHaptic('success');
+    recordMastery(charId);
+
+    let currentTitle = '';
+    let currentEmoji = '';
+    let nextId = '';
+    let nextTitle = '';
+    let nextEmoji = '';
+    let nextItem: LetterItem | TamilLetterItem | NumberItem;
+
+    if (activeTab === 'alphabets') {
+      currentTitle = selectedLetter.word;
+      currentEmoji = selectedLetter.emoji;
+      const nextIdx = (currentIndexLetter + 1) % ALPHABET_DATA.length;
+      const next = ALPHABET_DATA[nextIdx];
+      nextId = next.letter;
+      nextTitle = next.word;
+      nextEmoji = next.emoji;
+      nextItem = next;
+      speakText(`Superstar! Letter ${selectedLetter.letter} for ${selectedLetter.word} mastered! Zooming to letter ${next.letter} for ${next.word}!`);
+    } else if (activeTab === 'tamil') {
+      currentTitle = selectedTamil.word;
+      currentEmoji = selectedTamil.emoji;
+      const nextIdx = (currentIndexTamil + 1) % TAMIL_VOWEL_DATA.length;
+      const next = TAMIL_VOWEL_DATA[nextIdx];
+      nextId = next.letter;
+      nextTitle = next.word;
+      nextEmoji = next.emoji;
+      nextItem = next;
+      speakText(`அற்புதம்! ${selectedTamil.letter} ${selectedTamil.word} முடிந்தது! அடுத்து ${next.letter} ${next.word}!`);
+    } else {
+      currentTitle = selectedNumber.word;
+      currentEmoji = selectedNumber.emoji;
+      const nextIdx = (currentIndexNumber + 1) % NUMBER_DATA.length;
+      const next = NUMBER_DATA[nextIdx];
+      nextId = String(next.num);
+      nextTitle = next.word;
+      nextEmoji = next.emoji;
+      nextItem = next;
+      speakText(`Awesome! Number ${selectedNumber.num} mastered! Next is number ${next.num}!`);
+    }
+
+    const msg = `🎉 ${isAuto ? 'Auto Mastered!' : 'Superstar!'} ${charId} Traced! +5 Gold Stars! ⭐`;
+    setCelebrationMessage(msg);
+
+    setAutoAdvanceData({
+      isOpen: true,
+      currentId: charId,
+      currentTitle,
+      currentEmoji,
+      nextId,
+      nextTitle,
+      nextEmoji,
+      type: activeTab === 'tamil' ? 'tamil' : activeTab === 'numbers' ? 'numbers' : 'alphabets',
+      nextItem,
+      countdown: 3,
+    });
+  }, [
+    activeTab,
+    selectedLetter,
+    selectedTamil,
+    selectedNumber,
+    currentIndexLetter,
+    currentIndexTamil,
+    currentIndexNumber,
+    addStars,
+    recordMastery,
+  ]);
+
+  // Intelligent stroke analysis: detect when the child has completed tracing the character shape
+  const checkAutoCompletion = useCallback(() => {
+    if (hasAutoCelebratedRef.current) return;
+    if (autoAdvanceData.isOpen) return;
+
+    const allPoints = strokesRef.current.flatMap((s) => s.points);
+    if (allPoints.length < 20) return;
+
+    let minX = Infinity;
+    let maxX = -Infinity;
+    let minY = Infinity;
+    let maxY = -Infinity;
+
+    for (const p of allPoints) {
+      if (p.x < minX) minX = p.x;
+      if (p.x > maxX) maxX = p.x;
+      if (p.y < minY) minY = p.y;
+      if (p.y > maxY) maxY = p.y;
+    }
+
+    const verticalSpan = maxY - minY;
+    const horizontalSpan = maxX - minX;
+    const totalPoints = allPoints.length;
+
+    // Completed if child drew a substantial shape across the canvas area (>= 50px height or >= 35 total points)
+    const isCompleted = (verticalSpan >= 45 && horizontalSpan >= 20 && totalPoints >= 20) || totalPoints >= 35;
+
+    if (isCompleted) {
+      if (autoFinishTimerRef.current) clearTimeout(autoFinishTimerRef.current);
+      autoFinishTimerRef.current = setTimeout(() => {
+        if (!hasAutoCelebratedRef.current) {
+          hasAutoCelebratedRef.current = true;
+          handleCelebrate(true);
+        }
+      }, 500);
+    }
+  }, [autoAdvanceData.isOpen, handleCelebrate]);
+
   const stopDrawing = () => {
     setIsDrawing(false);
     currentStrokeRef.current = null;
+    checkAutoCompletion();
   };
 
   const clearCanvas = () => {
+    if (autoFinishTimerRef.current) clearTimeout(autoFinishTimerRef.current);
     strokesRef.current = [];
     currentStrokeRef.current = null;
     setStrokeCount(0);
@@ -582,69 +698,6 @@ export function AlphabetNumberHub() {
 
     return () => clearTimeout(timer);
   }, [autoAdvanceData.isOpen, autoAdvanceData.countdown, applyAdvanceToNext]);
-
-  const handleCelebrate = (isAuto = false) => {
-    const charId = getCurrentCharacterId();
-    addStars(5);
-    soundEngine.playCelebration();
-    soundEngine.triggerHaptic('success');
-    recordMastery(charId);
-
-    let currentTitle = '';
-    let currentEmoji = '';
-    let nextId = '';
-    let nextTitle = '';
-    let nextEmoji = '';
-    let nextItem: LetterItem | TamilLetterItem | NumberItem;
-
-    if (activeTab === 'alphabets') {
-      currentTitle = selectedLetter.word;
-      currentEmoji = selectedLetter.emoji;
-      const nextIdx = (currentIndexLetter + 1) % ALPHABET_DATA.length;
-      const next = ALPHABET_DATA[nextIdx];
-      nextId = next.letter;
-      nextTitle = next.word;
-      nextEmoji = next.emoji;
-      nextItem = next;
-      speakText(`Superstar! Letter ${selectedLetter.letter} for ${selectedLetter.word} mastered! Zooming to letter ${next.letter} for ${next.word}!`);
-    } else if (activeTab === 'tamil') {
-      currentTitle = selectedTamil.word;
-      currentEmoji = selectedTamil.emoji;
-      const nextIdx = (currentIndexTamil + 1) % TAMIL_VOWEL_DATA.length;
-      const next = TAMIL_VOWEL_DATA[nextIdx];
-      nextId = next.letter;
-      nextTitle = next.word;
-      nextEmoji = next.emoji;
-      nextItem = next;
-      speakText(`அற்புதம்! ${selectedTamil.letter} ${selectedTamil.word} முடிந்தது! அடுத்து ${next.letter} ${next.word}!`);
-    } else {
-      currentTitle = selectedNumber.word;
-      currentEmoji = selectedNumber.emoji;
-      const nextIdx = (currentIndexNumber + 1) % NUMBER_DATA.length;
-      const next = NUMBER_DATA[nextIdx];
-      nextId = String(next.num);
-      nextTitle = next.word;
-      nextEmoji = next.emoji;
-      nextItem = next;
-      speakText(`Awesome! Number ${selectedNumber.num} mastered! Next is number ${next.num}!`);
-    }
-
-    const msg = `🎉 ${isAuto ? 'Auto Mastered!' : 'Superstar!'} ${charId} Traced! +5 Gold Stars! ⭐`;
-    setCelebrationMessage(msg);
-
-    setAutoAdvanceData({
-      isOpen: true,
-      currentId: charId,
-      currentTitle,
-      currentEmoji,
-      nextId,
-      nextTitle,
-      nextEmoji,
-      type: activeTab === 'tamil' ? 'tamil' : activeTab === 'numbers' ? 'numbers' : 'alphabets',
-      nextItem,
-      countdown: 3,
-    });
-  };
 
   const handleSaveToGallery = () => {
     const canvas = canvasRef.current;
