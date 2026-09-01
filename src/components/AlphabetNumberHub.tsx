@@ -504,17 +504,12 @@ export function AlphabetNumberHub() {
 
     redrawCanvas();
 
-    // Auto-calculate coverage progress
-    if (!hasAutoCelebratedRef.current) {
-      const totalPoints = strokesRef.current.reduce((acc, s) => acc + s.points.length, 0);
-      const estProgress = Math.min(100, Math.round((totalPoints / 60) * 100));
-      setTracingProgress(estProgress);
-
-      if (estProgress >= 90) {
-        hasAutoCelebratedRef.current = true;
-        handleCelebrate(true);
-      }
-    }
+    // Calculate realistic coverage progress without abruptly interrupting the child while drawing
+    const totalPoints = strokesRef.current.reduce((acc, s) => acc + s.points.length, 0);
+    const charLen = String(getCurrentCharacterId()).length;
+    const requiredPoints = charLen > 1 ? 220 : 130;
+    const estProgress = Math.min(100, Math.round((totalPoints / requiredPoints) * 100));
+    setTracingProgress(estProgress);
   };
 
   const stopDrawing = () => {
@@ -1291,10 +1286,14 @@ export function AlphabetNumberHub() {
             <button
               type="button"
               onClick={() => handleCelebrate(false)}
-              className="btn-press px-5 py-2.5 rounded-2xl bg-gradient-to-r from-emerald-500 to-teal-600 hover:from-emerald-600 hover:to-teal-700 text-white font-black font-display text-xs sm:text-sm shadow-soft hover:shadow-pop flex items-center justify-center gap-2 cursor-pointer transition-all border border-emerald-400/40"
+              className={`btn-press px-5 py-2.5 rounded-2xl font-black font-display text-xs sm:text-sm shadow-soft hover:shadow-pop flex items-center justify-center gap-2 cursor-pointer transition-all border ${
+                tracingProgress >= 70
+                  ? 'bg-gradient-to-r from-amber-400 via-orange-500 to-rose-500 text-slate-950 border-amber-300 ring-4 ring-amber-300/40 animate-pulse'
+                  : 'bg-gradient-to-r from-emerald-500 to-teal-600 hover:from-emerald-600 hover:to-teal-700 text-white border-emerald-400/40'
+              }`}
             >
-              <Award className="h-4 w-4 text-amber-300" />
-              <span>I Finished Tracing! 🌟</span>
+              <Award className={`h-4 w-4 ${tracingProgress >= 70 ? 'text-slate-950' : 'text-amber-300'}`} />
+              <span>{tracingProgress >= 70 ? 'I Finished Tracing! 🚀' : 'I Finished Tracing! 🌟'}</span>
             </button>
           </div>
         </div>
