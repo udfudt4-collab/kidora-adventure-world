@@ -120,6 +120,48 @@ const gamesList: GameItem[] = [
     gradient: 'from-amber-400 to-orange-600',
     activityType: 'story',
   },
+  {
+    id: 'abc-123-academy',
+    title: 'ABC & 123 Learning Academy',
+    realm: 'Phonics & Numbers',
+    category: 'words',
+    emoji: '🔤',
+    hostCharacter: 'Kido',
+    hostEmoji: '🦊',
+    ageRange: 'Ages 3–8',
+    description: 'Master A-Z phonics, Tamil words, 1-20 counting counters, and interactive letter tracing.',
+    skills: ['Phonics', 'Handwriting Tracing', 'Counting', 'Tamil & English Vocabulary'],
+    gradient: 'from-amber-500 to-rose-600',
+    activityType: 'words',
+  },
+  {
+    id: 'colors-lab',
+    title: 'Colors & Magic Mixing Lab',
+    realm: 'Rainbow Safari',
+    category: 'creative',
+    emoji: '🎨',
+    hostCharacter: 'Ria',
+    hostEmoji: '🎨',
+    ageRange: 'All Ages',
+    description: 'Explore 10+ vibrant colors with bilingual names and mix magic paint potions in the cauldron.',
+    skills: ['Color Theory', 'Art Science', 'Bilingual Vocabulary'],
+    gradient: 'from-violet-500 to-pink-600',
+    activityType: 'creativity',
+  },
+  {
+    id: 'worksheets-studio',
+    title: 'Worksheets Studio & Tracing',
+    realm: 'Creative Island',
+    category: 'creative',
+    emoji: '📝',
+    hostCharacter: 'Tiko',
+    hostEmoji: '🧮',
+    ageRange: 'Ages 4–8',
+    description: 'Digital interactive tracing canvas and printable A4 worksheets for offline classroom & home study.',
+    skills: ['Pencil Control', 'Alphabet Tracing', 'Number Writing', 'Mazes'],
+    gradient: 'from-emerald-500 to-teal-600',
+    activityType: 'creativity',
+  },
 ];
 
 export function PlayHub({ onNavigate }: PlayHubProps) {
@@ -259,7 +301,9 @@ export function PlayHub({ onNavigate }: PlayHubProps) {
                 <button
                   type="button"
                   onClick={() => {
-                    if (game.activityType === 'creativity') {
+                    if (game.id === 'abc-123-academy' || game.id === 'colors-lab' || game.id === 'worksheets-studio') {
+                      onNavigate('learn');
+                    } else if (game.activityType === 'creativity') {
                       onNavigate('create');
                     } else {
                       setActiveGame(game);

@@ -272,6 +272,84 @@ export function Home({ onNavigate }: HomeProps) {
             </div>
           </div>
 
+          {/* 🌟 2A-NEW. EARLY LEARNING ACADEMY, COLORS & WORKSHEETS SUITE */}
+          <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+            {/* 🔤 ABC & 123 Academy Card */}
+            <div
+              onClick={() => onNavigate('learn')}
+              className="btn-press bg-gradient-to-br from-amber-500 via-orange-500 to-rose-600 rounded-3xl p-5 text-white shadow-pop flex flex-col justify-between space-y-3 cursor-pointer border border-amber-300/40 hover:scale-[1.02] transition-transform"
+            >
+              <div className="flex items-center justify-between">
+                <div className="w-11 h-11 rounded-2xl bg-white/20 backdrop-blur-md flex items-center justify-center text-2xl shadow-xs">
+                  🔤
+                </div>
+                <span className="text-[10px] font-black uppercase tracking-wider bg-white/20 px-2 py-0.5 rounded-full">
+                  Phonics & Count
+                </span>
+              </div>
+              <div>
+                <h3 className="text-base font-black font-display text-white">ABC & 123 Academy</h3>
+                <p className="text-xs text-amber-100 font-medium line-clamp-2 mt-0.5">
+                  Learn A-Z phonics, Tamil words, numbers 1-20 & letter tracing.
+                </p>
+              </div>
+              <div className="text-xs font-black text-amber-200 flex items-center gap-1 pt-1 border-t border-white/20">
+                <span>Start Learning</span>
+                <span>→</span>
+              </div>
+            </div>
+
+            {/* 🎨 Colors & Mixing Lab Card */}
+            <div
+              onClick={() => onNavigate('learn')}
+              className="btn-press bg-gradient-to-br from-violet-600 via-pink-600 to-amber-500 rounded-3xl p-5 text-white shadow-pop flex flex-col justify-between space-y-3 cursor-pointer border border-pink-300/40 hover:scale-[1.02] transition-transform"
+            >
+              <div className="flex items-center justify-between">
+                <div className="w-11 h-11 rounded-2xl bg-white/20 backdrop-blur-md flex items-center justify-center text-2xl shadow-xs">
+                  🎨
+                </div>
+                <span className="text-[10px] font-black uppercase tracking-wider bg-white/20 px-2 py-0.5 rounded-full">
+                  Color Lab
+                </span>
+              </div>
+              <div>
+                <h3 className="text-base font-black font-display text-white">Colors & Mixing Lab</h3>
+                <p className="text-xs text-pink-100 font-medium line-clamp-2 mt-0.5">
+                  Discover 10+ colors, bilingual names & mix magic paint potions!
+                </p>
+              </div>
+              <div className="text-xs font-black text-pink-200 flex items-center gap-1 pt-1 border-t border-white/20">
+                <span>Mix Paints</span>
+                <span>→</span>
+              </div>
+            </div>
+
+            {/* 📝 Worksheets Studio Card */}
+            <div
+              onClick={() => onNavigate('learn')}
+              className="btn-press bg-gradient-to-br from-emerald-600 via-teal-600 to-sky-600 rounded-3xl p-5 text-white shadow-pop flex flex-col justify-between space-y-3 cursor-pointer border border-emerald-300/40 hover:scale-[1.02] transition-transform"
+            >
+              <div className="flex items-center justify-between">
+                <div className="w-11 h-11 rounded-2xl bg-white/20 backdrop-blur-md flex items-center justify-center text-2xl shadow-xs">
+                  📝
+                </div>
+                <span className="text-[10px] font-black uppercase tracking-wider bg-white/20 px-2 py-0.5 rounded-full">
+                  Print & Draw
+                </span>
+              </div>
+              <div>
+                <h3 className="text-base font-black font-display text-white">Worksheets Studio</h3>
+                <p className="text-xs text-emerald-100 font-medium line-clamp-2 mt-0.5">
+                  Trace & draw on screen or print A4 worksheets for offline practice.
+                </p>
+              </div>
+              <div className="text-xs font-black text-emerald-200 flex items-center gap-1 pt-1 border-t border-white/20">
+                <span>Open Worksheets</span>
+                <span>→</span>
+              </div>
+            </div>
+          </div>
+
           {/* ⚔️ 2B. KID CHALLENGES & FRIEND QUESTS BANNER */}
           <div
             onClick={() => onNavigate('challenges')}

@@ -17,8 +17,11 @@ import {
   Volume2,
   VolumeX,
   Edit3,
+  Bell,
+  Clock,
 } from 'lucide-react';
 import { waterSound } from '@/lib/waterSound';
+import { HydrationReminderModal } from '@/components/HydrationReminderModal';
 
 const PRESET_TARGET_MLS = [1000, 1250, 1500, 1750, 2000, 2500];
 const PRESET_GLASS_SIZES = [
@@ -47,6 +50,24 @@ export function HydrationTracker() {
   const [showCelebration, setShowCelebration] = useState<boolean>(false);
   const [soundEnabled, setSoundEnabled] = useState<boolean>(true);
   const [savedFeedback, setSavedFeedback] = useState<string | null>(null);
+  const [showReminderModal, setShowReminderModal] = useState<boolean>(false);
+  const [reminderInterval, setReminderInterval] = useState<number>(() => {
+    try {
+      const val = localStorage.getItem('kidora_hydration_reminder_mins');
+      return val ? parseInt(val, 10) : 45;
+    } catch {
+      return 45;
+    }
+  });
+
+  const handleSetReminderInterval = (mins: number) => {
+    setReminderInterval(mins);
+    try {
+      localStorage.setItem('kidora_hydration_reminder_mins', String(mins));
+    } catch {}
+    setSavedFeedback(mins === 0 ? 'Water reminders paused' : `Reminder set every ${mins} minutes!`);
+    setTimeout(() => setSavedFeedback(null), 2000);
+  };
 
   const activeChild = familyChildren.find((c) => c.id === selectedChildId) || familyChildren[0];
 
@@ -329,6 +350,55 @@ export function HydrationTracker() {
               Current formula: Daily Target = <strong>{targetMl} ml</strong> = approx{' '}
               <strong className="text-sky-800">{targetGlasses} glasses</strong> of <strong>{mlPerGlass} ml</strong> each.
             </span>
+          </div>
+        </div>
+
+        {/* SECTION C: SMART HYDRATION REMINDER WITH SOUND */}
+        <div className="bg-gradient-to-r from-sky-500/10 via-teal-500/10 to-indigo-500/10 border border-sky-200 rounded-2xl p-4 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
+          <div className="space-y-1">
+            <div className="flex items-center gap-2">
+              <Bell className="h-4 w-4 text-sky-600 animate-bounce-soft" />
+              <h4 className="text-xs font-black font-display text-slate-900">
+                Automated Water Reminders (With Water Glug Sound 🔊)
+              </h4>
+            </div>
+            <p className="text-[11px] text-slate-500 font-medium">
+              Friendly reminder popups prompt your child to drink a glass of water during learning quests.
+            </p>
+          </div>
+
+          <div className="flex items-center gap-2 flex-wrap">
+            <div className="flex items-center gap-1 bg-white p-1 rounded-xl border border-slate-200">
+              {[
+                { mins: 30, label: '30m' },
+                { mins: 45, label: '45m' },
+                { mins: 60, label: '60m' },
+                { mins: 90, label: '90m' },
+                { mins: 0, label: 'Off' },
+              ].map((item) => (
+                <button
+                  key={item.mins}
+                  type="button"
+                  onClick={() => handleSetReminderInterval(item.mins)}
+                  className={`btn-press px-2.5 py-1 rounded-lg text-[11px] font-bold transition-colors cursor-pointer ${
+                    reminderInterval === item.mins
+                      ? 'bg-sky-600 text-white shadow-xs'
+                      : 'text-slate-600 hover:bg-slate-100'
+                  }`}
+                >
+                  {item.label}
+                </button>
+              ))}
+            </div>
+
+            <button
+              type="button"
+              onClick={() => setShowReminderModal(true)}
+              className="btn-press px-3 py-1.5 rounded-xl bg-amber-400 hover:bg-amber-300 text-slate-950 font-black text-xs shadow-xs flex items-center gap-1 cursor-pointer"
+              title="Preview the hydration reminder popup"
+            >
+              <span>🔔 Test Popup</span>
+            </button>
           </div>
         </div>
       </div>
@@ -614,6 +684,12 @@ export function HydrationTracker() {
           </div>
         </div>
       </div>
+
+      {/* Smart Hydration Reminder Modal */}
+      <HydrationReminderModal
+        isOpen={showReminderModal}
+        onClose={() => setShowReminderModal(false)}
+      />
     </div>
   );
 }

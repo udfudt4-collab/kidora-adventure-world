@@ -2,12 +2,16 @@ import { useState } from 'react';
 import { Navbar } from '@/components/Navbar';
 import { Footer } from '@/components/Footer';
 import { AdSenseSafeZone } from '@/components/AdSenseSafeZone';
+import { AlphabetNumberHub } from '@/components/AlphabetNumberHub';
+import { ColorExplorer } from '@/components/ColorExplorer';
+import { WorksheetsStudio } from '@/components/WorksheetsStudio';
 import type { Screen } from '@/lib/types';
 
 interface LearnHubProps {
   onNavigate: (screen: Screen) => void;
 }
 
+type LearnMainSection = 'abc123' | 'colors' | 'worksheets' | 'curriculum';
 type TopicKey = 'math' | 'reading' | 'logic' | 'science' | 'creativity';
 
 interface LearningModule {
@@ -280,6 +284,7 @@ const learningModules: LearningModule[] = [
 ];
 
 export function LearnHub({ onNavigate }: LearnHubProps) {
+  const [mainSection, setMainSection] = useState<LearnMainSection>('abc123');
   const [selectedTopic, setSelectedTopic] = useState<TopicKey>('math');
   const activeModule = learningModules.find((m) => m.id === selectedTopic) ?? learningModules[0];
 
@@ -287,155 +292,192 @@ export function LearnHub({ onNavigate }: LearnHubProps) {
     <div className="min-h-screen bg-slate-50 flex flex-col justify-between">
       <Navbar currentScreen="learn" onNavigate={onNavigate} />
 
-      <main className="flex-1 max-w-6xl w-full mx-auto px-4 sm:px-6 py-8">
-        {/* Header */}
-        <div className="text-center max-w-3xl mx-auto mb-8 animate-pop-in">
-          <div className="inline-flex items-center gap-1.5 bg-sky-100 text-sky-800 text-xs font-black px-3.5 py-1 rounded-full uppercase tracking-wider mb-2">
-            <span>📚</span> Kidora Learning Framework
-          </div>
-          <h1 className="text-3xl sm:text-4xl font-black font-display text-slate-800 tracking-tight mb-2">
-            Educational Guides & Curricula
-          </h1>
-          <p className="text-slate-600 text-sm sm:text-base leading-relaxed">
-            Detailed learning roadmaps, developmental milestones, and pedagogical insights designed by educators for parents and curious learners.
-          </p>
-        </div>
-
-        {/* Topic Selector Tabs */}
-        <div className="flex items-center justify-center gap-2 flex-wrap mb-8">
-          {learningModules.map((mod) => (
+      <main className="flex-1 max-w-6xl w-full mx-auto px-4 sm:px-6 py-8 space-y-8">
+        {/* Main Learning Hub Super Switcher */}
+        <div className="flex items-center justify-center gap-2 flex-wrap bg-white p-2 rounded-3xl border border-slate-200 shadow-soft max-w-2xl mx-auto">
+          {[
+            { id: 'abc123', label: '🔤 ABC & 123 Academy' },
+            { id: 'colors', label: '🎨 Colors & Mixing Lab' },
+            { id: 'worksheets', label: '📝 Worksheets Studio' },
+            { id: 'curriculum', label: '📚 Framework & Guides' },
+          ].map((tab) => (
             <button
-              key={mod.id}
+              key={tab.id}
               type="button"
-              onClick={() => setSelectedTopic(mod.id)}
-              className={`btn-press px-4 py-2.5 rounded-2xl text-xs font-black font-display transition-all cursor-pointer flex items-center gap-2 ${
-                selectedTopic === mod.id
-                  ? `bg-gradient-to-r ${mod.gradient} text-white shadow-soft scale-105`
-                  : 'bg-white text-slate-700 border border-slate-200 hover:bg-slate-100'
+              onClick={() => setMainSection(tab.id as LearnMainSection)}
+              className={`btn-press px-4 py-2.5 rounded-2xl text-xs font-black font-display transition-all cursor-pointer ${
+                mainSection === tab.id
+                  ? 'bg-gradient-to-r from-sky-600 to-teal-600 text-white shadow-soft scale-105'
+                  : 'text-slate-700 hover:bg-slate-100'
               }`}
             >
-              <span className="text-base">{mod.emoji}</span>
-              <span>{mod.title.split('&')[0]}</span>
+              {tab.label}
             </button>
           ))}
         </div>
 
-        {/* Active Module In-Depth Guide */}
-        <div className="bg-white rounded-4xl border border-slate-100 shadow-soft overflow-hidden mb-10">
-          {/* Header Banner */}
-          <div className={`bg-gradient-to-r ${activeModule.gradient} p-6 sm:p-8 text-white flex flex-col md:flex-row items-start md:items-center justify-between gap-4`}>
-            <div className="space-y-1 max-w-2xl">
-              <div className="flex items-center gap-2">
-                <span className="text-xs font-bold uppercase tracking-widest bg-white/20 px-2.5 py-0.5 rounded-full backdrop-blur-sm">
-                  {activeModule.realm}
-                </span>
-                <span className="text-xs font-bold">
-                  Mentor: {activeModule.mentor} {activeModule.mentorEmoji}
-                </span>
+        {/* 1. ABC & 123 Learning Academy */}
+        {mainSection === 'abc123' && <AlphabetNumberHub />}
+
+        {/* 2. Colors Explorer & Magic Mixing Lab */}
+        {mainSection === 'colors' && <ColorExplorer />}
+
+        {/* 3. Printable & Digital Worksheets Studio */}
+        {mainSection === 'worksheets' && <WorksheetsStudio />}
+
+        {/* 4. Curriculum & Parent Pedagogical Guides */}
+        {mainSection === 'curriculum' && (
+          <div className="space-y-8 animate-pop-in">
+            {/* Header */}
+            <div className="text-center max-w-3xl mx-auto mb-4">
+              <div className="inline-flex items-center gap-1.5 bg-sky-100 text-sky-800 text-xs font-black px-3.5 py-1 rounded-full uppercase tracking-wider mb-2">
+                <span>📚</span> Kidora Learning Framework
               </div>
-              <h2 className="text-2xl sm:text-3xl font-black font-display">{activeModule.title}</h2>
-              <p className="text-white/90 text-xs sm:text-sm font-medium leading-relaxed">
-                {activeModule.summary}
+              <h1 className="text-3xl sm:text-4xl font-black font-display text-slate-800 tracking-tight mb-2">
+                Educational Guides & Curricula
+              </h1>
+              <p className="text-slate-600 text-sm sm:text-base leading-relaxed">
+                Detailed learning roadmaps, developmental milestones, and pedagogical insights designed by educators for parents and curious learners.
               </p>
             </div>
 
-            <button
-              type="button"
-              onClick={() => onNavigate('play')}
-              className="btn-press bg-white text-slate-900 font-black font-display px-5 py-3 rounded-2xl shadow-soft text-xs cursor-pointer whitespace-nowrap hover:bg-slate-100"
-            >
-              Play {activeModule.relatedGame} 🚀
-            </button>
+            {/* Topic Selector Tabs */}
+            <div className="flex items-center justify-center gap-2 flex-wrap mb-6">
+              {learningModules.map((mod) => (
+                <button
+                  key={mod.id}
+                  type="button"
+                  onClick={() => setSelectedTopic(mod.id)}
+                  className={`btn-press px-4 py-2.5 rounded-2xl text-xs font-black font-display transition-all cursor-pointer flex items-center gap-2 ${
+                    selectedTopic === mod.id
+                      ? `bg-gradient-to-r ${mod.gradient} text-white shadow-soft scale-105`
+                      : 'bg-white text-slate-700 border border-slate-200 hover:bg-slate-100'
+                  }`}
+                >
+                  <span className="text-base">{mod.emoji}</span>
+                  <span>{mod.title.split('&')[0]}</span>
+                </button>
+              ))}
+            </div>
+
+            {/* Active Module In-Depth Guide */}
+            <div className="bg-white rounded-4xl border border-slate-100 shadow-soft overflow-hidden mb-10">
+              {/* Header Banner */}
+              <div className={`bg-gradient-to-r ${activeModule.gradient} p-6 sm:p-8 text-white flex flex-col md:flex-row items-start md:items-center justify-between gap-4`}>
+                <div className="space-y-1 max-w-2xl">
+                  <div className="flex items-center gap-2">
+                    <span className="text-xs font-bold uppercase tracking-widest bg-white/20 px-2.5 py-0.5 rounded-full backdrop-blur-sm">
+                      {activeModule.realm}
+                    </span>
+                    <span className="text-xs font-bold">
+                      Mentor: {activeModule.mentor} {activeModule.mentorEmoji}
+                    </span>
+                  </div>
+                  <h2 className="text-2xl sm:text-3xl font-black font-display">{activeModule.title}</h2>
+                  <p className="text-white/90 text-xs sm:text-sm font-medium leading-relaxed">
+                    {activeModule.summary}
+                  </p>
+                </div>
+
+                <button
+                  type="button"
+                  onClick={() => onNavigate('play')}
+                  className="btn-press bg-white text-slate-900 font-black font-display px-5 py-3 rounded-2xl shadow-soft text-xs cursor-pointer whitespace-nowrap hover:bg-slate-100"
+                >
+                  Play {activeModule.relatedGame} 🚀
+                </button>
+              </div>
+
+              {/* Body Sections */}
+              <div className="p-6 sm:p-8 space-y-8">
+                {/* 1. Age-by-Age Developmental Milestones */}
+                <div>
+                  <div className="flex items-center gap-2 mb-4">
+                    <span className="text-xl">🎯</span>
+                    <h3 className="text-lg font-black font-display text-slate-800">
+                      Developmental Age Milestones
+                    </h3>
+                  </div>
+                  <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                    {activeModule.ageMilestones.map((item, idx) => (
+                      <div
+                        key={idx}
+                        className="bg-slate-50 border border-slate-200/80 rounded-2xl p-4 space-y-2"
+                      >
+                        <h4 className="text-xs font-black font-display text-slate-700 border-b border-slate-200 pb-1.5">
+                          {item.age}
+                        </h4>
+                        <ul className="space-y-1.5">
+                          {item.milestones.map((ms, mIdx) => (
+                            <li key={mIdx} className="text-xs text-slate-600 flex items-start gap-1.5 leading-snug">
+                              <span className="text-emerald-500 font-bold">✓</span>
+                              <span>{ms}</span>
+                            </li>
+                          ))}
+                        </ul>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+
+                {/* 2. Pedagogical Approach */}
+                <div className="bg-sky-50/60 border border-sky-100 rounded-3xl p-6">
+                  <div className="flex items-center gap-2 mb-2">
+                    <span className="text-xl">🧠</span>
+                    <h3 className="text-base font-black font-display text-sky-900">
+                      How Kidora Teaches This Subject
+                    </h3>
+                  </div>
+                  <p className="text-xs sm:text-sm text-sky-800 leading-relaxed font-medium">
+                    {activeModule.pedagogy}
+                  </p>
+                </div>
+
+                {/* 3. Sample Quiz / Problem Breakdown */}
+                <div>
+                  <div className="flex items-center gap-2 mb-3">
+                    <span className="text-xl">💡</span>
+                    <h3 className="text-lg font-black font-display text-slate-800">
+                      Sample Concept Exploration
+                    </h3>
+                  </div>
+                  <div className="space-y-3">
+                    {activeModule.sampleQuestions.map((q, idx) => (
+                      <div key={idx} className="bg-amber-50/70 border border-amber-200 rounded-2xl p-4 space-y-1.5">
+                        <div className="text-xs font-bold text-amber-900">
+                          <strong>Question:</strong> {q.q}
+                        </div>
+                        <div className="text-xs font-black text-emerald-700">
+                          <strong>Answer:</strong> {q.a}
+                        </div>
+                        <div className="text-[11px] text-slate-600 font-medium pt-1 border-t border-amber-200/50">
+                          <strong>Learning Benefit:</strong> {q.explanation}
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+
+                {/* 4. Parent Offline Tips */}
+                <div className="border-t border-slate-100 pt-6">
+                  <div className="flex items-center gap-2 mb-3">
+                    <span className="text-xl">👨‍👩‍👧</span>
+                    <h3 className="text-base font-black font-display text-slate-800">
+                      Tips for Parents & Offline Co-Learning
+                    </h3>
+                  </div>
+                  <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+                    {activeModule.parentTips.map((tip, idx) => (
+                      <div key={idx} className="bg-slate-50 p-3.5 rounded-2xl border border-slate-200 text-xs text-slate-600 leading-relaxed">
+                        🌟 {tip}
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              </div>
+            </div>
           </div>
-
-          {/* Body Sections */}
-          <div className="p-6 sm:p-8 space-y-8">
-            {/* 1. Age-by-Age Developmental Milestones */}
-            <div>
-              <div className="flex items-center gap-2 mb-4">
-                <span className="text-xl">🎯</span>
-                <h3 className="text-lg font-black font-display text-slate-800">
-                  Developmental Age Milestones
-                </h3>
-              </div>
-              <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                {activeModule.ageMilestones.map((item, idx) => (
-                  <div
-                    key={idx}
-                    className="bg-slate-50 border border-slate-200/80 rounded-2xl p-4 space-y-2"
-                  >
-                    <h4 className="text-xs font-black font-display text-slate-700 border-b border-slate-200 pb-1.5">
-                      {item.age}
-                    </h4>
-                    <ul className="space-y-1.5">
-                      {item.milestones.map((ms, mIdx) => (
-                        <li key={mIdx} className="text-xs text-slate-600 flex items-start gap-1.5 leading-snug">
-                          <span className="text-emerald-500 font-bold">✓</span>
-                          <span>{ms}</span>
-                        </li>
-                      ))}
-                    </ul>
-                  </div>
-                ))}
-              </div>
-            </div>
-
-            {/* 2. Pedagogical Approach */}
-            <div className="bg-sky-50/60 border border-sky-100 rounded-3xl p-6">
-              <div className="flex items-center gap-2 mb-2">
-                <span className="text-xl">🧠</span>
-                <h3 className="text-base font-black font-display text-sky-900">
-                  How Kidora Teaches This Subject
-                </h3>
-              </div>
-              <p className="text-xs sm:text-sm text-sky-800 leading-relaxed font-medium">
-                {activeModule.pedagogy}
-              </p>
-            </div>
-
-            {/* 3. Sample Quiz / Problem Breakdown */}
-            <div>
-              <div className="flex items-center gap-2 mb-3">
-                <span className="text-xl">💡</span>
-                <h3 className="text-lg font-black font-display text-slate-800">
-                  Sample Concept Exploration
-                </h3>
-              </div>
-              <div className="space-y-3">
-                {activeModule.sampleQuestions.map((q, idx) => (
-                  <div key={idx} className="bg-amber-50/70 border border-amber-200 rounded-2xl p-4 space-y-1.5">
-                    <div className="text-xs font-bold text-amber-900">
-                      <strong>Question:</strong> {q.q}
-                    </div>
-                    <div className="text-xs font-black text-emerald-700">
-                      <strong>Answer:</strong> {q.a}
-                    </div>
-                    <div className="text-[11px] text-slate-600 font-medium pt-1 border-t border-amber-200/50">
-                      <strong>Learning Benefit:</strong> {q.explanation}
-                    </div>
-                  </div>
-                ))}
-              </div>
-            </div>
-
-            {/* 4. Parent Offline Tips */}
-            <div className="border-t border-slate-100 pt-6">
-              <div className="flex items-center gap-2 mb-3">
-                <span className="text-xl">👨‍👩‍👧</span>
-                <h3 className="text-base font-black font-display text-slate-800">
-                  Tips for Parents & Offline Co-Learning
-                </h3>
-              </div>
-              <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
-                {activeModule.parentTips.map((tip, idx) => (
-                  <div key={idx} className="bg-slate-50 p-3.5 rounded-2xl border border-slate-200 text-xs text-slate-600 leading-relaxed">
-                    🌟 {tip}
-                  </div>
-                ))}
-              </div>
-            </div>
-          </div>
-        </div>
+        )}
 
         {/* AdSense Safe Zone */}
         <AdSenseSafeZone format="horizontal" />

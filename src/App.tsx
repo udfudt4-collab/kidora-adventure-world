@@ -14,10 +14,12 @@ import { LearnHub } from '@/screens/LearnHub';
 import { Challenges } from '@/screens/Challenges';
 import { ParentsSection } from '@/screens/ParentsSection';
 import { IdeaHub } from '@/screens/IdeaHub';
+import { HydrationReminderModal } from '@/components/HydrationReminderModal';
 import type { Screen } from '@/lib/types';
 
 function AppContent() {
   const { profile, loading } = useApp();
+  const [showHydrationReminder, setShowHydrationReminder] = useState(false);
 
   // Read initial screen from URL hash if available
   const [screen, setScreen] = useState<Screen>(() => {
@@ -62,6 +64,26 @@ function AppContent() {
     };
   }, []);
 
+  // Automated Periodic Hydration Reminder Timer (with Sound)
+  useEffect(() => {
+    let reminderMins = 45;
+    try {
+      const stored = localStorage.getItem('kidora_hydration_reminder_mins');
+      if (stored !== null) reminderMins = parseInt(stored, 10);
+    } catch {}
+
+    if (reminderMins <= 0) return;
+
+    const intervalMs = reminderMins * 60 * 1000;
+    const timer = setInterval(() => {
+      if (profile) {
+        setShowHydrationReminder(true);
+      }
+    }, intervalMs);
+
+    return () => clearInterval(timer);
+  }, [profile]);
+
   if (loading) {
     return (
       <div className="min-h-screen bg-magic-gradient flex items-center justify-center">
@@ -82,28 +104,40 @@ function AppContent() {
     return <Onboarding />;
   }
 
-  switch (screen) {
-    case 'home': return <Home onNavigate={navigate} />;
-    case 'play': return <PlayHub onNavigate={navigate} />;
-    case 'learn': return <LearnHub onNavigate={navigate} />;
-    case 'adventure': return <Adventure onNavigate={navigate} />;
-    case 'challenges': return <Challenges onNavigate={navigate} />;
-    case 'world': return <WorldMap onNavigate={navigate} />;
-    case 'collections': return <MyKidora onNavigate={navigate} />;
-    case 'my-kidora': return <MyKidora onNavigate={navigate} />;
-    case 'pets': return <Pets onNavigate={navigate} />;
-    case 'create': return <Create onNavigate={navigate} />;
-    case 'parent': return <ParentDashboard onNavigate={navigate} />;
-    case 'parents': return <ParentsSection initialTab="guide" onNavigate={navigate} />;
-    case 'parent-guide': return <ParentsSection initialTab="guide" onNavigate={navigate} />;
-    case 'about': return <ParentsSection initialTab="about" onNavigate={navigate} />;
-    case 'safety': return <ParentsSection initialTab="safety" onNavigate={navigate} />;
-    case 'privacy': return <ParentsSection initialTab="privacy" onNavigate={navigate} />;
-    case 'terms': return <ParentsSection initialTab="terms" onNavigate={navigate} />;
-    case 'contact': return <ParentsSection initialTab="contact" onNavigate={navigate} />;
-    case 'ideas': return <IdeaHub onNavigate={navigate} />;
-    default: return <Home onNavigate={navigate} />;
-  }
+  const renderActiveScreen = () => {
+    switch (screen) {
+      case 'home': return <Home onNavigate={navigate} />;
+      case 'play': return <PlayHub onNavigate={navigate} />;
+      case 'learn': return <LearnHub onNavigate={navigate} />;
+      case 'adventure': return <Adventure onNavigate={navigate} />;
+      case 'challenges': return <Challenges onNavigate={navigate} />;
+      case 'world': return <WorldMap onNavigate={navigate} />;
+      case 'collections': return <MyKidora onNavigate={navigate} />;
+      case 'my-kidora': return <MyKidora onNavigate={navigate} />;
+      case 'pets': return <Pets onNavigate={navigate} />;
+      case 'create': return <Create onNavigate={navigate} />;
+      case 'parent': return <ParentDashboard onNavigate={navigate} />;
+      case 'parents': return <ParentsSection initialTab="guide" onNavigate={navigate} />;
+      case 'parent-guide': return <ParentsSection initialTab="guide" onNavigate={navigate} />;
+      case 'about': return <ParentsSection initialTab="about" onNavigate={navigate} />;
+      case 'safety': return <ParentsSection initialTab="safety" onNavigate={navigate} />;
+      case 'privacy': return <ParentsSection initialTab="privacy" onNavigate={navigate} />;
+      case 'terms': return <ParentsSection initialTab="terms" onNavigate={navigate} />;
+      case 'contact': return <ParentsSection initialTab="contact" onNavigate={navigate} />;
+      case 'ideas': return <IdeaHub onNavigate={navigate} />;
+      default: return <Home onNavigate={navigate} />;
+    }
+  };
+
+  return (
+    <>
+      {renderActiveScreen()}
+      <HydrationReminderModal
+        isOpen={showHydrationReminder}
+        onClose={() => setShowHydrationReminder(false)}
+      />
+    </>
+  );
 }
 
 function App() {
