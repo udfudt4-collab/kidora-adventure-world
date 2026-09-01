@@ -1,6 +1,7 @@
 import { useState, useRef, useEffect, useCallback } from 'react';
 import { useApp } from '@/lib/store';
 import { soundEngine } from '@/lib/soundEngine';
+import { HollowRoadStrokeGuide } from './HollowRoadStrokeGuide';
 import {
   Sparkles,
   Volume2,
@@ -1113,43 +1114,17 @@ export function AlphabetNumberHub() {
             </div>
           )}
 
-          {/* Dotted / Big Tracing Guide Character */}
+          {/* Hollow Road Tracing Track with Dotted Centerline & Numbered Stroke Pills */}
           {guideText && (
-            <div className="absolute inset-0 flex flex-col items-center justify-center pointer-events-none select-none z-0">
-              <span
-                className={`font-black font-display text-slate-200/90 tracking-widest text-center transition-all ${
-                  guideText.length > 4
-                    ? 'text-6xl sm:text-8xl md:text-9xl'
-                    : isExpanded
-                    ? 'text-[140px] sm:text-[200px] md:text-[240px]'
-                    : 'text-[110px] sm:text-[150px] md:text-[170px]'
-                }`}
-                style={{
-                  WebkitTextStroke: '3px #94a3b8',
-                  color: 'rgba(241, 245, 249, 0.7)',
-                  textShadow: '0 0 10px rgba(186, 230, 253, 0.4)',
-                }}
-              >
-                {guideText}
-              </span>
-              <span className="text-xs sm:text-sm font-bold text-sky-600/70 bg-sky-50/80 px-3 py-1 rounded-full mt-2 border border-sky-200/60 flex items-center gap-1">
-                <span>✏️ Trace along the guide outline</span>
-              </span>
-            </div>
-          )}
-
-          {/* Animated Stroke Order Hint Dots */}
-          {showStrokeOrder && activeTab === 'alphabets' && selectedLetter.strokeSteps && (
-            <div className="absolute inset-0 pointer-events-none z-5">
-              {selectedLetter.strokeSteps.map((step) => (
-                <div
-                  key={step.step}
-                  className="absolute transform -translate-x-1/2 -translate-y-1/2 flex items-center gap-1 bg-amber-400 text-slate-950 font-black text-[10px] px-2 py-0.5 rounded-full shadow-pop border border-white animate-bounce-soft"
-                  style={{ left: `${step.x}%`, top: `${step.y}%` }}
-                >
-                  <span>{step.label}</span>
-                </div>
-              ))}
+            <div className="absolute inset-0 flex flex-col items-center justify-center pointer-events-none select-none z-0 p-4">
+              <HollowRoadStrokeGuide
+                character={guideText}
+                showStrokeOrder={showStrokeOrder}
+              />
+              <div className="absolute bottom-2 left-1/2 -translate-x-1/2 flex items-center gap-1.5 bg-white/90 backdrop-blur-md px-3 py-1 rounded-full border border-sky-200 shadow-xs text-xs font-bold text-slate-700">
+                <span className="w-2 h-2 rounded-full bg-emerald-500 animate-ping" />
+                <span>Follow ❶ ➔ ❷ ➔ ❸ inside the road track</span>
+              </div>
             </div>
           )}
 

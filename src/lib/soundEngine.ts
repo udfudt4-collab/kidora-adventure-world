@@ -387,6 +387,88 @@ class SoundEngine {
       this.triggerHaptic('medium');
     } catch {}
   }
+
+  public playRainSound() {
+    const ctx = this.getAudioContext();
+    if (!ctx) return;
+    try {
+      const now = ctx.currentTime;
+      for (let i = 0; i < 6; i++) {
+        const osc = ctx.createOscillator();
+        const gain = ctx.createGain();
+        const start = now + i * 0.05;
+        osc.type = 'sine';
+        osc.frequency.setValueAtTime(800 + Math.random() * 400, start);
+        gain.gain.setValueAtTime(0.06, start);
+        gain.gain.exponentialRampToValueAtTime(0.001, start + 0.04);
+        osc.connect(gain);
+        gain.connect(ctx.destination);
+        osc.start(start);
+        osc.stop(start + 0.05);
+      }
+    } catch {}
+  }
+
+  public playWindSound() {
+    const ctx = this.getAudioContext();
+    if (!ctx) return;
+    try {
+      const now = ctx.currentTime;
+      const osc = ctx.createOscillator();
+      const gain = ctx.createGain();
+      osc.type = 'sine';
+      osc.frequency.setValueAtTime(150, now);
+      osc.frequency.linearRampToValueAtTime(280, now + 0.4);
+      osc.frequency.linearRampToValueAtTime(120, now + 0.9);
+      gain.gain.setValueAtTime(0.01, now);
+      gain.gain.linearRampToValueAtTime(0.12, now + 0.4);
+      gain.gain.exponentialRampToValueAtTime(0.001, now + 0.9);
+      osc.connect(gain);
+      gain.connect(ctx.destination);
+      osc.start(now);
+      osc.stop(now + 0.9);
+    } catch {}
+  }
+
+  public playThunderSound() {
+    const ctx = this.getAudioContext();
+    if (!ctx) return;
+    try {
+      const now = ctx.currentTime;
+      const osc = ctx.createOscillator();
+      const gain = ctx.createGain();
+      osc.type = 'triangle';
+      osc.frequency.setValueAtTime(90, now);
+      osc.frequency.linearRampToValueAtTime(45, now + 0.7);
+      gain.gain.setValueAtTime(0.3, now);
+      gain.gain.exponentialRampToValueAtTime(0.001, now + 0.8);
+      osc.connect(gain);
+      gain.connect(ctx.destination);
+      osc.start(now);
+      osc.stop(now + 0.8);
+      this.triggerHaptic('medium');
+    } catch {}
+  }
+
+  public playBirdChirp() {
+    const ctx = this.getAudioContext();
+    if (!ctx) return;
+    try {
+      const now = ctx.currentTime;
+      const osc = ctx.createOscillator();
+      const gain = ctx.createGain();
+      osc.type = 'sine';
+      osc.frequency.setValueAtTime(1800, now);
+      osc.frequency.exponentialRampToValueAtTime(2600, now + 0.08);
+      osc.frequency.exponentialRampToValueAtTime(1900, now + 0.15);
+      gain.gain.setValueAtTime(0.1, now);
+      gain.gain.exponentialRampToValueAtTime(0.001, now + 0.16);
+      osc.connect(gain);
+      gain.connect(ctx.destination);
+      osc.start(now);
+      osc.stop(now + 0.17);
+    } catch {}
+  }
 }
 
 export const soundEngine = new SoundEngine();

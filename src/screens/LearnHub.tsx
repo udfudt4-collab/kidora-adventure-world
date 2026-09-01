@@ -4,6 +4,8 @@ import { Footer } from '@/components/Footer';
 import { AdSenseSafeZone } from '@/components/AdSenseSafeZone';
 import { AlphabetNumberHub } from '@/components/AlphabetNumberHub';
 import { ColorExplorer } from '@/components/ColorExplorer';
+import { AnimalsExplorer } from '@/components/AnimalsExplorer';
+import { SeasonsWeatherExplorer } from '@/components/SeasonsWeatherExplorer';
 import { WorksheetsStudio } from '@/components/WorksheetsStudio';
 import { FruitsVeggieExplorer } from '@/components/FruitsVeggieExplorer';
 import { WorldFlagsExplorer } from '@/components/WorldFlagsExplorer';
@@ -17,6 +19,8 @@ interface LearnHubProps {
 
 type LearnMainSection =
   | 'abc123'
+  | 'animals'
+  | 'seasons'
   | 'colors'
   | 'fruits_veggies'
   | 'flags'
@@ -306,9 +310,11 @@ export function LearnHub({ onNavigate }: LearnHubProps) {
 
       <main className="flex-1 max-w-6xl w-full mx-auto px-4 sm:px-6 py-8 space-y-8">
         {/* Main Learning Hub Super Switcher */}
-        <div className="flex items-center justify-center gap-2 flex-wrap bg-white p-2.5 rounded-3xl border border-slate-200 shadow-soft max-w-4xl mx-auto">
+        <div className="flex items-center justify-center gap-2 flex-wrap bg-white p-2.5 rounded-3xl border border-slate-200 shadow-soft max-w-5xl mx-auto">
           {[
             { id: 'abc123', label: '🔤 ABC & 123' },
+            { id: 'animals', label: '🦁 Animals Kingdom' },
+            { id: 'seasons', label: '🌦️ Seasons & Weather' },
             { id: 'colors', label: '🎨 Colors Lab' },
             { id: 'fruits_veggies', label: '🍎 Fruits & Veggies' },
             { id: 'flags', label: '🌍 World & Flags' },
@@ -335,7 +341,13 @@ export function LearnHub({ onNavigate }: LearnHubProps) {
         {/* 1. ABC & 123 Learning Academy */}
         {mainSection === 'abc123' && <AlphabetNumberHub />}
 
-        {/* 2. Colors Explorer & Magic Mixing Lab */}
+        {/* 2. Wildlife & Animal Kingdom */}
+        {mainSection === 'animals' && <AnimalsExplorer />}
+
+        {/* 3. Seasons & Weather Explorer */}
+        {mainSection === 'seasons' && <SeasonsWeatherExplorer />}
+
+        {/* 4. Colors Explorer & Magic Mixing Lab */}
         {mainSection === 'colors' && <ColorExplorer />}
 
         {/* 3. Fruits & Vegetables Explorer */}
