@@ -1,5 +1,6 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useApp } from '@/lib/store';
+import { registerModalBackHandler } from '@/lib/navigation';
 import { getWhatsAppShareLink, getReferralShareUrl } from '@/lib/premium';
 import {
   Sparkles,
@@ -34,6 +35,15 @@ export function EarnPremiumModal({ isOpen, onClose }: EarnPremiumModalProps) {
   const [copied, setCopied] = useState(false);
   const [showSimulatePrompt, setShowSimulatePrompt] = useState(false);
   const [friendNameInput, setFriendNameInput] = useState('');
+
+  useEffect(() => {
+    if (isOpen) {
+      return registerModalBackHandler(() => {
+        onClose();
+        return true;
+      });
+    }
+  }, [isOpen, onClose]);
 
   if (!isOpen) return null;
 

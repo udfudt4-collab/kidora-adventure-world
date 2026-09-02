@@ -178,14 +178,24 @@ export function ParentDashboard({ onNavigate }: ParentDashboardProps) {
   const [newPin, setNewPin] = useState('');
   const [pinSaved, setPinSaved] = useState(false);
 
+  // Handle Back Button in Parent Dashboard (1-step back navigation to Overview)
+  useEffect(() => {
+    if (activeHub !== 'overview') {
+      return registerModalBackHandler(() => {
+        setActiveHub('overview');
+        return true;
+      });
+    }
+  }, [activeHub]);
+
   // Close modals on Back button press
   useEffect(() => {
-    if (showAddChildModal) return registerModalBackHandler(() => setShowAddChildModal(false));
-    if (showWeightModal) return registerModalBackHandler(() => setShowWeightModal(false));
-    if (showRecModal) return registerModalBackHandler(() => setShowRecModal(false));
-    if (showChallengeModal) return registerModalBackHandler(() => setShowChallengeModal(false));
-    if (showEventModal) return registerModalBackHandler(() => setShowEventModal(false));
-    if (showMomentModal) return registerModalBackHandler(() => setShowMomentModal(false));
+    if (showAddChildModal) return registerModalBackHandler(() => { setShowAddChildModal(false); return true; });
+    if (showWeightModal) return registerModalBackHandler(() => { setShowWeightModal(false); return true; });
+    if (showRecModal) return registerModalBackHandler(() => { setShowRecModal(false); return true; });
+    if (showChallengeModal) return registerModalBackHandler(() => { setShowChallengeModal(false); return true; });
+    if (showEventModal) return registerModalBackHandler(() => { setShowEventModal(false); return true; });
+    if (showMomentModal) return registerModalBackHandler(() => { setShowMomentModal(false); return true; });
   }, [showAddChildModal, showWeightModal, showRecModal, showChallengeModal, showEventModal, showMomentModal]);
 
   const selectedChild = familyChildren.find((c) => c.id === selectedChildId) ?? familyChildren[0];
@@ -392,10 +402,16 @@ export function ParentDashboard({ onNavigate }: ParentDashboardProps) {
 
           <button
             type="button"
-            onClick={() => onNavigate('home')}
+            onClick={() => {
+              if (activeHub !== 'overview') {
+                setActiveHub('overview');
+              } else {
+                onNavigate('home');
+              }
+            }}
             className="btn-press bg-white/10 hover:bg-white/20 text-white font-bold text-xs px-3.5 py-2 rounded-xl transition-colors cursor-pointer"
           >
-            ← Back to Kidora World 🏠
+            {activeHub !== 'overview' ? '← Back to Overview 📋' : '← Back to Kidora World 🏠'}
           </button>
         </div>
 
@@ -641,12 +657,15 @@ export function ParentDashboard({ onNavigate }: ParentDashboardProps) {
                   </span>
                 </div>
                 {(() => {
+                  const todayStr = new Date().toISOString().split('T')[0];
+                  const isNewDay = hydrationData.lastLoggedDate && hydrationData.lastLoggedDate !== todayStr;
                   const mlPerGlass = hydrationData.mlPerGlass || 250;
                   const targetMl = hydrationData.targetMl || (hydrationData.targetGlasses || 7) * mlPerGlass;
-                  const currentMl =
-                    hydrationData.dailyIntakeMlByChild && hydrationData.dailyIntakeMlByChild[activeChildId] !== undefined
-                      ? hydrationData.dailyIntakeMlByChild[activeChildId]
-                      : (hydrationData.dailyIntakeByChild[activeChildId] || 0) * mlPerGlass;
+                  const currentMl = isNewDay
+                    ? 0
+                    : hydrationData.dailyIntakeMlByChild && hydrationData.dailyIntakeMlByChild[activeChildId] !== undefined
+                    ? hydrationData.dailyIntakeMlByChild[activeChildId]
+                    : (hydrationData.dailyIntakeByChild[activeChildId] || 0) * mlPerGlass;
                   const pct = Math.min(100, Math.round((currentMl / (targetMl || 1)) * 100));
                   const glasses = Math.round((currentMl / mlPerGlass) * 10) / 10;
                   return (

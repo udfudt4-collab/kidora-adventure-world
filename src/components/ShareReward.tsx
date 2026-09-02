@@ -1,5 +1,6 @@
-import { useState, useRef } from 'react';
+import { useState, useRef, useEffect } from 'react';
 import { Button } from '@/components/Button';
+import { registerModalBackHandler } from '@/lib/navigation';
 import { type ShareableReward, APP_PUBLIC_URL } from '@/lib/rewards';
 import { shareAchievementAsImage } from '@/lib/imageCardGenerator';
 
@@ -18,6 +19,13 @@ export function ShareReward({ reward, childName, onClose }: ShareRewardProps) {
   const [copiedLink, setCopiedLink] = useState(false);
 
   const [shareFeedback, setShareFeedback] = useState<string | null>(null);
+
+  useEffect(() => {
+    return registerModalBackHandler(() => {
+      onClose();
+      return true;
+    });
+  }, [onClose]);
 
   const handleDownload = async () => {
     try {

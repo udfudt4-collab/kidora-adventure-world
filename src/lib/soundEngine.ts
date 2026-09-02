@@ -210,7 +210,8 @@ class SoundEngine {
         utterance.lang = 'ta-IN';
         utterance.voice = tamilVoice;
       } else {
-        utterance.lang = options?.lang ?? 'en-IN';
+        const defaultLang = typeof navigator !== 'undefined' && navigator.language ? navigator.language : 'en-US';
+        utterance.lang = options?.lang ?? defaultLang;
 
         if (this.voices.length > 0) {
           const matchingVoice =

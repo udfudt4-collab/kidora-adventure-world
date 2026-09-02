@@ -627,11 +627,94 @@ export const HollowRoadStrokeGuide: React.FC<HollowRoadStrokeGuideProps> = ({
     );
   }
 
-  // Fallback for full words, lowercase, numbers, or Tamil characters: High-definition Large Hollow Road Track
+  // High-Definition Large Hollow Road Track for Tamil Vowels & Words
   const isTamil = /[\u0B80-\u0BFF]/.test(character);
   const charLength = character.trim().length;
-  const fontSize = charLength > 5 ? 70 : charLength > 3 ? 95 : charLength > 1 ? 140 : isTamil ? 220 : 250;
-  const yPos = isTamil ? '54%' : '56%';
+
+  if (isTamil) {
+    const isSingleChar = charLength <= 1;
+    // For single Tamil vowel (அ, ஆ, இ, ஈ, உ, ஊ, எ, ஏ, ஐ, ஒ, ஓ, ஔ, ஃ)
+    // Scale viewBox and font size so the Tamil letter is HUGE and fills the canvas just like English A-Z!
+    const tamilViewBox = isSingleChar
+      ? '0 0 260 260'
+      : charLength <= 3
+      ? '0 0 360 220'
+      : '0 0 460 220';
+    const tamilFontSize = isSingleChar ? 300 : charLength <= 3 ? 170 : charLength <= 5 ? 130 : 90;
+    const strokeOuter = isSingleChar ? 46 : 28;
+    const strokeInner = isSingleChar ? 32 : 18;
+    const strokeDash = isSingleChar ? 6 : 4;
+
+    return (
+      <div className={`relative w-full h-full flex items-center justify-center pointer-events-none select-none p-1 sm:p-2 ${className}`}>
+        <svg
+          viewBox={tamilViewBox}
+          className="w-full h-full max-w-[480px] max-h-[520px] drop-shadow-2xl scale-105 sm:scale-110 transform transition-transform"
+          fill="none"
+          xmlns="http://www.w3.org/2000/svg"
+        >
+          {/* Layer 1: Outer Bold Road Border */}
+          <text
+            x="50%"
+            y="52%"
+            textAnchor="middle"
+            dominantBaseline="central"
+            stroke="#0f172a"
+            strokeWidth={strokeOuter}
+            strokeLinejoin="round"
+            strokeLinecap="round"
+            fill="#ffffff"
+            fontSize={tamilFontSize}
+            fontWeight="900"
+            fontFamily="'Nirmala UI', 'Latha', 'Vijaya', 'Mukta Malar', system-ui, -apple-system, sans-serif"
+          >
+            {character}
+          </text>
+
+          {/* Layer 2: Inner Hollow White Roadway */}
+          <text
+            x="50%"
+            y="52%"
+            textAnchor="middle"
+            dominantBaseline="central"
+            fill="#ffffff"
+            stroke="#ffffff"
+            strokeWidth={strokeInner}
+            strokeLinejoin="round"
+            strokeLinecap="round"
+            fontSize={tamilFontSize}
+            fontWeight="900"
+            fontFamily="'Nirmala UI', 'Latha', 'Vijaya', 'Mukta Malar', system-ui, -apple-system, sans-serif"
+          >
+            {character}
+          </text>
+
+          {/* Layer 3: Dashed Centerline Track Guide */}
+          <text
+            x="50%"
+            y="52%"
+            textAnchor="middle"
+            dominantBaseline="central"
+            fill="none"
+            stroke="#64748b"
+            strokeWidth={strokeDash}
+            strokeDasharray="10 12"
+            strokeLinejoin="round"
+            strokeLinecap="round"
+            fontSize={tamilFontSize}
+            fontWeight="900"
+            fontFamily="'Nirmala UI', 'Latha', 'Vijaya', 'Mukta Malar', system-ui, -apple-system, sans-serif"
+          >
+            {character}
+          </text>
+        </svg>
+      </div>
+    );
+  }
+
+  // Fallback for full words, lowercase, numbers: High-definition Large Hollow Road Track
+  const fontSize = charLength > 5 ? 70 : charLength > 3 ? 95 : charLength > 1 ? 140 : 250;
+  const yPos = '56%';
 
   return (
     <div className={`relative w-full h-full flex items-center justify-center pointer-events-none select-none p-1 sm:p-2 ${className}`}>

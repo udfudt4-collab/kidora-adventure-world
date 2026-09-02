@@ -831,21 +831,21 @@ export function AlphabetNumberHub() {
     }
     setSelectedLetter(item);
     soundEngine.playPop();
-    speakText(`${item.letter}. ${activeWord}.`);
+    speakText(`${item.letter} for ${activeWord}!`);
     clearCanvas();
   };
 
   const handleSelectTamil = (item: TamilLetterItem) => {
     setSelectedTamil(item);
     soundEngine.playPop();
-    speakText(`${item.phonetic}. ${item.word}. ${item.englishMeaning}.`);
+    speakText(`${item.phonetic} for ${item.word}! ${item.englishMeaning}.`);
     clearCanvas();
   };
 
   const handleSelectNumber = (item: NumberItem) => {
     setSelectedNumber(item);
     soundEngine.playPop();
-    speakText(`${item.num}. ${item.word}.`);
+    speakText(`Number ${item.num}! ${item.word}.`);
     clearCanvas();
   };
 
