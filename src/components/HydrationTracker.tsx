@@ -69,12 +69,14 @@ export function HydrationTracker() {
     setTimeout(() => setSavedFeedback(null), 2000);
   };
 
-  const activeChild = (familyChildren && familyChildren.length > 0)
-    ? familyChildren.find((c) => c.id === selectedChildId) || familyChildren[0]
+  const safeFamilyChildren = Array.isArray(familyChildren) ? familyChildren : [];
+  const activeChild = safeFamilyChildren.length > 0
+    ? safeFamilyChildren.find((c) => c.id === selectedChildId) || safeFamilyChildren[0]
     : { id: 'child-1', name: 'Child', age: 6, avatar: {}, stars: 0, totalAdventures: 0 };
 
   const mlPerGlass = hydrationData?.mlPerGlass || 250;
   const targetMl = hydrationData?.targetMl || (hydrationData?.targetGlasses ? hydrationData.targetGlasses * mlPerGlass : 1750);
+  const targetGlasses = Math.max(1, Math.round(targetMl / mlPerGlass));
   const todayStr = new Date().toISOString().split('T')[0];
   const historyLogs = Array.isArray(hydrationData?.historyLogs) ? hydrationData.historyLogs : [];
 
@@ -195,9 +197,9 @@ export function HydrationTracker() {
         </div>
 
         {/* Child Switcher */}
-        {familyChildren.length > 1 && (
+        {safeFamilyChildren.length > 1 && (
           <div className="bg-white/15 backdrop-blur-md p-2 rounded-2xl border border-white/25 flex items-center gap-1.5 shrink-0">
-            {familyChildren.map((child) => (
+            {safeFamilyChildren.map((child) => (
               <button
                 key={child.id}
                 type="button"
