@@ -34,7 +34,15 @@ import {
   HelpCircle,
   Rocket,
   ArrowRight,
+  Shuffle,
 } from 'lucide-react';
+
+export interface WordVariant {
+  word: string;
+  tamilWord: string;
+  emoji: string;
+  exampleSentence: string;
+}
 
 export interface LetterItem {
   letter: string;
@@ -45,6 +53,7 @@ export interface LetterItem {
   phonetic: string;
   exampleSentence: string;
   color: string;
+  variants: WordVariant[];
   strokeSteps?: { step: number; x: number; y: number; label: string }[];
 }
 
@@ -68,32 +77,397 @@ export interface NumberItem {
 }
 
 export const ALPHABET_DATA: LetterItem[] = [
-  { letter: 'A', lower: 'a', word: 'Apple', tamilWord: 'ஆப்பிள் (Aappil)', emoji: '🍎', phonetic: 'Ah', exampleSentence: 'A is for sweet red Apple', color: 'from-rose-500 to-red-600', strokeSteps: [{ step: 1, x: 25, y: 80, label: '1. Up-Left' }, { step: 2, x: 75, y: 80, label: '2. Down-Right' }, { step: 3, x: 50, y: 55, label: '3. Cross' }] },
-  { letter: 'B', lower: 'b', word: 'Butterfly', tamilWord: 'பட்டாம்பூச்சி (Pattampoochi)', emoji: '🦋', phonetic: 'Buh', exampleSentence: 'B is for colorful Butterfly', color: 'from-blue-500 to-indigo-600', strokeSteps: [{ step: 1, x: 30, y: 20, label: '1. Down Line' }, { step: 2, x: 60, y: 35, label: '2. Top Loop' }, { step: 3, x: 60, y: 68, label: '3. Bottom Loop' }] },
-  { letter: 'C', lower: 'c', word: 'Cat', tamilWord: 'பூனை (Poonai)', emoji: '🐱', phonetic: 'Kuh', exampleSentence: 'C is for cute playful Cat', color: 'from-amber-500 to-orange-600', strokeSteps: [{ step: 1, x: 75, y: 25, label: '1. Start Top' }, { step: 2, x: 25, y: 50, label: '2. Curve Left' }, { step: 3, x: 75, y: 75, label: '3. Curve Bottom' }] },
-  { letter: 'D', lower: 'd', word: 'Dolphin', tamilWord: 'டால்பின் (Dolphin)', emoji: '🐬', phonetic: 'Duh', exampleSentence: 'D is for jumping Dolphin', color: 'from-cyan-500 to-blue-600' },
-  { letter: 'E', lower: 'e', word: 'Elephant', tamilWord: 'யானை (Yaanai)', emoji: '🐘', phonetic: 'Eh', exampleSentence: 'E is for giant friendly Elephant', color: 'from-emerald-500 to-teal-600' },
-  { letter: 'F', lower: 'f', word: 'Fish', tamilWord: 'மீன் (Meen)', emoji: '🐠', phonetic: 'Fff', exampleSentence: 'F is for shiny swimming Fish', color: 'from-sky-500 to-blue-500' },
-  { letter: 'G', lower: 'g', word: 'Grapes', tamilWord: 'திராட்சை (Dhiraatchai)', emoji: '🍇', phonetic: 'Guh', exampleSentence: 'G is for sweet purple Grapes', color: 'from-purple-500 to-indigo-600' },
-  { letter: 'H', lower: 'h', word: 'Horse', tamilWord: 'குதிரை (Kuthirai)', emoji: '🐴', phonetic: 'Huh', exampleSentence: 'H is for fast running Horse', color: 'from-amber-600 to-orange-700' },
-  { letter: 'I', lower: 'i', word: 'Igloo', tamilWord: 'பனிவீடு (Paniveedu)', emoji: '🧊', phonetic: 'Ih', exampleSentence: 'I is for chilly winter Igloo', color: 'from-cyan-500 to-blue-600' },
-  { letter: 'J', lower: 'j', word: 'Juice', tamilWord: 'பழச்சாறு (Pazhachaaru)', emoji: '🧃', phonetic: 'Juh', exampleSentence: 'J is for fresh yummy Juice', color: 'from-green-600 to-emerald-700' },
-  { letter: 'K', lower: 'k', word: 'Kangaroo', tamilWord: 'கங்காரு (Kangaroo)', emoji: '🦘', phonetic: 'Kuh', exampleSentence: 'K is for hopping Kangaroo', color: 'from-orange-500 to-amber-600' },
-  { letter: 'L', lower: 'l', word: 'Lion', tamilWord: 'சிங்கம் (Singam)', emoji: '🦁', phonetic: 'Lll', exampleSentence: 'L is for brave roaring Lion', color: 'from-amber-500 to-yellow-600' },
-  { letter: 'M', lower: 'm', word: 'Mango', tamilWord: 'மாம்பழம் (Maambazham)', emoji: '🥭', phonetic: 'Mmm', exampleSentence: 'M is for sweet golden Mango', color: 'from-yellow-500 to-orange-500' },
-  { letter: 'N', lower: 'n', word: 'Nest', tamilWord: 'கூடு (Koodu)', emoji: '🪺', phonetic: 'Nnn', exampleSentence: 'N is for cozy bird Nest', color: 'from-teal-600 to-emerald-700' },
-  { letter: 'O', lower: 'o', word: 'Orange', tamilWord: 'ஆரஞ்சு (Orange)', emoji: '🍊', phonetic: 'Ah', exampleSentence: 'O is for juicy sweet Orange', color: 'from-orange-500 to-amber-600' },
-  { letter: 'P', lower: 'p', word: 'Peacock', tamilWord: 'மயில் (Mayil)', emoji: '🦚', phonetic: 'Puh', exampleSentence: 'P is for dancing beautiful Peacock', color: 'from-cyan-600 to-teal-700' },
-  { letter: 'Q', lower: 'q', word: 'Queen', tamilWord: 'ராணி (Raani)', emoji: '👑', phonetic: 'Kwuh', exampleSentence: 'Q is for kind Queen with crown', color: 'from-purple-500 to-pink-600' },
-  { letter: 'R', lower: 'r', word: 'Rainbow', tamilWord: 'வானவில் (Vaanavil)', emoji: '🌈', phonetic: 'Rrr', exampleSentence: 'R is for magical 7-color Rainbow', color: 'from-rose-500 to-violet-600' },
-  { letter: 'S', lower: 's', word: 'Sun', tamilWord: 'சூரியன் (Sooriyan)', emoji: '☀️', phonetic: 'Sss', exampleSentence: 'S is for warm shining Sun', color: 'from-amber-400 to-orange-500' },
-  { letter: 'T', lower: 't', word: 'Tiger', tamilWord: 'புலி (Puli)', emoji: '🐯', phonetic: 'Tuh', exampleSentence: 'T is for strong striped Tiger', color: 'from-orange-500 to-red-600' },
-  { letter: 'U', lower: 'u', word: 'Umbrella', tamilWord: 'குடை (Kudai)', emoji: '☂️', phonetic: 'Uh', exampleSentence: 'U is for rainy day Umbrella', color: 'from-purple-500 to-indigo-600' },
-  { letter: 'V', lower: 'v', word: 'Van', tamilWord: 'வாகனம் (Vaaganam)', emoji: '🚐', phonetic: 'Vvv', exampleSentence: 'V is for family adventure Van', color: 'from-blue-600 to-indigo-700' },
-  { letter: 'W', lower: 'w', word: 'Watermelon', tamilWord: 'தர்பூசணி (Dharpoosani)', emoji: '🍉', phonetic: 'Wuh', exampleSentence: 'W is for sweet red Watermelon', color: 'from-rose-500 to-emerald-600' },
-  { letter: 'X', lower: 'x', word: 'Xylophone', tamilWord: 'சைலோஃபோன் (Xylophone)', emoji: '🎵', phonetic: 'Ks', exampleSentence: 'X is for musical Xylophone', color: 'from-pink-500 to-purple-600' },
-  { letter: 'Y', lower: 'y', word: 'Yak', tamilWord: 'யாக் (Yak)', emoji: '🐂', phonetic: 'Yuh', exampleSentence: 'Y is for furry mountain Yak', color: 'from-amber-700 to-orange-800' },
-  { letter: 'Z', lower: 'z', word: 'Zebra', tamilWord: 'வரிக்குதிரை (Varikkuthirai)', emoji: '🦓', phonetic: 'Zzz', exampleSentence: 'Z is for black & white Zebra', color: 'from-slate-700 to-slate-900' },
+  {
+    letter: 'A',
+    lower: 'a',
+    word: 'Apple',
+    tamilWord: 'ஆப்பிள் (Aappil)',
+    emoji: '🍎',
+    phonetic: 'Ah',
+    exampleSentence: 'A is for sweet red Apple',
+    color: 'from-rose-500 to-red-600',
+    variants: [
+      { word: 'Apple', tamilWord: 'ஆப்பிள் (Aappil)', emoji: '🍎', exampleSentence: 'A is for sweet red Apple' },
+      { word: 'Astronaut', tamilWord: 'விண்வெளி வீரர் (Astronaut)', emoji: '👨‍🚀', exampleSentence: 'A is for brave space Astronaut' },
+      { word: 'Airplane', tamilWord: 'விமானம் (Vimaanam)', emoji: '✈️', exampleSentence: 'A is for soaring high Airplane' },
+    ],
+    strokeSteps: [{ step: 1, x: 25, y: 80, label: '1. Up-Left' }, { step: 2, x: 75, y: 80, label: '2. Down-Right' }, { step: 3, x: 50, y: 55, label: '3. Cross' }],
+  },
+  {
+    letter: 'B',
+    lower: 'b',
+    word: 'Butterfly',
+    tamilWord: 'பட்டாம்பூச்சி (Pattampoochi)',
+    emoji: '🦋',
+    phonetic: 'Buh',
+    exampleSentence: 'B is for colorful Butterfly',
+    color: 'from-blue-500 to-indigo-600',
+    variants: [
+      { word: 'Butterfly', tamilWord: 'பட்டாம்பூச்சி (Pattampoochi)', emoji: '🦋', exampleSentence: 'B is for colorful Butterfly' },
+      { word: 'Ball', tamilWord: 'பந்து (Panthu)', emoji: '⚽', exampleSentence: 'B is for bouncy football' },
+      { word: 'Bear', tamilWord: 'கரடி (Karadi)', emoji: '🐻', exampleSentence: 'B is for cuddly brown Bear' },
+    ],
+    strokeSteps: [{ step: 1, x: 30, y: 20, label: '1. Down Line' }, { step: 2, x: 60, y: 35, label: '2. Top Loop' }, { step: 3, x: 60, y: 68, label: '3. Bottom Loop' }],
+  },
+  {
+    letter: 'C',
+    lower: 'c',
+    word: 'Cat',
+    tamilWord: 'பூனை (Poonai)',
+    emoji: '🐱',
+    phonetic: 'Kuh',
+    exampleSentence: 'C is for cute playful Cat',
+    color: 'from-amber-500 to-orange-600',
+    variants: [
+      { word: 'Cat', tamilWord: 'பூனை (Poonai)', emoji: '🐱', exampleSentence: 'C is for cute playful Cat' },
+      { word: 'Car', tamilWord: 'கார் (Car)', emoji: '🚗', exampleSentence: 'C is for speedy red Car' },
+      { word: 'Cake', tamilWord: 'கேக் (Cake)', emoji: '🎂', exampleSentence: 'C is for delicious birthday Cake' },
+    ],
+    strokeSteps: [{ step: 1, x: 75, y: 25, label: '1. Start Top' }, { step: 2, x: 25, y: 50, label: '2. Curve Left' }, { step: 3, x: 75, y: 75, label: '3. Curve Bottom' }],
+  },
+  {
+    letter: 'D',
+    lower: 'd',
+    word: 'Dolphin',
+    tamilWord: 'டால்பின் (Dolphin)',
+    emoji: '🐬',
+    phonetic: 'Duh',
+    exampleSentence: 'D is for jumping Dolphin',
+    color: 'from-cyan-500 to-blue-600',
+    variants: [
+      { word: 'Dolphin', tamilWord: 'டால்பின் (Dolphin)', emoji: '🐬', exampleSentence: 'D is for jumping Dolphin' },
+      { word: 'Duck', tamilWord: 'வாத்து (Vaathu)', emoji: '🦆', exampleSentence: 'D is for quacking yellow Duck' },
+      { word: 'Dinosaur', tamilWord: 'டைனோசர் (Dinosaur)', emoji: '🦖', exampleSentence: 'D is for mighty friendly Dinosaur' },
+    ],
+  },
+  {
+    letter: 'E',
+    lower: 'e',
+    word: 'Elephant',
+    tamilWord: 'யானை (Yaanai)',
+    emoji: '🐘',
+    phonetic: 'Eh',
+    exampleSentence: 'E is for giant friendly Elephant',
+    color: 'from-emerald-500 to-teal-600',
+    variants: [
+      { word: 'Elephant', tamilWord: 'யானை (Yaanai)', emoji: '🐘', exampleSentence: 'E is for giant friendly Elephant' },
+      { word: 'Egg', tamilWord: 'முட்டை (Muttai)', emoji: '🥚', exampleSentence: 'E is for fresh breakfast Egg' },
+      { word: 'Eagle', tamilWord: 'கழுகு (Kazhugu)', emoji: '🦅', exampleSentence: 'E is for soaring high Eagle' },
+    ],
+  },
+  {
+    letter: 'F',
+    lower: 'f',
+    word: 'Fish',
+    tamilWord: 'மீன் (Meen)',
+    emoji: '🐠',
+    phonetic: 'Fff',
+    exampleSentence: 'F is for shiny swimming Fish',
+    color: 'from-sky-500 to-blue-500',
+    variants: [
+      { word: 'Fish', tamilWord: 'மீன் (Meen)', emoji: '🐠', exampleSentence: 'F is for shiny swimming Fish' },
+      { word: 'Frog', tamilWord: 'தவளை (Thavalai)', emoji: '🐸', exampleSentence: 'F is for jumping green Frog' },
+      { word: 'Flower', tamilWord: 'மலர் (Malar)', emoji: '🌸', exampleSentence: 'F is for blooming fragrant Flower' },
+    ],
+  },
+  {
+    letter: 'G',
+    lower: 'g',
+    word: 'Grapes',
+    tamilWord: 'திராட்சை (Dhiraatchai)',
+    emoji: '🍇',
+    phonetic: 'Guh',
+    exampleSentence: 'G is for sweet purple Grapes',
+    color: 'from-purple-500 to-indigo-600',
+    variants: [
+      { word: 'Grapes', tamilWord: 'திராட்சை (Dhiraatchai)', emoji: '🍇', exampleSentence: 'G is for sweet purple Grapes' },
+      { word: 'Guitar', tamilWord: 'கிட்டார் (Guitar)', emoji: '🎸', exampleSentence: 'G is for musical acoustic Guitar' },
+      { word: 'Gift', tamilWord: 'பரிசு (Parisu)', emoji: '🎁', exampleSentence: 'G is for surprise birthday Gift' },
+    ],
+  },
+  {
+    letter: 'H',
+    lower: 'h',
+    word: 'Horse',
+    tamilWord: 'குதிரை (Kuthirai)',
+    emoji: '🐴',
+    phonetic: 'Huh',
+    exampleSentence: 'H is for fast running Horse',
+    color: 'from-amber-600 to-orange-700',
+    variants: [
+      { word: 'Horse', tamilWord: 'குதிரை (Kuthirai)', emoji: '🐴', exampleSentence: 'H is for fast running Horse' },
+      { word: 'Hat', tamilWord: 'தொப்பி (Thoppi)', emoji: '🎩', exampleSentence: 'H is for stylish magic Hat' },
+      { word: 'House', tamilWord: 'வீடு (Veedu)', emoji: '🏠', exampleSentence: 'H is for warm cozy House' },
+    ],
+  },
+  {
+    letter: 'I',
+    lower: 'i',
+    word: 'Igloo',
+    tamilWord: 'பனிவீடு (Paniveedu)',
+    emoji: '🧊',
+    phonetic: 'Ih',
+    exampleSentence: 'I is for chilly winter Igloo',
+    color: 'from-cyan-500 to-blue-600',
+    variants: [
+      { word: 'Igloo', tamilWord: 'பனிவீடு (Paniveedu)', emoji: '🧊', exampleSentence: 'I is for chilly winter Igloo' },
+      { word: 'Island', tamilWord: 'தீவு (Theevu)', emoji: '🏝️', exampleSentence: 'I is for sunny tropical Island' },
+      { word: 'Insect', tamilWord: 'பூச்சி (Poochi)', emoji: '🐞', exampleSentence: 'I is for tiny colorful Insect' },
+    ],
+  },
+  {
+    letter: 'J',
+    lower: 'j',
+    word: 'Juice',
+    tamilWord: 'பழச்சாறு (Pazhachaaru)',
+    emoji: '🧃',
+    phonetic: 'Juh',
+    exampleSentence: 'J is for fresh yummy Juice',
+    color: 'from-green-600 to-emerald-700',
+    variants: [
+      { word: 'Juice', tamilWord: 'பழச்சாறு (Pazhachaaru)', emoji: '🧃', exampleSentence: 'J is for fresh yummy Juice' },
+      { word: 'Jungle', tamilWord: 'காடு (Kaadu)', emoji: '🌴', exampleSentence: 'J is for green tropical Jungle' },
+      { word: 'Jellyfish', tamilWord: 'ஜெல்லிமீன் (Jellyfish)', emoji: '🪼', exampleSentence: 'J is for glowing ocean Jellyfish' },
+    ],
+  },
+  {
+    letter: 'K',
+    lower: 'k',
+    word: 'Kangaroo',
+    tamilWord: 'கங்காரு (Kangaroo)',
+    emoji: '🦘',
+    phonetic: 'Kuh',
+    exampleSentence: 'K is for hopping Kangaroo',
+    color: 'from-orange-500 to-amber-600',
+    variants: [
+      { word: 'Kangaroo', tamilWord: 'கங்காரு (Kangaroo)', emoji: '🦘', exampleSentence: 'K is for hopping Kangaroo' },
+      { word: 'Kite', tamilWord: 'பட்டம் (Pattam)', emoji: '🪁', exampleSentence: 'K is for flying diamond Kite' },
+      { word: 'King', tamilWord: 'மன்னர் (Mannar)', emoji: '👑', exampleSentence: 'K is for royal golden King' },
+    ],
+  },
+  {
+    letter: 'L',
+    lower: 'l',
+    word: 'Lion',
+    tamilWord: 'சிங்கம் (Singam)',
+    emoji: '🦁',
+    phonetic: 'Lll',
+    exampleSentence: 'L is for brave roaring Lion',
+    color: 'from-amber-500 to-yellow-600',
+    variants: [
+      { word: 'Lion', tamilWord: 'சிங்கம் (Singam)', emoji: '🦁', exampleSentence: 'L is for brave roaring Lion' },
+      { word: 'Lemon', tamilWord: 'எலுமிச்சை (Elumichai)', emoji: '🍋', exampleSentence: 'L is for juicy sour Lemon' },
+      { word: 'Leaf', tamilWord: 'இலை (Ilai)', emoji: '🍃', exampleSentence: 'L is for fluttering green Leaf' },
+    ],
+  },
+  {
+    letter: 'M',
+    lower: 'm',
+    word: 'Mango',
+    tamilWord: 'மாம்பழம் (Maambazham)',
+    emoji: '🥭',
+    phonetic: 'Mmm',
+    exampleSentence: 'M is for sweet golden Mango',
+    color: 'from-yellow-500 to-orange-500',
+    variants: [
+      { word: 'Mango', tamilWord: 'மாம்பழம் (Maambazham)', emoji: '🥭', exampleSentence: 'M is for sweet golden Mango' },
+      { word: 'Monkey', tamilWord: 'குரங்கு (Kurangu)', emoji: '🐵', exampleSentence: 'M is for playful tree Monkey' },
+      { word: 'Moon', tamilWord: 'நிலா (Nila)', emoji: '🌙', exampleSentence: 'M is for glowing night Moon' },
+    ],
+  },
+  {
+    letter: 'N',
+    lower: 'n',
+    word: 'Nest',
+    tamilWord: 'கூடு (Koodu)',
+    emoji: '🪺',
+    phonetic: 'Nnn',
+    exampleSentence: 'N is for cozy bird Nest',
+    color: 'from-teal-600 to-emerald-700',
+    variants: [
+      { word: 'Nest', tamilWord: 'கூடு (Koodu)', emoji: '🪺', exampleSentence: 'N is for cozy bird Nest' },
+      { word: 'Nut', tamilWord: 'கொட்டை (Kottai)', emoji: '🥜', exampleSentence: 'N is for crunchy healthy Nut' },
+      { word: 'Night', tamilWord: 'இரவு (Iravu)', emoji: '🌌', exampleSentence: 'N is for peaceful starry Night' },
+    ],
+  },
+  {
+    letter: 'O',
+    lower: 'o',
+    word: 'Orange',
+    tamilWord: 'ஆரஞ்சு (Orange)',
+    emoji: '🍊',
+    phonetic: 'Ah',
+    exampleSentence: 'O is for juicy sweet Orange',
+    color: 'from-orange-500 to-amber-600',
+    variants: [
+      { word: 'Orange', tamilWord: 'ஆரஞ்சு (Orange)', emoji: '🍊', exampleSentence: 'O is for juicy sweet Orange' },
+      { word: 'Octopus', tamilWord: 'எண்காலி (Enkaali)', emoji: '🐙', exampleSentence: 'O is for friendly eight-armed Octopus' },
+      { word: 'Owl', tamilWord: 'ஆந்தை (Aanthai)', emoji: '🦉', exampleSentence: 'O is for wise night Owl' },
+    ],
+  },
+  {
+    letter: 'P',
+    lower: 'p',
+    word: 'Peacock',
+    tamilWord: 'மயில் (Mayil)',
+    emoji: '🦚',
+    phonetic: 'Puh',
+    exampleSentence: 'P is for dancing beautiful Peacock',
+    color: 'from-cyan-600 to-teal-700',
+    variants: [
+      { word: 'Peacock', tamilWord: 'மயில் (Mayil)', emoji: '🦚', exampleSentence: 'P is for dancing beautiful Peacock' },
+      { word: 'Panda', tamilWord: 'பாண்டா (Panda)', emoji: '🐼', exampleSentence: 'P is for cuddly bamboo Panda' },
+      { word: 'Penguin', tamilWord: 'பெங்குவின் (Penguin)', emoji: '🐧', exampleSentence: 'P is for waddling snow Penguin' },
+    ],
+  },
+  {
+    letter: 'Q',
+    lower: 'q',
+    word: 'Queen',
+    tamilWord: 'ராணி (Raani)',
+    emoji: '👑',
+    phonetic: 'Kwuh',
+    exampleSentence: 'Q is for kind Queen with crown',
+    color: 'from-purple-500 to-pink-600',
+    variants: [
+      { word: 'Queen', tamilWord: 'ராணி (Raani)', emoji: '👑', exampleSentence: 'Q is for kind Queen with crown' },
+      { word: 'Quilt', tamilWord: 'மெத்தை (Methai)', emoji: '🧵', exampleSentence: 'Q is for warm cozy Quilt' },
+      { word: 'Question', tamilWord: 'கேள்வி (Kelvi)', emoji: '❓', exampleSentence: 'Q is for curious mystery Question' },
+    ],
+  },
+  {
+    letter: 'R',
+    lower: 'r',
+    word: 'Rainbow',
+    tamilWord: 'வானவில் (Vaanavil)',
+    emoji: '🌈',
+    phonetic: 'Rrr',
+    exampleSentence: 'R is for magical 7-color Rainbow',
+    color: 'from-rose-500 to-violet-600',
+    variants: [
+      { word: 'Rainbow', tamilWord: 'வானவில் (Vaanavil)', emoji: '🌈', exampleSentence: 'R is for magical 7-color Rainbow' },
+      { word: 'Rocket', tamilWord: 'ராக்கெட் (Rocket)', emoji: '🚀', exampleSentence: 'R is for zooming space Rocket' },
+      { word: 'Robot', tamilWord: 'ரோபோ (Robot)', emoji: '🤖', exampleSentence: 'R is for smart friendly Robot' },
+    ],
+  },
+  {
+    letter: 'S',
+    lower: 's',
+    word: 'Sun',
+    tamilWord: 'சூரியன் (Sooriyan)',
+    emoji: '☀️',
+    phonetic: 'Sss',
+    exampleSentence: 'S is for warm shining Sun',
+    color: 'from-amber-400 to-orange-500',
+    variants: [
+      { word: 'Sun', tamilWord: 'சூரியன் (Sooriyan)', emoji: '☀️', exampleSentence: 'S is for warm shining Sun' },
+      { word: 'Star', tamilWord: 'நட்சத்திரம் (Natchathiram)', emoji: '⭐', exampleSentence: 'S is for twinkling golden Star' },
+      { word: 'Strawberry', tamilWord: 'ஸ்ட்ராபெரி (Strawberry)', emoji: '🍓', exampleSentence: 'S is for sweet red Strawberry' },
+    ],
+  },
+  {
+    letter: 'T',
+    lower: 't',
+    word: 'Tiger',
+    tamilWord: 'புலி (Puli)',
+    emoji: '🐯',
+    phonetic: 'Tuh',
+    exampleSentence: 'T is for strong striped Tiger',
+    color: 'from-orange-500 to-red-600',
+    variants: [
+      { word: 'Tiger', tamilWord: 'புலி (Puli)', emoji: '🐯', exampleSentence: 'T is for strong striped Tiger' },
+      { word: 'Train', tamilWord: 'ரயில் (Rayil)', emoji: '🚂', exampleSentence: 'T is for choo-choo steam Train' },
+      { word: 'Tree', tamilWord: 'மரம் (Maram)', emoji: '🌳', exampleSentence: 'T is for tall shady green Tree' },
+    ],
+  },
+  {
+    letter: 'U',
+    lower: 'u',
+    word: 'Umbrella',
+    tamilWord: 'குடை (Kudai)',
+    emoji: '☂️',
+    phonetic: 'Uh',
+    exampleSentence: 'U is for rainy day Umbrella',
+    color: 'from-purple-500 to-indigo-600',
+    variants: [
+      { word: 'Umbrella', tamilWord: 'குடை (Kudai)', emoji: '☂️', exampleSentence: 'U is for rainy day Umbrella' },
+      { word: 'Unicorn', tamilWord: 'யூனிகார்ன் (Unicorn)', emoji: '🦄', exampleSentence: 'U is for magical rainbow Unicorn' },
+    ],
+  },
+  {
+    letter: 'V',
+    lower: 'v',
+    word: 'Van',
+    tamilWord: 'வாகனம் (Vaaganam)',
+    emoji: '🚐',
+    phonetic: 'Vvv',
+    exampleSentence: 'V is for family adventure Van',
+    color: 'from-blue-600 to-indigo-700',
+    variants: [
+      { word: 'Van', tamilWord: 'வாகனம் (Vaaganam)', emoji: '🚐', exampleSentence: 'V is for family adventure Van' },
+      { word: 'Violin', tamilWord: 'வயலின் (Violin)', emoji: '🎻', exampleSentence: 'V is for sweet acoustic Violin' },
+      { word: 'Volcano', tamilWord: 'எரிமலை (Erimalai)', emoji: '🌋', exampleSentence: 'V is for mighty tall Volcano' },
+    ],
+  },
+  {
+    letter: 'W',
+    lower: 'w',
+    word: 'Watermelon',
+    tamilWord: 'தர்பூசணி (Dharpoosani)',
+    emoji: '🍉',
+    phonetic: 'Wuh',
+    exampleSentence: 'W is for sweet red Watermelon',
+    color: 'from-rose-500 to-emerald-600',
+    variants: [
+      { word: 'Watermelon', tamilWord: 'தர்பூசணி (Dharpoosani)', emoji: '🍉', exampleSentence: 'W is for sweet red Watermelon' },
+      { word: 'Watch', tamilWord: 'கடிகாரம் (Kadigaram)', emoji: '⌚', exampleSentence: 'W is for ticking wrist Watch' },
+      { word: 'Whale', tamilWord: 'திமிங்கலம் (Thimingalam)', emoji: '🐳', exampleSentence: 'W is for giant swimming ocean Whale' },
+    ],
+  },
+  {
+    letter: 'X',
+    lower: 'x',
+    word: 'Xylophone',
+    tamilWord: 'சைலோஃபோன் (Xylophone)',
+    emoji: '🎵',
+    phonetic: 'Ks',
+    exampleSentence: 'X is for musical Xylophone',
+    color: 'from-pink-500 to-purple-600',
+    variants: [
+      { word: 'Xylophone', tamilWord: 'சைலோஃபோன் (Xylophone)', emoji: '🎵', exampleSentence: 'X is for musical Xylophone' },
+      { word: 'X-ray', tamilWord: 'எக்ஸ்ரே (X-ray)', emoji: '🩻', exampleSentence: 'X is for doctor hospital X-ray' },
+    ],
+  },
+  {
+    letter: 'Y',
+    lower: 'y',
+    word: 'Yak',
+    tamilWord: 'யாக் (Yak)',
+    emoji: '🐂',
+    phonetic: 'Yuh',
+    exampleSentence: 'Y is for furry mountain Yak',
+    color: 'from-amber-700 to-orange-800',
+    variants: [
+      { word: 'Yak', tamilWord: 'யாக் (Yak)', emoji: '🐂', exampleSentence: 'Y is for furry mountain Yak' },
+      { word: 'Yo-yo', tamilWord: 'யோ-யோ (Yo-yo)', emoji: '🪀', exampleSentence: 'Y is for spinning trick Yo-yo' },
+      { word: 'Yacht', tamilWord: 'படகு (Yacht)', emoji: '⛵', exampleSentence: 'Y is for sailing luxury Yacht' },
+    ],
+  },
+  {
+    letter: 'Z',
+    lower: 'z',
+    word: 'Zebra',
+    tamilWord: 'வரிக்குதிரை (Varikkuthirai)',
+    emoji: '🦓',
+    phonetic: 'Zzz',
+    exampleSentence: 'Z is for black & white Zebra',
+    color: 'from-slate-700 to-slate-900',
+    variants: [
+      { word: 'Zebra', tamilWord: 'வரிக்குதிரை (Varikkuthirai)', emoji: '🦓', exampleSentence: 'Z is for black & white Zebra' },
+      { word: 'Zero', tamilWord: 'பூஜ்ஜியம் (Poojjiyam)', emoji: '0️⃣', exampleSentence: 'Z is for round number Zero' },
+      { word: 'Zoo', tamilWord: 'மிருகக்காட்சிசாலை (Zoo)', emoji: '🦒', exampleSentence: 'Z is for exciting safari Zoo' },
+    ],
+  },
 ];
 
 export const TAMIL_VOWEL_DATA: TamilLetterItem[] = [
@@ -179,6 +553,7 @@ export function AlphabetNumberHub() {
   const [showStrokeOrder, setShowStrokeOrder] = useState(true);
   const [musicalPenEnabled, setMusicalPenEnabled] = useState(true);
   const [celebrationMessage, setCelebrationMessage] = useState<string | null>(null);
+  const [letterVariantMap, setLetterVariantMap] = useState<Record<string, number>>({});
 
   // Auto Completion & Accuracy Coverage
   const [tracingProgress, setTracingProgress] = useState(0);
@@ -413,10 +788,50 @@ export function AlphabetNumberHub() {
     handleSelectNumber(NUMBER_DATA[nextIdx]);
   };
 
+  const getActiveLetterVariant = useCallback(
+    (item: LetterItem): WordVariant => {
+      if (!item.variants || item.variants.length === 0) {
+        return {
+          word: item.word,
+          tamilWord: item.tamilWord,
+          emoji: item.emoji,
+          exampleSentence: item.exampleSentence,
+        };
+      }
+      const idx = letterVariantMap[item.letter] || 0;
+      return item.variants[idx % item.variants.length];
+    },
+    [letterVariantMap]
+  );
+
+  const cycleLetterVariant = useCallback(
+    (letter: string) => {
+      const item = ALPHABET_DATA.find((l) => l.letter === letter);
+      if (!item || !item.variants || item.variants.length <= 1) return;
+
+      setLetterVariantMap((prev) => {
+        const current = prev[letter] || 0;
+        const next = (current + 1) % item.variants.length;
+        const variant = item.variants[next];
+        soundEngine.playPop();
+        speakText(`${variant.word}! ${variant.tamilWord}. ${variant.exampleSentence}`);
+        return { ...prev, [letter]: next };
+      });
+    },
+    [speakText]
+  );
+
   const handleSelectLetter = (item: LetterItem) => {
+    let activeWord = item.word;
+    if (item.variants && item.variants.length > 1) {
+      const current = letterVariantMap[item.letter] || 0;
+      const nextIdx = (current + 1) % item.variants.length;
+      setLetterVariantMap((prev) => ({ ...prev, [item.letter]: nextIdx }));
+      activeWord = item.variants[nextIdx].word;
+    }
     setSelectedLetter(item);
     soundEngine.playPop();
-    speakText(`${item.letter}. ${item.word}.`);
+    speakText(`${item.letter}. ${activeWord}.`);
     clearCanvas();
   };
 
@@ -526,16 +941,28 @@ export function AlphabetNumberHub() {
     let nextEmoji = '';
     let nextItem: LetterItem | TamilLetterItem | NumberItem;
 
+    // Diverse energetic praise lines so child stays excited
+    const praisePhrases = [
+      (w: string) => `Superstar! Fantastic tracing of ${w}! High five!`,
+      (w: string) => `Hooray! Look at that beautiful handwriting for ${w}! Outstanding!`,
+      (w: string) => `Woohoo! You are a handwriting champion! Mastered ${w}!`,
+      (w: string) => `Brilliant work! What a wonderful artist! Zooming to the next mission!`,
+      (w: string) => `You nailed it! Stellar tracing of ${w}! You earned 5 Gold Stars!`,
+    ];
+    const praise = praisePhrases[Math.floor(Math.random() * praisePhrases.length)];
+
     if (activeTab === 'alphabets') {
-      currentTitle = selectedLetter.word;
-      currentEmoji = selectedLetter.emoji;
+      const currentVariant = getActiveLetterVariant(selectedLetter);
+      currentTitle = currentVariant.word;
+      currentEmoji = currentVariant.emoji;
       const nextIdx = (currentIndexLetter + 1) % ALPHABET_DATA.length;
       const next = ALPHABET_DATA[nextIdx];
+      const nextVariant = getActiveLetterVariant(next);
       nextId = next.letter;
-      nextTitle = next.word;
-      nextEmoji = next.emoji;
+      nextTitle = nextVariant.word;
+      nextEmoji = nextVariant.emoji;
       nextItem = next;
-      speakText(`Superstar! Letter ${selectedLetter.letter} for ${selectedLetter.word} mastered! Zooming to letter ${next.letter} for ${next.word}!`);
+      speakText(`${praise(currentTitle)} Flying to Letter ${next.letter} for ${nextTitle}!`);
     } else if (activeTab === 'tamil') {
       currentTitle = selectedTamil.word;
       currentEmoji = selectedTamil.emoji;
@@ -545,7 +972,7 @@ export function AlphabetNumberHub() {
       nextTitle = next.word;
       nextEmoji = next.emoji;
       nextItem = next;
-      speakText(`அற்புதம்! ${selectedTamil.letter} ${selectedTamil.word} முடிந்தது! அடுத்து ${next.letter} ${next.word}!`);
+      speakText(`அற்புதம்! ${selectedTamil.letter} (${selectedTamil.word}) முடிந்தது! அடுத்து ${next.letter} (${next.word})!`);
     } else {
       currentTitle = selectedNumber.word;
       currentEmoji = selectedNumber.emoji;
@@ -581,6 +1008,7 @@ export function AlphabetNumberHub() {
     currentIndexLetter,
     currentIndexTamil,
     currentIndexNumber,
+    getActiveLetterVariant,
     addStars,
     recordMastery,
   ]);
@@ -771,7 +1199,7 @@ export function AlphabetNumberHub() {
       if (letterTraceMode === 'upper') return selectedLetter.letter;
       if (letterTraceMode === 'lower') return selectedLetter.lower;
       if (letterTraceMode === 'both') return `${selectedLetter.letter} ${selectedLetter.lower}`;
-      if (letterTraceMode === 'word') return selectedLetter.word;
+      if (letterTraceMode === 'word') return getActiveLetterVariant(selectedLetter).word;
       return '';
     } else if (activeTab === 'tamil') {
       return selectedTamil.letter;
@@ -1624,37 +2052,64 @@ export function AlphabetNumberHub() {
 
             {/* Letter Showcase Card (Right 5 cols) */}
             <div className="lg:col-span-5 space-y-4">
-              <div className={`bg-gradient-to-br ${selectedLetter.color} rounded-3xl p-6 text-white shadow-soft space-y-4`}>
-                <div className="flex items-center justify-between">
-                  <span className="text-[10px] font-black uppercase tracking-wider bg-white/20 px-3 py-1 rounded-full">
-                    Phonics Sound: "{selectedLetter.phonetic}"
-                  </span>
-                  <button
-                    type="button"
-                    onClick={() => speakText(`${selectedLetter.letter}. ${selectedLetter.word}. ${selectedLetter.exampleSentence}`)}
-                    className="btn-press p-2 rounded-xl bg-white/20 hover:bg-white/30 text-white cursor-pointer transition-colors"
-                    title="Speak out loud"
-                  >
-                    <Volume2 className="h-4 w-4" />
-                  </button>
-                </div>
+              {(() => {
+                const activeVariant = getActiveLetterVariant(selectedLetter);
+                return (
+                  <div className={`bg-gradient-to-br ${selectedLetter.color} rounded-3xl p-6 text-white shadow-soft space-y-4`}>
+                    <div className="flex items-center justify-between flex-wrap gap-2">
+                      <span className="text-[10px] font-black uppercase tracking-wider bg-white/20 px-3 py-1 rounded-full">
+                        Phonics Sound: "{selectedLetter.phonetic}"
+                      </span>
 
-                <div className="flex items-center justify-between gap-4">
-                  <div className="space-y-1">
-                    <div className="text-5xl sm:text-6xl font-black font-display tracking-tight text-white flex items-baseline gap-3">
-                      <span>{selectedLetter.letter}</span>
-                      <span className="text-3xl font-bold opacity-80">{selectedLetter.lower}</span>
+                      <div className="flex items-center gap-1.5">
+                        {/* Change Word / Variant Shuffle Button */}
+                        {selectedLetter.variants && selectedLetter.variants.length > 1 && (
+                          <button
+                            type="button"
+                            onClick={() => cycleLetterVariant(selectedLetter.letter)}
+                            className="btn-press px-2.5 py-1 rounded-xl bg-white/25 hover:bg-white/35 text-white font-black text-[11px] flex items-center gap-1 cursor-pointer transition-colors shadow-xs"
+                            title="Discover another word for this letter"
+                          >
+                            <Shuffle className="h-3.5 w-3.5" />
+                            <span>Change Word 🎲</span>
+                          </button>
+                        )}
+
+                        <button
+                          type="button"
+                          onClick={() =>
+                            speakText(
+                              `${selectedLetter.letter}. ${activeVariant.word}. ${activeVariant.tamilWord}. ${activeVariant.exampleSentence}`
+                            )
+                          }
+                          className="btn-press p-2 rounded-xl bg-white/20 hover:bg-white/30 text-white cursor-pointer transition-colors"
+                          title="Speak out loud"
+                        >
+                          <Volume2 className="h-4 w-4" />
+                        </button>
+                      </div>
                     </div>
-                    <div className="text-xl font-black font-display">{selectedLetter.word}</div>
-                    <div className="text-xs text-white/90 font-bold">{selectedLetter.tamilWord}</div>
-                  </div>
-                  <div className="text-6xl animate-bounce-soft">{selectedLetter.emoji}</div>
-                </div>
 
-                <div className="bg-black/20 rounded-2xl p-3 text-xs font-medium text-white/95">
-                  💬 <em>"{selectedLetter.exampleSentence}"</em>
-                </div>
-              </div>
+                    <div className="flex items-center justify-between gap-4">
+                      <div className="space-y-1">
+                        <div className="text-5xl sm:text-6xl font-black font-display tracking-tight text-white flex items-baseline gap-3">
+                          <span>{selectedLetter.letter}</span>
+                          <span className="text-3xl font-bold opacity-80">{selectedLetter.lower}</span>
+                        </div>
+                        <div className="text-2xl font-black font-display flex items-center gap-2">
+                          <span>{activeVariant.word}</span>
+                        </div>
+                        <div className="text-xs text-white/90 font-bold">{activeVariant.tamilWord}</div>
+                      </div>
+                      <div className="text-6xl animate-bounce-soft">{activeVariant.emoji}</div>
+                    </div>
+
+                    <div className="bg-black/20 rounded-2xl p-3 text-xs font-medium text-white/95">
+                      💬 <em>"{activeVariant.exampleSentence}"</em>
+                    </div>
+                  </div>
+                );
+              })()}
 
               {/* Broad View Quick Promo Banner */}
               <div className="bg-gradient-to-r from-sky-50 to-indigo-50 border border-sky-200/80 rounded-3xl p-5 flex items-center justify-between gap-4">
