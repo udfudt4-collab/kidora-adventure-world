@@ -59,10 +59,10 @@ const WORKSHEET_TEMPLATES: WorksheetTemplate[] = [
     renderType: 'alphabet_grid',
     items: [
       { char: 'Ff', word: 'Fish', emoji: '🐠', dotted: 'F F F f f f' },
-      { char: 'Gg', word: 'Giraffe', emoji: '🦒', dotted: 'G G G g g g' },
+      { char: 'Gg', word: 'Grapes', emoji: '🍇', dotted: 'G G G g g g' },
       { char: 'Hh', word: 'Horse', emoji: '🐴', dotted: 'H H H h h h' },
-      { char: 'Ii', word: 'Ice Cream', emoji: '🍦', dotted: 'I I I i i i' },
-      { char: 'Jj', word: 'Jungle', emoji: '🌴', dotted: 'J J J j j j' },
+      { char: 'Ii', word: 'Igloo', emoji: '🧊', dotted: 'I I I i i i' },
+      { char: 'Jj', word: 'Juice', emoji: '🧃', dotted: 'J J J j j j' },
     ],
   },
   {
