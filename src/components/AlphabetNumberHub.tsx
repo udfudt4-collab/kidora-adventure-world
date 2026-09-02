@@ -248,7 +248,6 @@ export function AlphabetNumberHub() {
   const currentStrokeRef = useRef<StrokePath | null>(null);
   const [strokeCount, setStrokeCount] = useState(0);
   const pointCounterRef = useRef(0);
-  const autoFinishTimerRef = useRef<NodeJS.Timeout | null>(null);
 
   // Quiz State
   const [quizQuestion, setQuizQuestion] = useState<{
@@ -453,7 +452,6 @@ export function AlphabetNumberHub() {
   // Drawing Handlers with Musical Crayon & Smart Auto Coverage Detection
   const startDrawing = (e: React.MouseEvent<HTMLCanvasElement> | React.TouchEvent<HTMLCanvasElement>) => {
     e.preventDefault();
-    if (autoFinishTimerRef.current) clearTimeout(autoFinishTimerRef.current);
     const canvas = canvasRef.current;
     if (!canvas) return;
     const coords = getCanvasCoords(e);
@@ -515,7 +513,6 @@ export function AlphabetNumberHub() {
   };
 
   const handleCelebrate = useCallback((isAuto = false) => {
-    if (autoFinishTimerRef.current) clearTimeout(autoFinishTimerRef.current);
     const charId = getCurrentCharacterId();
     addStars(5);
     soundEngine.playCelebration();
@@ -588,52 +585,12 @@ export function AlphabetNumberHub() {
     recordMastery,
   ]);
 
-  // Intelligent stroke analysis: detect when the child has completed tracing the character shape
-  const checkAutoCompletion = useCallback(() => {
-    if (hasAutoCelebratedRef.current) return;
-    if (autoAdvanceData.isOpen) return;
-
-    const allPoints = strokesRef.current.flatMap((s) => s.points);
-    if (allPoints.length < 20) return;
-
-    let minX = Infinity;
-    let maxX = -Infinity;
-    let minY = Infinity;
-    let maxY = -Infinity;
-
-    for (const p of allPoints) {
-      if (p.x < minX) minX = p.x;
-      if (p.x > maxX) maxX = p.x;
-      if (p.y < minY) minY = p.y;
-      if (p.y > maxY) maxY = p.y;
-    }
-
-    const verticalSpan = maxY - minY;
-    const horizontalSpan = maxX - minX;
-    const totalPoints = allPoints.length;
-
-    // Completed if child drew a substantial shape across the canvas area (>= 50px height or >= 35 total points)
-    const isCompleted = (verticalSpan >= 45 && horizontalSpan >= 20 && totalPoints >= 20) || totalPoints >= 35;
-
-    if (isCompleted) {
-      if (autoFinishTimerRef.current) clearTimeout(autoFinishTimerRef.current);
-      autoFinishTimerRef.current = setTimeout(() => {
-        if (!hasAutoCelebratedRef.current) {
-          hasAutoCelebratedRef.current = true;
-          handleCelebrate(true);
-        }
-      }, 500);
-    }
-  }, [autoAdvanceData.isOpen, handleCelebrate]);
-
   const stopDrawing = () => {
     setIsDrawing(false);
     currentStrokeRef.current = null;
-    checkAutoCompletion();
   };
 
   const clearCanvas = () => {
-    if (autoFinishTimerRef.current) clearTimeout(autoFinishTimerRef.current);
     strokesRef.current = [];
     currentStrokeRef.current = null;
     setStrokeCount(0);
