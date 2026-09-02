@@ -664,27 +664,19 @@ export function AppProvider({ children: reactChildren }: { children: ReactNode }
         const mlPerGlass = parsed.mlPerGlass || 250;
         const targetMl = parsed.targetMl || (parsed.targetGlasses ? parsed.targetGlasses * mlPerGlass : 1750);
         const targetGlasses = Math.max(1, Math.round(targetMl / mlPerGlass));
-        
-        let dailyIntakeMlByChild: Record<string, number> = { ...(parsed.dailyIntakeMlByChild || {}) };
-        let dailyIntakeByChild: Record<string, number> = { ...(parsed.dailyIntakeByChild || {}) };
         const historyLogs = Array.isArray(parsed.historyLogs) ? parsed.historyLogs : [];
 
-        // Daily Midnight Rollover: If stored date is prior to today, start fresh for today at 0 ML!
-        if (lastDate && lastDate !== todayStr) {
-          dailyIntakeMlByChild = {};
-          dailyIntakeByChild = {};
-        }
+        let dailyIntakeMlByChild: Record<string, number> = {};
+        let dailyIntakeByChild: Record<string, number> = {};
 
-        Object.keys(dailyIntakeByChild).forEach((cId) => {
-          if (dailyIntakeMlByChild[cId] === undefined) {
-            dailyIntakeMlByChild[cId] = Math.round(dailyIntakeByChild[cId] * mlPerGlass);
-          }
-        });
-        Object.keys(dailyIntakeMlByChild).forEach((cId) => {
-          if (dailyIntakeByChild[cId] === undefined) {
-            dailyIntakeByChild[cId] = Math.round((dailyIntakeMlByChild[cId] / mlPerGlass) * 10) / 10;
-          }
-        });
+        // Only populate today's intake if an explicit log was made TODAY
+        const todayLogs = historyLogs.filter((l) => l.date === todayStr);
+        if (lastDate === todayStr && todayLogs.length > 0) {
+          todayLogs.forEach((l) => {
+            dailyIntakeMlByChild[l.childId] = l.mlDrank;
+            dailyIntakeByChild[l.childId] = l.glassesDrank;
+          });
+        }
 
         const refreshedData: HydrationData = {
           ...parsed,

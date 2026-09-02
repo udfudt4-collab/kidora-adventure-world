@@ -658,14 +658,18 @@ export function ParentDashboard({ onNavigate }: ParentDashboardProps) {
                 </div>
                 {(() => {
                   const todayStr = new Date().toISOString().split('T')[0];
-                  const isNewDay = hydrationData.lastLoggedDate && hydrationData.lastLoggedDate !== todayStr;
                   const mlPerGlass = hydrationData.mlPerGlass || 250;
                   const targetMl = hydrationData.targetMl || (hydrationData.targetGlasses || 7) * mlPerGlass;
-                  const currentMl = isNewDay
-                    ? 0
-                    : hydrationData.dailyIntakeMlByChild && hydrationData.dailyIntakeMlByChild[activeChildId] !== undefined
+                  const todayLog = hydrationData.historyLogs.find(
+                    (l) => l.childId === activeChildId && l.date === todayStr
+                  );
+                  const currentMl = todayLog
+                    ? todayLog.mlDrank
+                    : hydrationData.lastLoggedDate === todayStr &&
+                      hydrationData.dailyIntakeMlByChild &&
+                      hydrationData.dailyIntakeMlByChild[activeChildId] !== undefined
                     ? hydrationData.dailyIntakeMlByChild[activeChildId]
-                    : (hydrationData.dailyIntakeByChild[activeChildId] || 0) * mlPerGlass;
+                    : 0;
                   const pct = Math.min(100, Math.round((currentMl / (targetMl || 1)) * 100));
                   const glasses = Math.round((currentMl / mlPerGlass) * 10) / 10;
                   return (

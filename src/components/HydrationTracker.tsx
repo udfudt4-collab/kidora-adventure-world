@@ -83,13 +83,24 @@ export function HydrationTracker() {
     }
   }, [hydrationData.lastLoggedDate, selectedChildId, resetTodayWaterIntake]);
 
-  // Compute today's current intake (0 if a new day has rolled over)
-  const isRolloverNewDay = hydrationData.lastLoggedDate && hydrationData.lastLoggedDate !== todayStr;
-  const currentMl = isRolloverNewDay
-    ? 0
-    : hydrationData.dailyIntakeMlByChild && hydrationData.dailyIntakeMlByChild[selectedChildId] !== undefined
-    ? hydrationData.dailyIntakeMlByChild[selectedChildId]
-    : (hydrationData.dailyIntakeByChild[selectedChildId] || 0) * mlPerGlass;
+  // Compute today's current intake (Strictly 0 ml unless explicitly logged today!)
+  const currentMl = useMemo(() => {
+    const today = new Date().toISOString().split('T')[0];
+    const todayLog = hydrationData.historyLogs.find(
+      (l) => l.childId === selectedChildId && l.date === today
+    );
+    if (todayLog) {
+      return todayLog.mlDrank;
+    }
+    if (
+      hydrationData.lastLoggedDate === today &&
+      hydrationData.dailyIntakeMlByChild &&
+      hydrationData.dailyIntakeMlByChild[selectedChildId] !== undefined
+    ) {
+      return hydrationData.dailyIntakeMlByChild[selectedChildId];
+    }
+    return 0;
+  }, [hydrationData, selectedChildId]);
 
   const currentGlasses = Math.round((currentMl / mlPerGlass) * 10) / 10;
   const percentComplete = Math.min(100, Math.round((currentMl / (targetMl || 1)) * 100));

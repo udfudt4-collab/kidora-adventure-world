@@ -18,15 +18,6 @@ let lastBackPressTime = 0;
 export function registerModalBackHandler(handler: ModalCloseHandler): () => void {
   modalBackStack.push(handler);
 
-  // Push a state into browser history so browser back triggers popstate instead of exiting
-  if (typeof window !== 'undefined' && window.history) {
-    try {
-      window.history.pushState({ isModal: true, depth: modalBackStack.length }, '', window.location.href);
-    } catch (e) {
-      // ignore
-    }
-  }
-
   return () => {
     const idx = modalBackStack.indexOf(handler);
     if (idx !== -1) {
@@ -55,8 +46,10 @@ export function handleGlobalBack(): boolean {
     const topHandler = modalBackStack.pop();
     if (topHandler) {
       try {
-        topHandler();
-        return true;
+        const result = topHandler();
+        if (result !== false) {
+          return true;
+        }
       } catch (err) {
         console.error('Error closing modal on back:', err);
       }
@@ -72,20 +65,15 @@ export function handleGlobalBack(): boolean {
     }
   }
 
-  // 3. Already on home
+  // 3. Already on home -> handle double-tap to exit on Android
   const now = Date.now();
   if (now - lastBackPressTime < 2000) {
-    // Double tap back within 2s on Home -> allow exit if native
     if (Capacitor.isNativePlatform()) {
       CapApp.exitApp();
     }
     return false;
   } else {
     lastBackPressTime = now;
-    // Push home state back to keep web user inside app
-    if (typeof window !== 'undefined' && window.history) {
-      window.history.pushState({ screen: 'home' }, '', '#home');
-    }
     return true;
   }
 }
@@ -99,7 +87,7 @@ export function initBackButtonSupport() {
   // Ensure initial history state is primed
   if (window.history && !window.history.state) {
     const initialScreen = (window.location.hash.replace('#', '') as Screen) || 'home';
-    window.history.replaceState({ screen: initialScreen }, '', window.location.href);
+    window.history.replaceState({ screen: initialScreen }, '', `#${initialScreen}`);
   }
 
   // 1. Web Browser Popstate (Back / Forward buttons & Mobile swipe-back)
@@ -113,16 +101,24 @@ export function initBackButtonSupport() {
       }
     }
 
-    if (e.state && e.state.screen) {
-      if (screenNavigateHandler) {
-        screenNavigateHandler(e.state.screen);
+    const validScreens: Screen[] = [
+      'home', 'play', 'learn', 'adventure', 'challenges', 'world',
+      'collections', 'my-kidora', 'pets', 'create', 'parent', 'parents',
+      'parent-guide', 'about', 'safety', 'privacy', 'terms', 'contact', 'ideas'
+    ];
+
+    let targetScreen: Screen = 'home';
+    if (e.state && e.state.screen && validScreens.includes(e.state.screen)) {
+      targetScreen = e.state.screen;
+    } else if (window.location.hash) {
+      const parsed = window.location.hash.replace('#', '') as Screen;
+      if (validScreens.includes(parsed)) {
+        targetScreen = parsed;
       }
-    } else {
-      // Fallback: if no state, go to Home
-      const current = currentScreenGetter ? currentScreenGetter() : 'home';
-      if (current !== 'home' && screenNavigateHandler) {
-        screenNavigateHandler('home');
-      }
+    }
+
+    if (screenNavigateHandler) {
+      screenNavigateHandler(targetScreen);
     }
   };
 
@@ -130,11 +126,8 @@ export function initBackButtonSupport() {
 
   // 2. Capacitor Native Android Back Button
   if (Capacitor.isNativePlatform()) {
-    CapApp.addListener('backButton', ({ canGoBack }) => {
-      const handled = handleGlobalBack();
-      if (!handled && canGoBack) {
-        window.history.back();
-      }
+    CapApp.addListener('backButton', () => {
+      handleGlobalBack();
     });
   }
 
