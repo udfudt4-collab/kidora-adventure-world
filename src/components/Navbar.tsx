@@ -3,9 +3,9 @@ import { StarCounter } from './StatBadges';
 import { ParentSecurityGate } from './ParentSecurityGate';
 import { BackpackModal } from './BackpackModal';
 import { PassportModal } from './PassportModal';
-import { EarnPremiumModal } from './EarnPremiumModal';
 import { useApp } from '@/lib/store';
 import { Menu, X, Compass, Gamepad2, BookOpen, Heart, Home as HomeIcon, ChevronDown, Sparkles, Gift } from 'lucide-react';
+import { APP_VERSION } from '@/lib/version';
 import type { Screen } from '@/lib/types';
 
 interface NavbarProps {
@@ -68,7 +68,7 @@ export function Navbar({ currentScreen, onNavigate }: NavbarProps) {
             </div>
             <div className="text-left">
               <span className="text-lg sm:text-xl font-black font-display tracking-tight text-slate-800 flex items-center gap-1.5">
-                KIDORA <span className="text-amber-700 text-[10px] font-black tracking-wider bg-amber-100/90 px-1.5 py-0.5 rounded-md border border-amber-300">v1.9.0</span>
+                KIDORA <span className="text-amber-700 text-[10px] font-black tracking-wider bg-amber-100/90 px-1.5 py-0.5 rounded-md border border-amber-300">v{APP_VERSION}</span>
               </span>
               <p className="text-[10px] font-bold text-slate-400 leading-none hidden sm:block">
                 Learn • Play • Co-Create

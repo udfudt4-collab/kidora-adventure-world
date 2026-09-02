@@ -1,4 +1,5 @@
 import type { Screen } from '@/lib/types';
+import { APP_VERSION } from '@/lib/version';
 
 interface FooterProps {
   onNavigate: (screen: Screen) => void;
@@ -179,7 +180,7 @@ export function Footer({ onNavigate }: FooterProps) {
           <div className="flex items-center gap-2 flex-wrap">
             <span>© 2026 Kidora Adventure World. All rights reserved.</span>
             <span className="px-2 py-0.5 rounded-md bg-slate-800 text-amber-400 font-mono text-[10px] font-bold border border-slate-700">
-              v1.9.0
+              v{APP_VERSION}
             </span>
           </div>
           <div className="flex items-center gap-4 text-[11px]">

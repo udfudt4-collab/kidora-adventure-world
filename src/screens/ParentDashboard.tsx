@@ -1,5 +1,6 @@
 import { useState, useMemo, useEffect } from 'react';
 import { useApp } from '@/lib/store';
+import { APP_VERSION } from '@/lib/version';
 import { registerModalBackHandler } from '@/lib/navigation';
 import { PeriodTracker } from '@/components/PeriodTracker';
 import { EarnPremiumModal } from '@/components/EarnPremiumModal';
@@ -367,7 +368,7 @@ export function ParentDashboard({ onNavigate }: ParentDashboardProps) {
                   <span>{greeting.title}</span>
                 </h1>
                 <span className="px-2 py-0.5 rounded-md bg-slate-800 text-amber-400 font-mono text-[10px] font-black border border-slate-700">
-                  v1.9.0
+                  v{APP_VERSION}
                 </span>
                 <button
                   type="button"
