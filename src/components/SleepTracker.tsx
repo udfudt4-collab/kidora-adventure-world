@@ -65,11 +65,15 @@ export function SleepTracker() {
     }
   }, [bedtime, wakeTime]);
 
-  const activeChild = familyChildren.find((c) => c.id === selectedChildId) || familyChildren[0];
+  const activeChild = (familyChildren && familyChildren.length > 0)
+    ? familyChildren.find((c) => c.id === selectedChildId) || familyChildren[0]
+    : { id: 'child-1', name: 'Child', age: 6, avatar: {}, stars: 0, totalAdventures: 0 };
+
+  const safeSleepLogs = Array.isArray(sleepLogs) ? sleepLogs : [];
 
   const childSleepLogs = useMemo(() => {
-    return sleepLogs.filter((l) => l.childId === selectedChildId);
-  }, [sleepLogs, selectedChildId]);
+    return safeSleepLogs.filter((l) => l.childId === selectedChildId);
+  }, [safeSleepLogs, selectedChildId]);
 
   const latestLog = childSleepLogs[0];
 
@@ -80,7 +84,7 @@ export function SleepTracker() {
 
   const averageHours = useMemo(() => {
     if (past7DaysLogs.length === 0) return 10.0;
-    const total = past7DaysLogs.reduce((acc, curr) => acc + curr.durationHours, 0);
+    const total = past7DaysLogs.reduce((acc, curr) => acc + (curr.durationHours || 0), 0);
     return (total / past7DaysLogs.length).toFixed(1);
   }, [past7DaysLogs]);
 

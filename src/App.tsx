@@ -2,6 +2,7 @@ import { useState, useEffect, useRef } from 'react';
 import { AppProvider, useApp } from '@/lib/store';
 import { setupNavigationHandlers, initBackButtonSupport } from '@/lib/navigation';
 import { soundEngine } from '@/lib/soundEngine';
+import { ErrorBoundary } from '@/components/ErrorBoundary';
 import { Onboarding } from '@/screens/Onboarding';
 import { Home } from '@/screens/Home';
 import { Adventure } from '@/screens/Adventure';
@@ -146,9 +147,11 @@ function AppContent() {
 
 function App() {
   return (
-    <AppProvider>
-      <AppContent />
-    </AppProvider>
+    <ErrorBoundary fallbackTitle="Welcome back to Kidora!">
+      <AppProvider>
+        <AppContent />
+      </AppProvider>
+    </ErrorBoundary>
   );
 }
 

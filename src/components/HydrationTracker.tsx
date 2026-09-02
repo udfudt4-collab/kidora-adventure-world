@@ -69,38 +69,41 @@ export function HydrationTracker() {
     setTimeout(() => setSavedFeedback(null), 2000);
   };
 
-  const activeChild = familyChildren.find((c) => c.id === selectedChildId) || familyChildren[0];
+  const activeChild = (familyChildren && familyChildren.length > 0)
+    ? familyChildren.find((c) => c.id === selectedChildId) || familyChildren[0]
+    : { id: 'child-1', name: 'Child', age: 6, avatar: {}, stars: 0, totalAdventures: 0 };
 
-  const mlPerGlass = hydrationData.mlPerGlass || 250;
-  const targetMl = hydrationData.targetMl || (hydrationData.targetGlasses ? hydrationData.targetGlasses * mlPerGlass : 1750);
+  const mlPerGlass = hydrationData?.mlPerGlass || 250;
+  const targetMl = hydrationData?.targetMl || (hydrationData?.targetGlasses ? hydrationData.targetGlasses * mlPerGlass : 1750);
   const todayStr = new Date().toISOString().split('T')[0];
+  const historyLogs = Array.isArray(hydrationData?.historyLogs) ? hydrationData.historyLogs : [];
 
   // Auto-refresh today's hydration when calendar day changes
   useEffect(() => {
     const today = new Date().toISOString().split('T')[0];
-    if (hydrationData.lastLoggedDate && hydrationData.lastLoggedDate !== today) {
+    if (hydrationData?.lastLoggedDate && hydrationData.lastLoggedDate !== today) {
       resetTodayWaterIntake(selectedChildId);
     }
-  }, [hydrationData.lastLoggedDate, selectedChildId, resetTodayWaterIntake]);
+  }, [hydrationData?.lastLoggedDate, selectedChildId, resetTodayWaterIntake]);
 
   // Compute today's current intake (Strictly 0 ml unless explicitly logged today!)
   const currentMl = useMemo(() => {
     const today = new Date().toISOString().split('T')[0];
-    const todayLog = hydrationData.historyLogs.find(
+    const todayLog = historyLogs.find(
       (l) => l.childId === selectedChildId && l.date === today
     );
     if (todayLog) {
       return todayLog.mlDrank;
     }
     if (
-      hydrationData.lastLoggedDate === today &&
-      hydrationData.dailyIntakeMlByChild &&
+      hydrationData?.lastLoggedDate === today &&
+      hydrationData?.dailyIntakeMlByChild &&
       hydrationData.dailyIntakeMlByChild[selectedChildId] !== undefined
     ) {
       return hydrationData.dailyIntakeMlByChild[selectedChildId];
     }
     return 0;
-  }, [hydrationData, selectedChildId]);
+  }, [hydrationData, historyLogs, selectedChildId]);
 
   const currentGlasses = Math.round((currentMl / mlPerGlass) * 10) / 10;
   const percentComplete = Math.min(100, Math.round((currentMl / (targetMl || 1)) * 100));
@@ -118,10 +121,10 @@ export function HydrationTracker() {
 
   // Past 7 days history for active child
   const past7DaysLogs = useMemo(() => {
-    return hydrationData.historyLogs
+    return historyLogs
       .filter((l) => l.childId === selectedChildId)
       .slice(0, 7);
-  }, [hydrationData.historyLogs, selectedChildId]);
+  }, [historyLogs, selectedChildId]);
 
   const handleAddMl = (mlToAdd: number, isGlassLog: boolean = false) => {
     if (mlToAdd <= 0) return;

@@ -7,6 +7,7 @@ import { EarnPremiumModal } from '@/components/EarnPremiumModal';
 import { ParentFeedbackReviews } from '@/components/ParentFeedbackReviews';
 import { SleepTracker } from '@/components/SleepTracker';
 import { HydrationTracker } from '@/components/HydrationTracker';
+import { ErrorBoundary } from '@/components/ErrorBoundary';
 import { getParentGreeting, parentAffirmations } from '@/lib/greetings';
 import { defaultAvatar, skinTones, hairColors } from '@/lib/avatar';
 import {
@@ -1957,17 +1958,29 @@ export function ParentDashboard({ onNavigate }: ParentDashboardProps) {
         {/* ======================================================== */}
         {/* HUB: SLEEP MEASURE */}
         {/* ======================================================== */}
-        {activeHub === 'sleep' && <SleepTracker />}
+        {activeHub === 'sleep' && (
+          <ErrorBoundary fallbackTitle="Sleep Tracker">
+            <SleepTracker />
+          </ErrorBoundary>
+        )}
 
         {/* ======================================================== */}
         {/* HUB: HYDRATION MEASURE */}
         {/* ======================================================== */}
-        {activeHub === 'hydration' && <HydrationTracker />}
+        {activeHub === 'hydration' && (
+          <ErrorBoundary fallbackTitle="Hydration Tracker">
+            <HydrationTracker />
+          </ErrorBoundary>
+        )}
 
         {/* ======================================================== */}
         {/* HUB: FEEDBACK & REVIEWS */}
         {/* ======================================================== */}
-        {activeHub === 'reviews' && <ParentFeedbackReviews />}
+        {activeHub === 'reviews' && (
+          <ErrorBoundary fallbackTitle="Parent Feedback & Reviews">
+            <ParentFeedbackReviews />
+          </ErrorBoundary>
+        )}
       </main>
 
       {/* ======================================================== */}

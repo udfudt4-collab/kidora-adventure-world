@@ -53,14 +53,16 @@ export function ParentFeedbackReviews() {
     setTimeout(() => setSubmittedMessage(false), 5000);
   };
 
+  const safeReviews = Array.isArray(parentReviews) ? parentReviews : [];
+
   const filteredReviews =
     selectedFilter === 'all'
-      ? parentReviews
-      : parentReviews.filter((r) => r.category === selectedFilter);
+      ? safeReviews
+      : safeReviews.filter((r) => r.category === selectedFilter);
 
   const averageRating =
-    parentReviews.length > 0
-      ? (parentReviews.reduce((sum, r) => sum + r.rating, 0) / parentReviews.length).toFixed(1)
+    safeReviews.length > 0
+      ? (safeReviews.reduce((sum, r) => sum + (r.rating || 5), 0) / safeReviews.length).toFixed(1)
       : '5.0';
 
   return (
