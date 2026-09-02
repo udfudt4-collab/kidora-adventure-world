@@ -1,5 +1,6 @@
 import type { DailyMystery } from './types';
 import { getBackpackItemById } from './backpack';
+import { shuffle } from './content';
 
 export const dailyMysteriesPool: DailyMystery[] = [
   {
@@ -121,5 +122,13 @@ export const dailyMysteriesPool: DailyMystery[] = [
 export function getTodayMystery(): DailyMystery {
   const dayOfYear = Math.floor((Date.now() - new Date(new Date().getFullYear(), 0, 0).getTime()) / 1000 / 60 / 60 / 24);
   const index = Math.abs(dayOfYear) % dailyMysteriesPool.length;
-  return dailyMysteriesPool[index] || dailyMysteriesPool[0];
+  const mystery = dailyMysteriesPool[index] || dailyMysteriesPool[0];
+
+  return {
+    ...mystery,
+    clues: mystery.clues.map((c) => ({
+      ...c,
+      options: shuffle(c.options),
+    })),
+  };
 }

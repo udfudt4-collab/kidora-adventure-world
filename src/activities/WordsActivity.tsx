@@ -1,5 +1,5 @@
-import { useState } from 'react';
-import { generateWordProblems, getDifficultyLevel, type WordProblem } from '@/lib/content';
+import { useState, useMemo } from 'react';
+import { generateWordProblems, getDifficultyLevel, shuffle, type WordProblem } from '@/lib/content';
 import { useVoice } from '@/lib/useVoice';
 import { Sparkles, Volume2, Award, Star, CheckCircle2 } from 'lucide-react';
 
@@ -21,6 +21,11 @@ export function WordsActivity({ age, onComplete }: Props) {
 
   const problem = problems[idx];
   if (!problem) return null;
+
+  // Ensure options are always shuffled uniquely per problem
+  const currentOptions = useMemo(() => {
+    return shuffle(problem.options);
+  }, [problem]);
 
   const handleSpeak = () => {
     speak(`${problem.word}. ${problem.hint}`, true);
@@ -57,8 +62,17 @@ export function WordsActivity({ age, onComplete }: Props) {
     genius: { label: `🧠 ${problem.word.length}-Letter Science Word`, color: 'bg-amber-100 text-amber-900' },
   }[problem.difficultyTier];
 
+  // Tile dimensions adjusted by word length to fit all mobile screens on one line
+  const letterLength = problem.word.length;
+  const tileClass =
+    letterLength >= 9
+      ? 'w-7 h-10 sm:w-10 sm:h-12 text-lg sm:text-2xl rounded-xl'
+      : letterLength >= 7
+      ? 'w-8 h-11 sm:w-11 sm:h-13 text-xl sm:text-3xl rounded-xl'
+      : 'w-10 h-12 sm:w-12 sm:h-14 text-2xl sm:text-3xl rounded-2xl';
+
   return (
-    <div className="bg-white rounded-4xl p-6 sm:p-7 shadow-pop border border-slate-100 space-y-6">
+    <div className="bg-white rounded-4xl p-5 sm:p-7 shadow-pop border border-slate-100 space-y-6">
       {/* Top Header */}
       <div className="flex items-center justify-between">
         <span className={`text-[10px] font-black uppercase tracking-wider px-3 py-1 rounded-full ${tierBadge.color}`}>
@@ -87,13 +101,13 @@ export function WordsActivity({ age, onComplete }: Props) {
         </div>
 
         {/* Word Tiles with Missing Slot */}
-        <div className="flex items-center justify-center gap-1.5 sm:gap-2 pt-2 flex-wrap">
+        <div className="flex items-center justify-center gap-1 sm:gap-2 pt-2 overflow-x-auto no-scrollbar pb-1">
           {problem.word.split('').map((letter, letterIdx) => {
             const isMissingSlot = letterIdx === problem.missingIndex;
             return (
               <div
                 key={letterIdx}
-                className={`w-10 h-12 sm:w-12 sm:h-14 rounded-2xl flex items-center justify-center font-display font-black text-2xl sm:text-3xl transition-all shadow-xs ${
+                className={`${tileClass} shrink-0 flex items-center justify-center font-display font-black transition-all shadow-xs ${
                   isMissingSlot
                     ? showFeedback
                       ? selected === problem.missingLetter
@@ -121,7 +135,7 @@ export function WordsActivity({ age, onComplete }: Props) {
         </p>
 
         <div className="grid grid-cols-4 gap-2.5 max-w-xs mx-auto">
-          {problem.options.map((opt) => {
+          {currentOptions.map((opt) => {
             const isCorrect = opt === problem.missingLetter;
             const isSelected = opt === selected;
             let btnStyle = 'bg-slate-50 hover:bg-sky-50 text-slate-700 border border-slate-200';

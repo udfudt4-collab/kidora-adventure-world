@@ -48,8 +48,13 @@ export interface StoryData {
   segments: StorySegment[];
 }
 
-function shuffle<T>(arr: T[]): T[] {
-  return [...arr].sort(() => Math.random() - 0.5);
+export function shuffle<T>(arr: T[]): T[] {
+  const result = [...arr];
+  for (let i = result.length - 1; i > 0; i--) {
+    const j = Math.floor(Math.random() * (i + 1));
+    [result[i], result[j]] = [result[j], result[i]];
+  }
+  return result;
 }
 
 function makeChoices(answer: number): number[] {
@@ -179,7 +184,12 @@ export function generateWordProblems(level = 1): WordProblem[] {
     pool = level4Words;
   }
 
-  return shuffle(pool).slice(0, 3);
+  return shuffle(pool)
+    .slice(0, 3)
+    .map((p) => ({
+      ...p,
+      options: shuffle(p.options),
+    }));
 }
 
 // 🧠 AGE-ADAPTIVE BRAIN PUZZLES DATABASE (Levels 1 to 4)
@@ -222,7 +232,13 @@ export function generateBrainPuzzles(level = 1): BrainPuzzle[] {
   else if (level === 3) pool = level3Puzzles;
   else pool = level4Puzzles;
 
-  return [shuffle(pool)[0]];
+  const picked = shuffle(pool)[0];
+  return [
+    {
+      ...picked,
+      options: shuffle(picked.options),
+    },
+  ];
 }
 
 export function generateScienceFacts(): ScienceFact[] {
@@ -252,7 +268,10 @@ export function generateScienceFacts(): ScienceFact[] {
       options: ['1 Second', 'About 8 Minutes ⏱️', '1 Full Day', '1 Year'],
     },
   ];
-  return facts;
+  return shuffle(facts).map((f) => ({
+    ...f,
+    options: shuffle(f.options),
+  }));
 }
 
 export function generateStory(theme?: Theme): StoryData {
