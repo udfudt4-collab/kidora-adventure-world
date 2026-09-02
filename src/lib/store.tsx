@@ -272,10 +272,10 @@ const initialDefaultHydration: HydrationData = {
   targetMl: 1750,
   targetGlasses: 7,
   mlPerGlass: 250,
-  dailyIntakeMlByChild: { 'child-1': 1250 },
-  dailyIntakeByChild: { 'child-1': 5 },
+  lastLoggedDate: new Date().toISOString().split('T')[0],
+  dailyIntakeMlByChild: { 'child-1': 0 },
+  dailyIntakeByChild: { 'child-1': 0 },
   historyLogs: [
-    { id: 'hl-1', childId: 'child-1', date: new Date().toISOString().split('T')[0], mlDrank: 1250, glassesDrank: 5, targetMl: 1750, targetGlasses: 7, mlPerGlass: 250, notes: 'Drank well throughout afternoon study.' },
     { id: 'hl-2', childId: 'child-1', date: new Date(Date.now() - 86400000).toISOString().split('T')[0], mlDrank: 1750, glassesDrank: 7, targetMl: 1750, targetGlasses: 7, mlPerGlass: 250, notes: 'Reached full daily goal!' },
     { id: 'hl-3', childId: 'child-1', date: new Date(Date.now() - 2 * 86400000).toISOString().split('T')[0], mlDrank: 1500, glassesDrank: 6, targetMl: 1750, targetGlasses: 7, mlPerGlass: 250, notes: 'Good hydration day.' },
     { id: 'hl-4', childId: 'child-1', date: new Date(Date.now() - 3 * 86400000).toISOString().split('T')[0], mlDrank: 2000, glassesDrank: 8, targetMl: 1750, targetGlasses: 7, mlPerGlass: 250, notes: 'Hot outdoor day, drank extra.' },
@@ -659,11 +659,21 @@ export function AppProvider({ children: reactChildren }: { children: ReactNode }
     if (localHydration) {
       try {
         const parsed = JSON.parse(localHydration);
+        const todayStr = new Date().toISOString().split('T')[0];
+        const lastDate = parsed.lastLoggedDate || parsed.lastActiveDate;
         const mlPerGlass = parsed.mlPerGlass || 250;
         const targetMl = parsed.targetMl || (parsed.targetGlasses ? parsed.targetGlasses * mlPerGlass : 1750);
         const targetGlasses = Math.max(1, Math.round(targetMl / mlPerGlass));
-        const dailyIntakeMlByChild: Record<string, number> = { ...(parsed.dailyIntakeMlByChild || {}) };
-        const dailyIntakeByChild: Record<string, number> = { ...(parsed.dailyIntakeByChild || {}) };
+        
+        let dailyIntakeMlByChild: Record<string, number> = { ...(parsed.dailyIntakeMlByChild || {}) };
+        let dailyIntakeByChild: Record<string, number> = { ...(parsed.dailyIntakeByChild || {}) };
+        const historyLogs = Array.isArray(parsed.historyLogs) ? parsed.historyLogs : [];
+
+        // Daily Midnight Rollover: If stored date is prior to today, start fresh for today at 0 ML!
+        if (lastDate && lastDate !== todayStr) {
+          dailyIntakeMlByChild = {};
+          dailyIntakeByChild = {};
+        }
 
         Object.keys(dailyIntakeByChild).forEach((cId) => {
           if (dailyIntakeMlByChild[cId] === undefined) {
@@ -676,14 +686,21 @@ export function AppProvider({ children: reactChildren }: { children: ReactNode }
           }
         });
 
-        setHydrationData({
+        const refreshedData: HydrationData = {
           ...parsed,
+          lastLoggedDate: todayStr,
           targetMl,
           targetGlasses,
           mlPerGlass,
           dailyIntakeMlByChild,
           dailyIntakeByChild,
-        });
+          historyLogs,
+        };
+
+        setHydrationData(refreshedData);
+        try {
+          localStorage.setItem('kidora_hydration', JSON.stringify(refreshedData));
+        } catch (e) {}
       } catch (e) {}
     }
     if (localKidChallenges) {
@@ -1293,16 +1310,17 @@ export function AppProvider({ children: reactChildren }: { children: ReactNode }
     (childId: string, ml: number, notes?: string) => {
       setHydrationData((prev) => {
         const todayStr = new Date().toISOString().split('T')[0];
+        const isNewDay = prev.lastLoggedDate && prev.lastLoggedDate !== todayStr;
         const mlPerGlass = prev.mlPerGlass || 250;
-        const currentMl =
-          prev.dailyIntakeMlByChild && prev.dailyIntakeMlByChild[childId] !== undefined
-            ? prev.dailyIntakeMlByChild[childId]
-            : (prev.dailyIntakeByChild[childId] || 0) * mlPerGlass;
 
+        const baseDailyMl = isNewDay ? {} : { ...(prev.dailyIntakeMlByChild || {}) };
+        const baseDaily = isNewDay ? {} : { ...(prev.dailyIntakeByChild || {}) };
+
+        const currentMl = baseDailyMl[childId] !== undefined ? baseDailyMl[childId] : (baseDaily[childId] || 0) * mlPerGlass;
         const newMl = Math.max(0, currentMl + ml);
         const newGlasses = Math.round((newMl / mlPerGlass) * 10) / 10;
-        const updatedDailyMl = { ...(prev.dailyIntakeMlByChild || {}), [childId]: newMl };
-        const updatedDaily = { ...prev.dailyIntakeByChild, [childId]: newGlasses };
+        const updatedDailyMl = { ...baseDailyMl, [childId]: newMl };
+        const updatedDaily = { ...baseDaily, [childId]: newGlasses };
 
         const existingLogIndex = prev.historyLogs.findIndex(
           (l) => l.childId === childId && l.date === todayStr
@@ -1334,6 +1352,7 @@ export function AppProvider({ children: reactChildren }: { children: ReactNode }
 
         const updated: HydrationData = {
           ...prev,
+          lastLoggedDate: todayStr,
           dailyIntakeMlByChild: updatedDailyMl,
           dailyIntakeByChild: updatedDaily,
           historyLogs: updatedHistory,
@@ -1351,18 +1370,19 @@ export function AppProvider({ children: reactChildren }: { children: ReactNode }
   const addWaterIntake = useCallback(
     (childId: string, glasses: number, notes?: string) => {
       setHydrationData((prev) => {
+        const todayStr = new Date().toISOString().split('T')[0];
+        const isNewDay = prev.lastLoggedDate && prev.lastLoggedDate !== todayStr;
         const mlPerGlass = prev.mlPerGlass || 250;
         const mlToAdd = Math.round(glasses * mlPerGlass);
-        const todayStr = new Date().toISOString().split('T')[0];
-        const currentMl =
-          prev.dailyIntakeMlByChild && prev.dailyIntakeMlByChild[childId] !== undefined
-            ? prev.dailyIntakeMlByChild[childId]
-            : (prev.dailyIntakeByChild[childId] || 0) * mlPerGlass;
 
+        const baseDailyMl = isNewDay ? {} : { ...(prev.dailyIntakeMlByChild || {}) };
+        const baseDaily = isNewDay ? {} : { ...(prev.dailyIntakeByChild || {}) };
+
+        const currentMl = baseDailyMl[childId] !== undefined ? baseDailyMl[childId] : (baseDaily[childId] || 0) * mlPerGlass;
         const newMl = Math.max(0, currentMl + mlToAdd);
         const newGlasses = Math.round((newMl / mlPerGlass) * 10) / 10;
-        const updatedDailyMl = { ...(prev.dailyIntakeMlByChild || {}), [childId]: newMl };
-        const updatedDaily = { ...prev.dailyIntakeByChild, [childId]: newGlasses };
+        const updatedDailyMl = { ...baseDailyMl, [childId]: newMl };
+        const updatedDaily = { ...baseDaily, [childId]: newGlasses };
 
         const existingLogIndex = prev.historyLogs.findIndex(
           (l) => l.childId === childId && l.date === todayStr
@@ -1394,6 +1414,7 @@ export function AppProvider({ children: reactChildren }: { children: ReactNode }
 
         const updated: HydrationData = {
           ...prev,
+          lastLoggedDate: todayStr,
           dailyIntakeMlByChild: updatedDailyMl,
           dailyIntakeByChild: updatedDaily,
           historyLogs: updatedHistory,
@@ -1419,6 +1440,7 @@ export function AppProvider({ children: reactChildren }: { children: ReactNode }
         );
         const updated: HydrationData = {
           ...prev,
+          lastLoggedDate: todayStr,
           dailyIntakeMlByChild: updatedDailyMl,
           dailyIntakeByChild: updatedDaily,
           historyLogs: updatedHistory,

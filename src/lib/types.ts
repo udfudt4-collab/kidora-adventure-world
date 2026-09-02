@@ -395,6 +395,7 @@ export interface HydrationData {
   targetMl?: number; // daily target in ML (e.g. 1750 ml)
   targetGlasses: number; // glass equivalent target
   mlPerGlass: number; // customizable glass capacity (e.g. 100ml, 250ml)
+  lastLoggedDate?: string; // date string "YYYY-MM-DD" for automatic daily refresh
   dailyIntakeMlByChild?: Record<string, number>; // childId -> today's ml count
   dailyIntakeByChild: Record<string, number>; // childId -> today's glasses count
   historyLogs: HydrationLogEntry[];

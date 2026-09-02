@@ -73,12 +73,23 @@ export function HydrationTracker() {
 
   const mlPerGlass = hydrationData.mlPerGlass || 250;
   const targetMl = hydrationData.targetMl || (hydrationData.targetGlasses ? hydrationData.targetGlasses * mlPerGlass : 1750);
-  const targetGlasses = Math.max(1, Math.round(targetMl / mlPerGlass));
+  const todayStr = new Date().toISOString().split('T')[0];
 
-  const currentMl =
-    hydrationData.dailyIntakeMlByChild && hydrationData.dailyIntakeMlByChild[selectedChildId] !== undefined
-      ? hydrationData.dailyIntakeMlByChild[selectedChildId]
-      : (hydrationData.dailyIntakeByChild[selectedChildId] || 0) * mlPerGlass;
+  // Auto-refresh today's hydration when calendar day changes
+  useEffect(() => {
+    const today = new Date().toISOString().split('T')[0];
+    if (hydrationData.lastLoggedDate && hydrationData.lastLoggedDate !== today) {
+      resetTodayWaterIntake(selectedChildId);
+    }
+  }, [hydrationData.lastLoggedDate, selectedChildId, resetTodayWaterIntake]);
+
+  // Compute today's current intake (0 if a new day has rolled over)
+  const isRolloverNewDay = hydrationData.lastLoggedDate && hydrationData.lastLoggedDate !== todayStr;
+  const currentMl = isRolloverNewDay
+    ? 0
+    : hydrationData.dailyIntakeMlByChild && hydrationData.dailyIntakeMlByChild[selectedChildId] !== undefined
+    ? hydrationData.dailyIntakeMlByChild[selectedChildId]
+    : (hydrationData.dailyIntakeByChild[selectedChildId] || 0) * mlPerGlass;
 
   const currentGlasses = Math.round((currentMl / mlPerGlass) * 10) / 10;
   const percentComplete = Math.min(100, Math.round((currentMl / (targetMl || 1)) * 100));
