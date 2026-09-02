@@ -537,10 +537,10 @@ export const HollowRoadStrokeGuide: React.FC<HollowRoadStrokeGuideProps> = ({
   // If we have accurate vector stroke definition
   if (roadData) {
     return (
-      <div className={`relative w-full h-full flex items-center justify-center pointer-events-none select-none p-1 sm:p-2 ${className}`}>
+      <div className={`relative w-full h-full flex items-center justify-center pointer-events-none select-none p-2 ${className}`}>
         <svg
           viewBox={roadData.viewBox || '0 0 300 340'}
-          className="w-full h-full max-w-[440px] max-h-[500px] drop-shadow-xl scale-100 sm:scale-105"
+          className="w-full h-full max-h-[380px] sm:max-h-[440px] drop-shadow-lg"
           fill="none"
           xmlns="http://www.w3.org/2000/svg"
         >
@@ -550,7 +550,7 @@ export const HollowRoadStrokeGuide: React.FC<HollowRoadStrokeGuideProps> = ({
               key={`outer-${idx}`}
               d={s.d}
               stroke="#0f172a"
-              strokeWidth="68"
+              strokeWidth="56"
               strokeLinecap="round"
               strokeLinejoin="round"
             />
@@ -562,7 +562,7 @@ export const HollowRoadStrokeGuide: React.FC<HollowRoadStrokeGuideProps> = ({
               key={`inner-${idx}`}
               d={s.d}
               stroke="#ffffff"
-              strokeWidth="52"
+              strokeWidth="42"
               strokeLinecap="round"
               strokeLinejoin="round"
             />
@@ -574,10 +574,10 @@ export const HollowRoadStrokeGuide: React.FC<HollowRoadStrokeGuideProps> = ({
               key={`dash-${idx}`}
               d={s.d}
               stroke="#64748b"
-              strokeWidth="6"
+              strokeWidth="5"
               strokeLinecap="round"
               strokeLinejoin="round"
-              strokeDasharray="12 14"
+              strokeDasharray="10 12"
             />
           ))}
 
@@ -591,19 +591,19 @@ export const HollowRoadStrokeGuide: React.FC<HollowRoadStrokeGuideProps> = ({
                   <circle
                     cx={s.badge.x}
                     cy={s.badge.y}
-                    r="16"
+                    r="15"
                     fill={s.badge.color}
                     stroke="#ffffff"
-                    strokeWidth="3"
+                    strokeWidth="2.5"
                     className="drop-shadow-md"
                   />
                   {/* Number text */}
                   <text
                     x={s.badge.x}
-                    y={s.badge.y + 5}
+                    y={s.badge.y + 4.5}
                     textAnchor="middle"
                     fill="#ffffff"
-                    fontSize="14"
+                    fontSize="13"
                     fontWeight="900"
                     fontFamily="sans-serif"
                   >
@@ -611,10 +611,10 @@ export const HollowRoadStrokeGuide: React.FC<HollowRoadStrokeGuideProps> = ({
                   </text>
                   {/* Arrow indicator */}
                   <text
-                    x={s.badge.x + 20}
-                    y={s.badge.y + 6}
+                    x={s.badge.x + 18}
+                    y={s.badge.y + 5}
                     fill="#334155"
-                    fontSize="16"
+                    fontSize="14"
                     fontWeight="bold"
                   >
                     {s.badge.arrow}
@@ -627,36 +627,35 @@ export const HollowRoadStrokeGuide: React.FC<HollowRoadStrokeGuideProps> = ({
     );
   }
 
-  // High-Definition Large Hollow Road Track for Tamil Vowels & Words
+  // High-Definition Perfectly Proportioned Hollow Road Track for Tamil Vowels & Words
   const isTamil = /[\u0B80-\u0BFF]/.test(character);
   const charLength = character.trim().length;
 
   if (isTamil) {
     const isSingleChar = charLength <= 1;
-    // For single Tamil vowel (அ, ஆ, இ, ஈ, உ, ஊ, எ, ஏ, ஐ, ஒ, ஓ, ஔ, ஃ)
-    // Scale viewBox and font size so the Tamil letter is HUGE and fills the canvas just like English A-Z!
+    // Perfectly proportioned viewBox and font size for Tamil vowels (அ, ஆ, இ, ஈ...)
     const tamilViewBox = isSingleChar
-      ? '0 0 260 260'
+      ? '0 0 320 300'
       : charLength <= 3
-      ? '0 0 360 220'
-      : '0 0 460 220';
-    const tamilFontSize = isSingleChar ? 300 : charLength <= 3 ? 170 : charLength <= 5 ? 130 : 90;
-    const strokeOuter = isSingleChar ? 46 : 28;
-    const strokeInner = isSingleChar ? 32 : 18;
-    const strokeDash = isSingleChar ? 6 : 4;
+      ? '0 0 380 260'
+      : '0 0 480 260';
+    const tamilFontSize = isSingleChar ? 190 : charLength <= 3 ? 125 : charLength <= 5 ? 95 : 75;
+    const strokeOuter = isSingleChar ? 30 : 22;
+    const strokeInner = isSingleChar ? 20 : 14;
+    const strokeDash = isSingleChar ? 4.5 : 3;
 
     return (
-      <div className={`relative w-full h-full flex items-center justify-center pointer-events-none select-none p-1 sm:p-2 ${className}`}>
+      <div className={`relative w-full h-full flex items-center justify-center pointer-events-none select-none p-2 ${className}`}>
         <svg
           viewBox={tamilViewBox}
-          className="w-full h-full max-w-[480px] max-h-[520px] drop-shadow-2xl scale-105 sm:scale-110 transform transition-transform"
+          className="w-full h-full max-h-[380px] sm:max-h-[440px] drop-shadow-lg"
           fill="none"
           xmlns="http://www.w3.org/2000/svg"
         >
           {/* Layer 1: Outer Bold Road Border */}
           <text
             x="50%"
-            y="52%"
+            y="54%"
             textAnchor="middle"
             dominantBaseline="central"
             stroke="#0f172a"
@@ -674,7 +673,7 @@ export const HollowRoadStrokeGuide: React.FC<HollowRoadStrokeGuideProps> = ({
           {/* Layer 2: Inner Hollow White Roadway */}
           <text
             x="50%"
-            y="52%"
+            y="54%"
             textAnchor="middle"
             dominantBaseline="central"
             fill="#ffffff"
@@ -692,13 +691,13 @@ export const HollowRoadStrokeGuide: React.FC<HollowRoadStrokeGuideProps> = ({
           {/* Layer 3: Dashed Centerline Track Guide */}
           <text
             x="50%"
-            y="52%"
+            y="54%"
             textAnchor="middle"
             dominantBaseline="central"
             fill="none"
             stroke="#64748b"
             strokeWidth={strokeDash}
-            strokeDasharray="10 12"
+            strokeDasharray="9 11"
             strokeLinejoin="round"
             strokeLinecap="round"
             fontSize={tamilFontSize}
@@ -713,14 +712,14 @@ export const HollowRoadStrokeGuide: React.FC<HollowRoadStrokeGuideProps> = ({
   }
 
   // Fallback for full words, lowercase, numbers: High-definition Large Hollow Road Track
-  const fontSize = charLength > 5 ? 70 : charLength > 3 ? 95 : charLength > 1 ? 140 : 250;
+  const fontSize = charLength > 5 ? 65 : charLength > 3 ? 85 : charLength > 1 ? 120 : 180;
   const yPos = '56%';
 
   return (
-    <div className={`relative w-full h-full flex items-center justify-center pointer-events-none select-none p-1 sm:p-2 ${className}`}>
+    <div className={`relative w-full h-full flex items-center justify-center pointer-events-none select-none p-2 ${className}`}>
       <svg
-        viewBox="0 0 360 320"
-        className="w-full h-full max-w-[460px] max-h-[500px] drop-shadow-xl"
+        viewBox="0 0 360 300"
+        className="w-full h-full max-h-[380px] sm:max-h-[440px] drop-shadow-lg"
         fill="none"
         xmlns="http://www.w3.org/2000/svg"
       >
@@ -731,7 +730,7 @@ export const HollowRoadStrokeGuide: React.FC<HollowRoadStrokeGuideProps> = ({
           textAnchor="middle"
           dominantBaseline="central"
           stroke="#0f172a"
-          strokeWidth="38"
+          strokeWidth="32"
           strokeLinejoin="round"
           strokeLinecap="round"
           fill="#ffffff"
@@ -750,7 +749,7 @@ export const HollowRoadStrokeGuide: React.FC<HollowRoadStrokeGuideProps> = ({
           dominantBaseline="central"
           fill="#ffffff"
           stroke="#ffffff"
-          strokeWidth="26"
+          strokeWidth="22"
           strokeLinejoin="round"
           strokeLinecap="round"
           fontSize={fontSize}
@@ -768,8 +767,8 @@ export const HollowRoadStrokeGuide: React.FC<HollowRoadStrokeGuideProps> = ({
           dominantBaseline="central"
           fill="none"
           stroke="#64748b"
-          strokeWidth="5"
-          strokeDasharray="10 10"
+          strokeWidth="4"
+          strokeDasharray="8 8"
           strokeLinejoin="round"
           strokeLinecap="round"
           fontSize={fontSize}
