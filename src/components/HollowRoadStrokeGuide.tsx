@@ -537,20 +537,20 @@ export const HollowRoadStrokeGuide: React.FC<HollowRoadStrokeGuideProps> = ({
   // If we have accurate vector stroke definition
   if (roadData) {
     return (
-      <div className={`relative w-full h-full flex items-center justify-center pointer-events-none select-none ${className}`}>
+      <div className={`relative w-full h-full flex items-center justify-center pointer-events-none select-none p-1 sm:p-2 ${className}`}>
         <svg
           viewBox={roadData.viewBox || '0 0 300 340'}
-          className="w-full h-full max-h-[380px] sm:max-h-[440px] drop-shadow-md"
+          className="w-full h-full max-w-[440px] max-h-[500px] drop-shadow-xl scale-100 sm:scale-105"
           fill="none"
           xmlns="http://www.w3.org/2000/svg"
         >
-          {/* Layer 1: Outer Bold Track Contour (Black road edge) */}
+          {/* Layer 1: Outer Bold Track Contour (Dark road edge) */}
           {roadData.strokes.map((s, idx) => (
             <path
               key={`outer-${idx}`}
               d={s.d}
               stroke="#0f172a"
-              strokeWidth="56"
+              strokeWidth="68"
               strokeLinecap="round"
               strokeLinejoin="round"
             />
@@ -562,22 +562,22 @@ export const HollowRoadStrokeGuide: React.FC<HollowRoadStrokeGuideProps> = ({
               key={`inner-${idx}`}
               d={s.d}
               stroke="#ffffff"
-              strokeWidth="42"
+              strokeWidth="52"
               strokeLinecap="round"
               strokeLinejoin="round"
             />
           ))}
 
-          {/* Layer 3: Dashed / Dotted Centerline Track */}
+          {/* Layer 3: Dashed Centerline Track */}
           {roadData.strokes.map((s, idx) => (
             <path
               key={`dash-${idx}`}
               d={s.d}
-              stroke="#94a3b8"
-              strokeWidth="5"
+              stroke="#64748b"
+              strokeWidth="6"
               strokeLinecap="round"
               strokeLinejoin="round"
-              strokeDasharray="10 12"
+              strokeDasharray="12 14"
             />
           ))}
 
@@ -591,30 +591,30 @@ export const HollowRoadStrokeGuide: React.FC<HollowRoadStrokeGuideProps> = ({
                   <circle
                     cx={s.badge.x}
                     cy={s.badge.y}
-                    r="15"
+                    r="16"
                     fill={s.badge.color}
                     stroke="#ffffff"
-                    strokeWidth="2.5"
+                    strokeWidth="3"
                     className="drop-shadow-md"
                   />
                   {/* Number text */}
                   <text
                     x={s.badge.x}
-                    y={s.badge.y + 4.5}
+                    y={s.badge.y + 5}
                     textAnchor="middle"
                     fill="#ffffff"
-                    fontSize="13"
+                    fontSize="14"
                     fontWeight="900"
                     fontFamily="sans-serif"
                   >
                     {s.badge.num}
                   </text>
-                  {/* Arrow indicator below or near the badge */}
+                  {/* Arrow indicator */}
                   <text
-                    x={s.badge.x + 18}
-                    y={s.badge.y + 5}
-                    fill="#475569"
-                    fontSize="14"
+                    x={s.badge.x + 20}
+                    y={s.badge.y + 6}
+                    fill="#334155"
+                    fontSize="16"
                     fontWeight="bold"
                   >
                     {s.badge.arrow}
@@ -627,57 +627,71 @@ export const HollowRoadStrokeGuide: React.FC<HollowRoadStrokeGuideProps> = ({
     );
   }
 
-  // Fallback for full words, lowercase or Tamil characters: High-definition SVG hollow outline font track!
+  // Fallback for full words, lowercase, numbers, or Tamil characters: High-definition Large Hollow Road Track
+  const isTamil = /[\u0B80-\u0BFF]/.test(character);
+  const charLength = character.trim().length;
+  const fontSize = charLength > 5 ? 70 : charLength > 3 ? 95 : charLength > 1 ? 140 : isTamil ? 220 : 250;
+  const yPos = isTamil ? '54%' : '56%';
+
   return (
-    <div className={`relative w-full h-full flex items-center justify-center pointer-events-none select-none ${className}`}>
+    <div className={`relative w-full h-full flex items-center justify-center pointer-events-none select-none p-1 sm:p-2 ${className}`}>
       <svg
-        viewBox="0 0 400 300"
-        className="w-full h-full max-h-[380px] sm:max-h-[440px] drop-shadow-md"
+        viewBox="0 0 360 320"
+        className="w-full h-full max-w-[460px] max-h-[500px] drop-shadow-xl"
         fill="none"
         xmlns="http://www.w3.org/2000/svg"
       >
-        {/* Outer bold outline */}
+        {/* Layer 1: Outer bold outline road edge */}
         <text
           x="50%"
-          y="62%"
+          y={yPos}
           textAnchor="middle"
-          dominantBaseline="middle"
+          dominantBaseline="central"
           stroke="#0f172a"
-          strokeWidth="32"
+          strokeWidth="38"
           strokeLinejoin="round"
+          strokeLinecap="round"
           fill="#ffffff"
-          className="font-black font-display text-[150px] sm:text-[180px]"
+          fontSize={fontSize}
+          fontWeight="900"
+          fontFamily="system-ui, -apple-system, sans-serif"
         >
           {character}
         </text>
 
-        {/* Inner white fill */}
+        {/* Layer 2: Inner white roadway */}
         <text
           x="50%"
-          y="62%"
+          y={yPos}
           textAnchor="middle"
-          dominantBaseline="middle"
+          dominantBaseline="central"
           fill="#ffffff"
           stroke="#ffffff"
-          strokeWidth="20"
+          strokeWidth="26"
           strokeLinejoin="round"
-          className="font-black font-display text-[150px] sm:text-[180px]"
+          strokeLinecap="round"
+          fontSize={fontSize}
+          fontWeight="900"
+          fontFamily="system-ui, -apple-system, sans-serif"
         >
           {character}
         </text>
 
-        {/* Center dotted guide */}
+        {/* Layer 3: Center dotted / dashed track line */}
         <text
           x="50%"
-          y="62%"
+          y={yPos}
           textAnchor="middle"
-          dominantBaseline="middle"
+          dominantBaseline="central"
           fill="none"
-          stroke="#94a3b8"
-          strokeWidth="4"
-          strokeDasharray="8 8"
+          stroke="#64748b"
+          strokeWidth="5"
+          strokeDasharray="10 10"
           strokeLinejoin="round"
-          className="font-black font-display text-[150px] sm:text-[180px]"
+          strokeLinecap="round"
+          fontSize={fontSize}
+          fontWeight="900"
+          fontFamily="system-ui, -apple-system, sans-serif"
         >
           {character}
         </text>

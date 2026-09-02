@@ -1647,7 +1647,7 @@ export function AlphabetNumberHub() {
         <div
           ref={containerRef}
           className={`relative w-full rounded-3xl bg-white border-2 border-dashed border-sky-300 overflow-hidden touch-none select-none flex items-center justify-center shadow-inner ${
-            isExpanded ? 'flex-1 min-h-[460px] sm:min-h-[520px]' : 'min-h-[380px] sm:min-h-[430px]'
+            isExpanded ? 'flex-1 min-h-[500px] sm:min-h-[560px]' : 'min-h-[440px] sm:min-h-[500px]'
           }`}
           style={{
             backgroundImage:
@@ -1658,7 +1658,7 @@ export function AlphabetNumberHub() {
         >
           {/* Primary School 4-Line Handwriting Guidelines */}
           {showGuidelines && (
-            <div className="absolute inset-0 pointer-events-none flex flex-col justify-center gap-8 sm:gap-12 px-6 opacity-60">
+            <div className="absolute inset-0 pointer-events-none flex flex-col justify-center gap-10 sm:gap-14 px-4 opacity-50">
               <div className="w-full border-b-2 border-rose-300/70" />
               <div className="w-full border-b-2 border-dashed border-sky-400/80" />
               <div className="w-full border-b-2 border-sky-500/70" />
@@ -1668,7 +1668,7 @@ export function AlphabetNumberHub() {
 
           {/* Hollow Road Tracing Track with Dotted Centerline & Numbered Stroke Pills */}
           {guideText && (
-            <div className="absolute inset-0 flex flex-col items-center justify-center pointer-events-none select-none z-0 p-4">
+            <div className="absolute inset-0 flex flex-col items-center justify-center pointer-events-none select-none z-0 p-1 sm:p-2">
               <HollowRoadStrokeGuide
                 character={guideText}
                 showStrokeOrder={showStrokeOrder}

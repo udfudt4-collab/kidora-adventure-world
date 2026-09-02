@@ -56,10 +56,7 @@ class SoundEngine {
   }
 
   public warmup() {
-    if (this.isWarmedUp) return;
-    this.isWarmedUp = true;
-
-    // 1. Resume AudioContext
+    // 1. Resume AudioContext immediately
     const ctx = this.getAudioContext();
     if (ctx && ctx.state === 'suspended') {
       ctx.resume().catch(() => {});
@@ -71,17 +68,20 @@ class SoundEngine {
         if (window.speechSynthesis.paused) {
           window.speechSynthesis.resume();
         }
-        // Silent micro-utterance to wake up Android TTS audio track
-        const warmupUtterance = new SpeechSynthesisUtterance(' ');
-        warmupUtterance.volume = 0.01;
-        warmupUtterance.rate = 10;
-        this.activeUtterances.add(warmupUtterance);
-        warmupUtterance.onend = () => this.activeUtterances.delete(warmupUtterance);
-        warmupUtterance.onerror = () => this.activeUtterances.delete(warmupUtterance);
-        window.speechSynthesis.speak(warmupUtterance);
-      } catch {
-        // Ignore warmup errors
-      }
+        if (this.voices.length === 0) {
+          this.loadVoices();
+        }
+        if (!this.isWarmedUp) {
+          this.isWarmedUp = true;
+          const warmupUtterance = new SpeechSynthesisUtterance('');
+          warmupUtterance.volume = 0.001;
+          warmupUtterance.rate = 10;
+          this.activeUtterances.add(warmupUtterance);
+          warmupUtterance.onend = () => this.activeUtterances.delete(warmupUtterance);
+          warmupUtterance.onerror = () => this.activeUtterances.delete(warmupUtterance);
+          window.speechSynthesis.speak(warmupUtterance);
+        }
+      } catch {}
     }
   }
 
@@ -101,23 +101,26 @@ class SoundEngine {
   ) {
     if (typeof window === 'undefined') return;
 
-    // Ensure AudioContext is active
-    this.getAudioContext();
+    // 1. Ensure Web Audio Context is active and play an instant UI chime/pop
+    this.warmup();
+    if (options?.playFallbackTone !== false) {
+      this.playPop();
+    }
 
     if (!('speechSynthesis' in window)) {
-      if (options?.playFallbackTone !== false) {
-        this.playTone(440, 0.2);
-      }
       options?.onEnd?.();
       return;
     }
 
     try {
+      if (this.voices.length === 0) {
+        this.loadVoices();
+      }
+
       // Resume if Android engine was paused
       if (window.speechSynthesis.paused) {
         window.speechSynthesis.resume();
       }
-      window.speechSynthesis.cancel();
 
       // Clean text for speech
       let cleaned = text.replace(/[\p{Emoji_Presentation}\p{Extended_Pictographic}]/gu, '').trim();
@@ -170,6 +173,7 @@ class SoundEngine {
           'சிங்கம்': 'Singam',
           'யானை': 'Yaanai',
           'புலி': 'Puli',
+          'திராட்சை': 'Dhiratchai',
           'ஒட்டகச்சிவிங்கி': 'Ottagachivingi',
           'வரிக்குதிரை': 'Varikkuthirai',
           'கங்காரு': 'Kangaroo',
@@ -186,11 +190,10 @@ class SoundEngine {
           'ஆந்தை': 'Aanthai',
           'நாய்': 'Naai',
           'பூனை': 'Poonai',
-          'கோடைக்காலம்': 'Kodaikaalam',
-          'மழைக்காலம்': 'Mazaikaalam',
-          'இலையுதிர்காலம்': 'Ilaiyuthirkaalam',
-          'குளிர்காலம்': 'Kulirkaalam',
-          'வசந்தகாலம்': 'Vasanthakaalam',
+          'பனிவீடு': 'Paniveedu',
+          'பழச்சாறு': 'Pazhachaaru',
+          'ஆரஞ்சு': 'Orange',
+          'தர்பூசணி': 'Dharpoosani',
         };
 
         for (const [k, v] of Object.entries(TAMIL_MAP)) {
@@ -209,7 +212,6 @@ class SoundEngine {
       } else {
         utterance.lang = options?.lang ?? 'en-IN';
 
-        // Pick best natural voice (prefer Indian English or Natural female for crisp pronunciation)
         if (this.voices.length > 0) {
           const matchingVoice =
             this.voices.find((v) => v.lang.includes('IN') || v.name.includes('India')) ||
@@ -232,33 +234,37 @@ class SoundEngine {
 
       // CRITICAL FOR ANDROID: Prevent garbage collection before audio ends
       this.activeUtterances.add(utterance);
+      (window as unknown as { __lastUtterance?: SpeechSynthesisUtterance }).__lastUtterance = utterance;
 
       utterance.onend = () => {
         this.activeUtterances.delete(utterance);
         options?.onEnd?.();
       };
 
-      utterance.onerror = (err) => {
+      utterance.onerror = () => {
         this.activeUtterances.delete(utterance);
-        // If Android TTS failed, play musical chime fallback
-        if (options?.playFallbackTone !== false) {
-          this.playChime();
-        }
         options?.onEnd?.();
       };
 
-      window.speechSynthesis.speak(utterance);
+      // In Android WebView, if speech is ongoing, cancel and queue
+      if (window.speechSynthesis.speaking) {
+        window.speechSynthesis.cancel();
+        setTimeout(() => {
+          try {
+            window.speechSynthesis.speak(utterance);
+          } catch {}
+        }, 35);
+      } else {
+        window.speechSynthesis.speak(utterance);
+      }
 
-      // Android WebView safety timeout: If speech is stuck paused, force resume
+      // Safety timeout: If speech is stuck paused on Android, force resume
       setTimeout(() => {
         if (window.speechSynthesis.paused) {
           window.speechSynthesis.resume();
         }
-      }, 100);
+      }, 80);
     } catch {
-      if (options?.playFallbackTone !== false) {
-        this.playChime();
-      }
       options?.onEnd?.();
     }
   }
